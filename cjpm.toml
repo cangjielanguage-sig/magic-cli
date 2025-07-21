@@ -12,4 +12,4 @@
   package-configuration = {}
 
 [dependencies]
-  magic = { path = "D:\\CangjieAgent\\CangjieMagic\\CangjieMagic" }
+  magic = { path = "D:\\CangjieAgent\\Cangjie-CLI\\Cangjie-CLI\\CangjieMagic" }

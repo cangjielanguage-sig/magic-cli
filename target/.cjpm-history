@@ -1,9 +1,29 @@
 {
   "resolves": [
     {
+      "rootPackageName": "cli",
+      "modulePath": ".",
+      "packagePath": "D:\\CangjieAgent\\Cangjie-CLI\\Cangjie-CLI\\src",
+      "fullName": "cli",
+      "isMacroPackage": false,
+      "output-type": "executable",
+      "compile-option": "",
+      "native-compile-option": "",
+      "customized-option": {},
+      "link-option": "",
+      "native-link-option": "",
+      "requires": [],
+      "std-requires": [],
+      "c_libs": {},
+      "hasTestFiles": false,
+      "hasProdFiles": true,
+      "hasTestsInProdFiles": false,
+      "accessLevel": "public"
+    },
+    {
       "rootPackageName": "magic",
-      "modulePath": "D:\\CangjieAgent\\CangjieMagic\\CangjieMagic",
-      "packagePath": "D:\\CangjieAgent\\CangjieMagic\\CangjieMagic\\src",
+      "modulePath": "D:\\CangjieAgent\\Cangjie-CLI\\Cangjie-CLI\\CangjieMagic",
+      "packagePath": "D:\\CangjieAgent\\Cangjie-CLI\\Cangjie-CLI\\CangjieMagic\\src",
       "fullName": "magic",
       "isMacroPackage": false,
       "output-type": "dynamic",
@@ -22,8 +42,8 @@
     },
     {
       "rootPackageName": "magic",
-      "modulePath": "D:\\CangjieAgent\\CangjieMagic\\CangjieMagic",
-      "packagePath": "D:\\CangjieAgent\\CangjieMagic\\CangjieMagic\\src\\core\\memory",
+      "modulePath": "D:\\CangjieAgent\\Cangjie-CLI\\Cangjie-CLI\\CangjieMagic",
+      "packagePath": "D:\\CangjieAgent\\Cangjie-CLI\\Cangjie-CLI\\CangjieMagic\\src\\core\\memory",
       "fullName": "magic.core.memory",
       "isMacroPackage": false,
       "output-type": "dynamic",
@@ -42,8 +62,8 @@
     },
     {
       "rootPackageName": "magic",
-      "modulePath": "D:\\CangjieAgent\\CangjieMagic\\CangjieMagic",
-      "packagePath": "D:\\CangjieAgent\\CangjieMagic\\CangjieMagic\\src\\core\\message",
+      "modulePath": "D:\\CangjieAgent\\Cangjie-CLI\\Cangjie-CLI\\CangjieMagic",
+      "packagePath": "D:\\CangjieAgent\\Cangjie-CLI\\Cangjie-CLI\\CangjieMagic\\src\\core\\message",
       "fullName": "magic.core.message",
       "isMacroPackage": false,
       "output-type": "dynamic",
@@ -64,8 +84,8 @@
     },
     {
       "rootPackageName": "magic",
-      "modulePath": "D:\\CangjieAgent\\CangjieMagic\\CangjieMagic",
-      "packagePath": "D:\\CangjieAgent\\CangjieMagic\\CangjieMagic\\src\\core\\tokenizer",
+      "modulePath": "D:\\CangjieAgent\\Cangjie-CLI\\Cangjie-CLI\\CangjieMagic",
+      "packagePath": "D:\\CangjieAgent\\Cangjie-CLI\\Cangjie-CLI\\CangjieMagic\\src\\core\\tokenizer",
       "fullName": "magic.core.tokenizer",
       "isMacroPackage": false,
       "output-type": "dynamic",
@@ -84,8 +104,8 @@
     },
     {
       "rootPackageName": "magic",
-      "modulePath": "D:\\CangjieAgent\\CangjieMagic\\CangjieMagic",
-      "packagePath": "D:\\CangjieAgent\\CangjieMagic\\CangjieMagic\\src\\dsl",
+      "modulePath": "D:\\CangjieAgent\\Cangjie-CLI\\Cangjie-CLI\\CangjieMagic",
+      "packagePath": "D:\\CangjieAgent\\Cangjie-CLI\\Cangjie-CLI\\CangjieMagic\\src\\dsl",
       "fullName": "magic.dsl",
       "isMacroPackage": true,
       "output-type": "dynamic",
@@ -112,8 +132,8 @@
     },
     {
       "rootPackageName": "magic",
-      "modulePath": "D:\\CangjieAgent\\CangjieMagic\\CangjieMagic",
-      "packagePath": "D:\\CangjieAgent\\CangjieMagic\\CangjieMagic\\src\\examples",
+      "modulePath": "D:\\CangjieAgent\\Cangjie-CLI\\Cangjie-CLI\\CangjieMagic",
+      "packagePath": "D:\\CangjieAgent\\Cangjie-CLI\\Cangjie-CLI\\CangjieMagic\\src\\examples",
       "fullName": "magic.examples",
       "isMacroPackage": false,
       "output-type": "dynamic",
@@ -132,8 +152,8 @@
     },
     {
       "rootPackageName": "magic",
-      "modulePath": "D:\\CangjieAgent\\CangjieMagic\\CangjieMagic",
-      "packagePath": "D:\\CangjieAgent\\CangjieMagic\\CangjieMagic\\src\\storage",
+      "modulePath": "D:\\CangjieAgent\\Cangjie-CLI\\Cangjie-CLI\\CangjieMagic",
+      "packagePath": "D:\\CangjieAgent\\Cangjie-CLI\\Cangjie-CLI\\CangjieMagic\\src\\storage",
       "fullName": "magic.storage",
       "isMacroPackage": false,
       "output-type": "dynamic",
@@ -152,8 +172,8 @@
     },
     {
       "rootPackageName": "magic",
-      "modulePath": "D:\\CangjieAgent\\CangjieMagic\\CangjieMagic",
-      "packagePath": "D:\\CangjieAgent\\CangjieMagic\\CangjieMagic\\src\\utils\\ohos",
+      "modulePath": "D:\\CangjieAgent\\Cangjie-CLI\\Cangjie-CLI\\CangjieMagic",
+      "packagePath": "D:\\CangjieAgent\\Cangjie-CLI\\Cangjie-CLI\\CangjieMagic\\src\\utils\\ohos",
       "fullName": "magic.utils.ohos",
       "isMacroPackage": false,
       "output-type": "dynamic",
@@ -174,8 +194,8 @@
     },
     {
       "rootPackageName": "magic",
-      "modulePath": "D:\\CangjieAgent\\CangjieMagic\\CangjieMagic",
-      "packagePath": "D:\\CangjieAgent\\CangjieMagic\\CangjieMagic\\src\\core\\model",
+      "modulePath": "D:\\CangjieAgent\\Cangjie-CLI\\Cangjie-CLI\\CangjieMagic",
+      "packagePath": "D:\\CangjieAgent\\Cangjie-CLI\\Cangjie-CLI\\CangjieMagic\\src\\core\\model",
       "fullName": "magic.core.model",
       "isMacroPackage": false,
       "output-type": "dynamic",
@@ -199,8 +219,8 @@
     },
     {
       "rootPackageName": "magic",
-      "modulePath": "D:\\CangjieAgent\\CangjieMagic\\CangjieMagic",
-      "packagePath": "D:\\CangjieAgent\\CangjieMagic\\CangjieMagic\\src\\jsonable",
+      "modulePath": "D:\\CangjieAgent\\Cangjie-CLI\\Cangjie-CLI\\CangjieMagic",
+      "packagePath": "D:\\CangjieAgent\\Cangjie-CLI\\Cangjie-CLI\\CangjieMagic\\src\\jsonable",
       "fullName": "magic.jsonable",
       "isMacroPackage": false,
       "output-type": "dynamic",
@@ -223,8 +243,8 @@
     },
     {
       "rootPackageName": "magic",
-      "modulePath": "D:\\CangjieAgent\\CangjieMagic\\CangjieMagic",
-      "packagePath": "D:\\CangjieAgent\\CangjieMagic\\CangjieMagic\\src\\utils",
+      "modulePath": "D:\\CangjieAgent\\Cangjie-CLI\\Cangjie-CLI\\CangjieMagic",
+      "packagePath": "D:\\CangjieAgent\\Cangjie-CLI\\Cangjie-CLI\\CangjieMagic\\src\\utils",
       "fullName": "magic.utils",
       "isMacroPackage": false,
       "output-type": "dynamic",
@@ -247,7 +267,8 @@
         "std.fs",
         "std.io",
         "std.math",
-        "std.process"
+        "std.process",
+        "std.random"
       ],
       "c_libs": {},
       "hasTestFiles": false,
@@ -257,8 +278,8 @@
     },
     {
       "rootPackageName": "magic",
-      "modulePath": "D:\\CangjieAgent\\CangjieMagic\\CangjieMagic",
-      "packagePath": "D:\\CangjieAgent\\CangjieMagic\\CangjieMagic\\src\\config",
+      "modulePath": "D:\\CangjieAgent\\Cangjie-CLI\\Cangjie-CLI\\CangjieMagic",
+      "packagePath": "D:\\CangjieAgent\\Cangjie-CLI\\Cangjie-CLI\\CangjieMagic\\src\\config",
       "fullName": "magic.config",
       "isMacroPackage": false,
       "output-type": "dynamic",
@@ -283,8 +304,8 @@
     },
     {
       "rootPackageName": "magic",
-      "modulePath": "D:\\CangjieAgent\\CangjieMagic\\CangjieMagic",
-      "packagePath": "D:\\CangjieAgent\\CangjieMagic\\CangjieMagic\\src\\core\\tool",
+      "modulePath": "D:\\CangjieAgent\\Cangjie-CLI\\Cangjie-CLI\\CangjieMagic",
+      "packagePath": "D:\\CangjieAgent\\Cangjie-CLI\\Cangjie-CLI\\CangjieMagic\\src\\core\\tool",
       "fullName": "magic.core.tool",
       "isMacroPackage": false,
       "output-type": "dynamic",
@@ -309,8 +330,8 @@
     },
     {
       "rootPackageName": "magic",
-      "modulePath": "D:\\CangjieAgent\\CangjieMagic\\CangjieMagic",
-      "packagePath": "D:\\CangjieAgent\\CangjieMagic\\CangjieMagic\\src\\prompt",
+      "modulePath": "D:\\CangjieAgent\\Cangjie-CLI\\Cangjie-CLI\\CangjieMagic",
+      "packagePath": "D:\\CangjieAgent\\Cangjie-CLI\\Cangjie-CLI\\CangjieMagic\\src\\prompt",
       "fullName": "magic.prompt",
       "isMacroPackage": false,
       "output-type": "dynamic",
@@ -336,8 +357,8 @@
     },
     {
       "rootPackageName": "magic",
-      "modulePath": "D:\\CangjieAgent\\CangjieMagic\\CangjieMagic",
-      "packagePath": "D:\\CangjieAgent\\CangjieMagic\\CangjieMagic\\src\\storage\\graph",
+      "modulePath": "D:\\CangjieAgent\\Cangjie-CLI\\Cangjie-CLI\\CangjieMagic",
+      "packagePath": "D:\\CangjieAgent\\Cangjie-CLI\\Cangjie-CLI\\CangjieMagic\\src\\storage\\graph",
       "fullName": "magic.storage.graph",
       "isMacroPackage": false,
       "output-type": "dynamic",
@@ -366,8 +387,8 @@
     },
     {
       "rootPackageName": "magic",
-      "modulePath": "D:\\CangjieAgent\\CangjieMagic\\CangjieMagic",
-      "packagePath": "D:\\CangjieAgent\\CangjieMagic\\CangjieMagic\\src\\storage\\kv",
+      "modulePath": "D:\\CangjieAgent\\Cangjie-CLI\\Cangjie-CLI\\CangjieMagic",
+      "packagePath": "D:\\CangjieAgent\\Cangjie-CLI\\Cangjie-CLI\\CangjieMagic\\src\\storage\\kv",
       "fullName": "magic.storage.kv",
       "isMacroPackage": false,
       "output-type": "dynamic",
@@ -396,8 +417,8 @@
     },
     {
       "rootPackageName": "magic",
-      "modulePath": "D:\\CangjieAgent\\CangjieMagic\\CangjieMagic",
-      "packagePath": "D:\\CangjieAgent\\CangjieMagic\\CangjieMagic\\src\\core\\rag",
+      "modulePath": "D:\\CangjieAgent\\Cangjie-CLI\\Cangjie-CLI\\CangjieMagic",
+      "packagePath": "D:\\CangjieAgent\\Cangjie-CLI\\Cangjie-CLI\\CangjieMagic\\src\\core\\rag",
       "fullName": "magic.core.rag",
       "isMacroPackage": false,
       "output-type": "dynamic",
@@ -424,8 +445,8 @@
     },
     {
       "rootPackageName": "magic",
-      "modulePath": "D:\\CangjieAgent\\CangjieMagic\\CangjieMagic",
-      "packagePath": "D:\\CangjieAgent\\CangjieMagic\\CangjieMagic\\src\\log",
+      "modulePath": "D:\\CangjieAgent\\Cangjie-CLI\\Cangjie-CLI\\CangjieMagic",
+      "packagePath": "D:\\CangjieAgent\\Cangjie-CLI\\Cangjie-CLI\\CangjieMagic\\src\\log",
       "fullName": "magic.log",
       "isMacroPackage": false,
       "output-type": "dynamic",
@@ -455,8 +476,8 @@
     },
     {
       "rootPackageName": "magic",
-      "modulePath": "D:\\CangjieAgent\\CangjieMagic\\CangjieMagic",
-      "packagePath": "D:\\CangjieAgent\\CangjieMagic\\CangjieMagic\\src\\tokenizer",
+      "modulePath": "D:\\CangjieAgent\\Cangjie-CLI\\Cangjie-CLI\\CangjieMagic",
+      "packagePath": "D:\\CangjieAgent\\Cangjie-CLI\\Cangjie-CLI\\CangjieMagic\\src\\tokenizer",
       "fullName": "magic.tokenizer",
       "isMacroPackage": false,
       "output-type": "dynamic",
@@ -490,8 +511,34 @@
     },
     {
       "rootPackageName": "magic",
-      "modulePath": "D:\\CangjieAgent\\CangjieMagic\\CangjieMagic",
-      "packagePath": "D:\\CangjieAgent\\CangjieMagic\\CangjieMagic\\src\\parser",
+      "modulePath": "D:\\CangjieAgent\\Cangjie-CLI\\Cangjie-CLI\\CangjieMagic",
+      "packagePath": "D:\\CangjieAgent\\Cangjie-CLI\\Cangjie-CLI\\CangjieMagic\\src\\core\\interaction",
+      "fullName": "magic.core.interaction",
+      "isMacroPackage": false,
+      "output-type": "dynamic",
+      "compile-option": "-Woff unused -Woff deprecated --cfg \"faiss=disable,sqlite=disable,llamacpp=disable,http=curl\"  --cfg \"ohos=false\"",
+      "native-compile-option": "",
+      "customized-option": {},
+      "link-option": "",
+      "native-link-option": "",
+      "requires": [
+        "magic.log"
+      ],
+      "std-requires": [
+        "std.collection.concurrent",
+        "std.deriving",
+        "std.sync"
+      ],
+      "c_libs": {},
+      "hasTestFiles": false,
+      "hasProdFiles": true,
+      "hasTestsInProdFiles": false,
+      "accessLevel": "public"
+    },
+    {
+      "rootPackageName": "magic",
+      "modulePath": "D:\\CangjieAgent\\Cangjie-CLI\\Cangjie-CLI\\CangjieMagic",
+      "packagePath": "D:\\CangjieAgent\\Cangjie-CLI\\Cangjie-CLI\\CangjieMagic\\src\\parser",
       "fullName": "magic.parser",
       "isMacroPackage": false,
       "output-type": "dynamic",
@@ -520,8 +567,8 @@
     },
     {
       "rootPackageName": "magic",
-      "modulePath": "D:\\CangjieAgent\\CangjieMagic\\CangjieMagic",
-      "packagePath": "D:\\CangjieAgent\\CangjieMagic\\CangjieMagic\\src\\rag\\splitter",
+      "modulePath": "D:\\CangjieAgent\\Cangjie-CLI\\Cangjie-CLI\\CangjieMagic",
+      "packagePath": "D:\\CangjieAgent\\Cangjie-CLI\\Cangjie-CLI\\CangjieMagic\\src\\rag\\splitter",
       "fullName": "magic.rag.splitter",
       "isMacroPackage": false,
       "output-type": "dynamic",
@@ -549,8 +596,8 @@
     },
     {
       "rootPackageName": "magic",
-      "modulePath": "D:\\CangjieAgent\\CangjieMagic\\CangjieMagic",
-      "packagePath": "D:\\CangjieAgent\\CangjieMagic\\CangjieMagic\\src\\utils\\http",
+      "modulePath": "D:\\CangjieAgent\\Cangjie-CLI\\Cangjie-CLI\\CangjieMagic",
+      "packagePath": "D:\\CangjieAgent\\Cangjie-CLI\\Cangjie-CLI\\CangjieMagic\\src\\utils\\http",
       "fullName": "magic.utils.http",
       "isMacroPackage": false,
       "output-type": "dynamic",
@@ -583,8 +630,8 @@
     },
     {
       "rootPackageName": "magic",
-      "modulePath": "D:\\CangjieAgent\\CangjieMagic\\CangjieMagic",
-      "packagePath": "D:\\CangjieAgent\\CangjieMagic\\CangjieMagic\\src\\core\\agent",
+      "modulePath": "D:\\CangjieAgent\\Cangjie-CLI\\Cangjie-CLI\\CangjieMagic",
+      "packagePath": "D:\\CangjieAgent\\Cangjie-CLI\\Cangjie-CLI\\CangjieMagic\\src\\core\\agent",
       "fullName": "magic.core.agent",
       "isMacroPackage": false,
       "output-type": "dynamic",
@@ -594,6 +641,7 @@
       "link-option": "",
       "native-link-option": "",
       "requires": [
+        "magic.core.interaction",
         "magic.core.memory",
         "magic.core.message",
         "magic.core.model",
@@ -612,8 +660,8 @@
     },
     {
       "rootPackageName": "magic",
-      "modulePath": "D:\\CangjieAgent\\CangjieMagic\\CangjieMagic",
-      "packagePath": "D:\\CangjieAgent\\CangjieMagic\\CangjieMagic\\src\\model\\dashscope",
+      "modulePath": "D:\\CangjieAgent\\Cangjie-CLI\\Cangjie-CLI\\CangjieMagic",
+      "packagePath": "D:\\CangjieAgent\\Cangjie-CLI\\Cangjie-CLI\\CangjieMagic\\src\\model\\dashscope",
       "fullName": "magic.model.dashscope",
       "isMacroPackage": false,
       "output-type": "dynamic",
@@ -640,8 +688,8 @@
     },
     {
       "rootPackageName": "magic",
-      "modulePath": "D:\\CangjieAgent\\CangjieMagic\\CangjieMagic",
-      "packagePath": "D:\\CangjieAgent\\CangjieMagic\\CangjieMagic\\src\\model\\llamacpp",
+      "modulePath": "D:\\CangjieAgent\\Cangjie-CLI\\Cangjie-CLI\\CangjieMagic",
+      "packagePath": "D:\\CangjieAgent\\Cangjie-CLI\\Cangjie-CLI\\CangjieMagic\\src\\model\\llamacpp",
       "fullName": "magic.model.llamacpp",
       "isMacroPackage": false,
       "output-type": "dynamic",
@@ -668,8 +716,8 @@
     },
     {
       "rootPackageName": "magic",
-      "modulePath": "D:\\CangjieAgent\\CangjieMagic\\CangjieMagic",
-      "packagePath": "D:\\CangjieAgent\\CangjieMagic\\CangjieMagic\\src\\model\\ollama",
+      "modulePath": "D:\\CangjieAgent\\Cangjie-CLI\\Cangjie-CLI\\CangjieMagic",
+      "packagePath": "D:\\CangjieAgent\\Cangjie-CLI\\Cangjie-CLI\\CangjieMagic\\src\\model\\ollama",
       "fullName": "magic.model.ollama",
       "isMacroPackage": false,
       "output-type": "dynamic",
@@ -700,8 +748,8 @@
     },
     {
       "rootPackageName": "magic",
-      "modulePath": "D:\\CangjieAgent\\CangjieMagic\\CangjieMagic",
-      "packagePath": "D:\\CangjieAgent\\CangjieMagic\\CangjieMagic\\src\\model\\openai",
+      "modulePath": "D:\\CangjieAgent\\Cangjie-CLI\\Cangjie-CLI\\CangjieMagic",
+      "packagePath": "D:\\CangjieAgent\\Cangjie-CLI\\Cangjie-CLI\\CangjieMagic\\src\\model\\openai",
       "fullName": "magic.model.openai",
       "isMacroPackage": false,
       "output-type": "dynamic",
@@ -733,8 +781,8 @@
     },
     {
       "rootPackageName": "magic",
-      "modulePath": "D:\\CangjieAgent\\CangjieMagic\\CangjieMagic",
-      "packagePath": "D:\\CangjieAgent\\CangjieMagic\\CangjieMagic\\src\\model\\siliconflow",
+      "modulePath": "D:\\CangjieAgent\\Cangjie-CLI\\Cangjie-CLI\\CangjieMagic",
+      "packagePath": "D:\\CangjieAgent\\Cangjie-CLI\\Cangjie-CLI\\CangjieMagic\\src\\model\\siliconflow",
       "fullName": "magic.model.siliconflow",
       "isMacroPackage": false,
       "output-type": "dynamic",
@@ -761,8 +809,8 @@
     },
     {
       "rootPackageName": "magic",
-      "modulePath": "D:\\CangjieAgent\\CangjieMagic\\CangjieMagic",
-      "packagePath": "D:\\CangjieAgent\\CangjieMagic\\CangjieMagic\\src\\model\\zhipuai",
+      "modulePath": "D:\\CangjieAgent\\Cangjie-CLI\\Cangjie-CLI\\CangjieMagic",
+      "packagePath": "D:\\CangjieAgent\\Cangjie-CLI\\Cangjie-CLI\\CangjieMagic\\src\\model\\zhipuai",
       "fullName": "magic.model.zhipuai",
       "isMacroPackage": false,
       "output-type": "dynamic",
@@ -789,8 +837,8 @@
     },
     {
       "rootPackageName": "magic",
-      "modulePath": "D:\\CangjieAgent\\CangjieMagic\\CangjieMagic",
-      "packagePath": "D:\\CangjieAgent\\CangjieMagic\\CangjieMagic\\src\\core",
+      "modulePath": "D:\\CangjieAgent\\Cangjie-CLI\\Cangjie-CLI\\CangjieMagic",
+      "packagePath": "D:\\CangjieAgent\\Cangjie-CLI\\Cangjie-CLI\\CangjieMagic\\src\\core",
       "fullName": "magic.core",
       "isMacroPackage": false,
       "output-type": "dynamic",
@@ -815,9 +863,9 @@
     },
     {
       "rootPackageName": "magic",
-      "modulePath": "D:\\CangjieAgent\\CangjieMagic\\CangjieMagic",
-      "packagePath": "D:\\CangjieAgent\\CangjieMagic\\CangjieMagic\\src\\instrumentor",
-      "fullName": "magic.instrumentor",
+      "modulePath": "D:\\CangjieAgent\\Cangjie-CLI\\Cangjie-CLI\\CangjieMagic",
+      "packagePath": "D:\\CangjieAgent\\Cangjie-CLI\\Cangjie-CLI\\CangjieMagic\\src\\interaction",
+      "fullName": "magic.interaction",
       "isMacroPackage": false,
       "output-type": "dynamic",
       "compile-option": "-Woff unused -Woff deprecated --cfg \"faiss=disable,sqlite=disable,llamacpp=disable,http=curl\"  --cfg \"ohos=false\"",
@@ -827,10 +875,17 @@
       "native-link-option": "",
       "requires": [
         "magic.core.agent",
+        "magic.core.interaction",
         "magic.core.model",
-        "magic.core.tool"
+        "magic.core.tool",
+        "magic.parser",
+        "magic.utils"
       ],
-      "std-requires": [],
+      "std-requires": [
+        "std.collection",
+        "std.deriving",
+        "std.env"
+      ],
       "c_libs": {},
       "hasTestFiles": false,
       "hasProdFiles": true,
@@ -839,8 +894,8 @@
     },
     {
       "rootPackageName": "magic",
-      "modulePath": "D:\\CangjieAgent\\CangjieMagic\\CangjieMagic",
-      "packagePath": "D:\\CangjieAgent\\CangjieMagic\\CangjieMagic\\src\\model",
+      "modulePath": "D:\\CangjieAgent\\Cangjie-CLI\\Cangjie-CLI\\CangjieMagic",
+      "packagePath": "D:\\CangjieAgent\\Cangjie-CLI\\Cangjie-CLI\\CangjieMagic\\src\\model",
       "fullName": "magic.model",
       "isMacroPackage": false,
       "output-type": "dynamic",
@@ -854,7 +909,6 @@
         "magic.core.agent",
         "magic.core.message",
         "magic.core.model",
-        "magic.instrumentor",
         "magic.log",
         "magic.model.dashscope",
         "magic.model.llamacpp",
@@ -876,8 +930,8 @@
     },
     {
       "rootPackageName": "magic",
-      "modulePath": "D:\\CangjieAgent\\CangjieMagic\\CangjieMagic",
-      "packagePath": "D:\\CangjieAgent\\CangjieMagic\\CangjieMagic\\src\\vdb",
+      "modulePath": "D:\\CangjieAgent\\Cangjie-CLI\\Cangjie-CLI\\CangjieMagic",
+      "packagePath": "D:\\CangjieAgent\\Cangjie-CLI\\Cangjie-CLI\\CangjieMagic\\src\\vdb",
       "fullName": "magic.vdb",
       "isMacroPackage": false,
       "output-type": "dynamic",
@@ -912,8 +966,8 @@
     },
     {
       "rootPackageName": "magic",
-      "modulePath": "D:\\CangjieAgent\\CangjieMagic\\CangjieMagic",
-      "packagePath": "D:\\CangjieAgent\\CangjieMagic\\CangjieMagic\\src\\memory",
+      "modulePath": "D:\\CangjieAgent\\Cangjie-CLI\\Cangjie-CLI\\CangjieMagic",
+      "packagePath": "D:\\CangjieAgent\\Cangjie-CLI\\Cangjie-CLI\\CangjieMagic\\src\\memory",
       "fullName": "magic.memory",
       "isMacroPackage": false,
       "output-type": "dynamic",
@@ -937,8 +991,8 @@
     },
     {
       "rootPackageName": "magic",
-      "modulePath": "D:\\CangjieAgent\\CangjieMagic\\CangjieMagic",
-      "packagePath": "D:\\CangjieAgent\\CangjieMagic\\CangjieMagic\\src\\storage\\vdb",
+      "modulePath": "D:\\CangjieAgent\\Cangjie-CLI\\Cangjie-CLI\\CangjieMagic",
+      "packagePath": "D:\\CangjieAgent\\Cangjie-CLI\\Cangjie-CLI\\CangjieMagic\\src\\storage\\vdb",
       "fullName": "magic.storage.vdb",
       "isMacroPackage": false,
       "output-type": "dynamic",
@@ -970,8 +1024,8 @@
     },
     {
       "rootPackageName": "magic",
-      "modulePath": "D:\\CangjieAgent\\CangjieMagic\\CangjieMagic",
-      "packagePath": "D:\\CangjieAgent\\CangjieMagic\\CangjieMagic\\src\\tool",
+      "modulePath": "D:\\CangjieAgent\\Cangjie-CLI\\Cangjie-CLI\\CangjieMagic",
+      "packagePath": "D:\\CangjieAgent\\Cangjie-CLI\\Cangjie-CLI\\CangjieMagic\\src\\tool",
       "fullName": "magic.tool",
       "isMacroPackage": false,
       "output-type": "dynamic",
@@ -1007,9 +1061,9 @@
     },
     {
       "rootPackageName": "magic",
-      "modulePath": "D:\\CangjieAgent\\CangjieMagic\\CangjieMagic",
-      "packagePath": "D:\\CangjieAgent\\CangjieMagic\\CangjieMagic\\src\\agent",
-      "fullName": "magic.agent",
+      "modulePath": "D:\\CangjieAgent\\Cangjie-CLI\\Cangjie-CLI\\CangjieMagic",
+      "packagePath": "D:\\CangjieAgent\\Cangjie-CLI\\Cangjie-CLI\\CangjieMagic\\src\\agent\\base",
+      "fullName": "magic.agent.base",
       "isMacroPackage": false,
       "output-type": "dynamic",
       "compile-option": "-Woff unused -Woff deprecated --cfg \"faiss=disable,sqlite=disable,llamacpp=disable,http=curl\"  --cfg \"ohos=false\"",
@@ -1021,24 +1075,21 @@
         "magic.config",
         "magic.core",
         "magic.core.agent",
+        "magic.core.interaction",
         "magic.core.message",
         "magic.core.model",
         "magic.core.rag",
-        "magic.core.tool",
-        "magic.instrumentor",
         "magic.jsonable",
         "magic.log",
         "magic.model",
         "magic.parser",
         "magic.prompt",
         "magic.tokenizer",
-        "magic.tool",
-        "stdx.encoding.json"
+        "magic.tool"
       ],
       "std-requires": [
         "std.collection",
         "std.collection.concurrent",
-        "std.console",
         "std.sync"
       ],
       "c_libs": {},
@@ -1049,8 +1100,8 @@
     },
     {
       "rootPackageName": "magic",
-      "modulePath": "D:\\CangjieAgent\\CangjieMagic\\CangjieMagic",
-      "packagePath": "D:\\CangjieAgent\\CangjieMagic\\CangjieMagic\\src\\mcp",
+      "modulePath": "D:\\CangjieAgent\\Cangjie-CLI\\Cangjie-CLI\\CangjieMagic",
+      "packagePath": "D:\\CangjieAgent\\Cangjie-CLI\\Cangjie-CLI\\CangjieMagic\\src\\mcp",
       "fullName": "magic.mcp",
       "isMacroPackage": false,
       "output-type": "dynamic",
@@ -1079,7 +1130,6 @@
         "std.console",
         "std.io",
         "std.process",
-        "std.random",
         "std.regex",
         "std.time"
       ],
@@ -1091,8 +1141,8 @@
     },
     {
       "rootPackageName": "magic",
-      "modulePath": "D:\\CangjieAgent\\CangjieMagic\\CangjieMagic",
-      "packagePath": "D:\\CangjieAgent\\CangjieMagic\\CangjieMagic\\src\\agent_executor\\common",
+      "modulePath": "D:\\CangjieAgent\\Cangjie-CLI\\Cangjie-CLI\\CangjieMagic",
+      "packagePath": "D:\\CangjieAgent\\Cangjie-CLI\\Cangjie-CLI\\CangjieMagic\\src\\agent_executor\\common",
       "fullName": "magic.agent_executor.common",
       "isMacroPackage": false,
       "output-type": "dynamic",
@@ -1102,21 +1152,23 @@
       "link-option": "",
       "native-link-option": "",
       "requires": [
-        "magic.agent",
+        "magic.agent.base",
         "magic.core.agent",
+        "magic.core.interaction",
         "magic.core.message",
+        "magic.core.model",
         "magic.core.rag",
         "magic.core.tool",
-        "magic.instrumentor",
+        "magic.interaction",
         "magic.jsonable",
         "magic.log",
+        "magic.model",
         "magic.parser",
-        "magic.tokenizer",
-        "magic.utils"
+        "magic.tokenizer"
       ],
       "std-requires": [
         "std.collection",
-        "std.console"
+        "std.sync"
       ],
       "c_libs": {},
       "hasTestFiles": false,
@@ -1126,8 +1178,8 @@
     },
     {
       "rootPackageName": "magic",
-      "modulePath": "D:\\CangjieAgent\\CangjieMagic\\CangjieMagic",
-      "packagePath": "D:\\CangjieAgent\\CangjieMagic\\CangjieMagic\\src\\agent_group",
+      "modulePath": "D:\\CangjieAgent\\Cangjie-CLI\\Cangjie-CLI\\CangjieMagic",
+      "packagePath": "D:\\CangjieAgent\\Cangjie-CLI\\Cangjie-CLI\\CangjieMagic\\src\\agent_group",
       "fullName": "magic.agent_group",
       "isMacroPackage": false,
       "output-type": "dynamic",
@@ -1137,7 +1189,7 @@
       "link-option": "",
       "native-link-option": "",
       "requires": [
-        "magic.agent",
+        "magic.agent.base",
         "magic.core.agent",
         "magic.core.message",
         "magic.core.model",
@@ -1158,8 +1210,8 @@
     },
     {
       "rootPackageName": "magic",
-      "modulePath": "D:\\CangjieAgent\\CangjieMagic\\CangjieMagic",
-      "packagePath": "D:\\CangjieAgent\\CangjieMagic\\CangjieMagic\\src\\agent_executor\\dsl",
+      "modulePath": "D:\\CangjieAgent\\Cangjie-CLI\\Cangjie-CLI\\CangjieMagic",
+      "packagePath": "D:\\CangjieAgent\\Cangjie-CLI\\Cangjie-CLI\\CangjieMagic\\src\\agent_executor\\dsl",
       "fullName": "magic.agent_executor.dsl",
       "isMacroPackage": false,
       "output-type": "dynamic",
@@ -1169,7 +1221,7 @@
       "link-option": "",
       "native-link-option": "",
       "requires": [
-        "magic.agent",
+        "magic.agent.base",
         "magic.agent_executor.common",
         "magic.core.agent",
         "magic.core.message",
@@ -1195,8 +1247,8 @@
     },
     {
       "rootPackageName": "magic",
-      "modulePath": "D:\\CangjieAgent\\CangjieMagic\\CangjieMagic",
-      "packagePath": "D:\\CangjieAgent\\CangjieMagic\\CangjieMagic\\src\\agent_executor\\react",
+      "modulePath": "D:\\CangjieAgent\\Cangjie-CLI\\Cangjie-CLI\\CangjieMagic",
+      "packagePath": "D:\\CangjieAgent\\Cangjie-CLI\\Cangjie-CLI\\CangjieMagic\\src\\agent_executor\\react",
       "fullName": "magic.agent_executor.react",
       "isMacroPackage": false,
       "output-type": "dynamic",
@@ -1230,8 +1282,8 @@
     },
     {
       "rootPackageName": "magic",
-      "modulePath": "D:\\CangjieAgent\\CangjieMagic\\CangjieMagic",
-      "packagePath": "D:\\CangjieAgent\\CangjieMagic\\CangjieMagic\\src\\agent_executor\\naive",
+      "modulePath": "D:\\CangjieAgent\\Cangjie-CLI\\Cangjie-CLI\\CangjieMagic",
+      "packagePath": "D:\\CangjieAgent\\Cangjie-CLI\\Cangjie-CLI\\CangjieMagic\\src\\agent_executor\\naive",
       "fullName": "magic.agent_executor.naive",
       "isMacroPackage": false,
       "output-type": "dynamic",
@@ -1262,8 +1314,8 @@
     },
     {
       "rootPackageName": "magic",
-      "modulePath": "D:\\CangjieAgent\\CangjieMagic\\CangjieMagic",
-      "packagePath": "D:\\CangjieAgent\\CangjieMagic\\CangjieMagic\\src\\agent_executor\\plan_react",
+      "modulePath": "D:\\CangjieAgent\\Cangjie-CLI\\Cangjie-CLI\\CangjieMagic",
+      "packagePath": "D:\\CangjieAgent\\Cangjie-CLI\\Cangjie-CLI\\CangjieMagic\\src\\agent_executor\\plan_react",
       "fullName": "magic.agent_executor.plan_react",
       "isMacroPackage": false,
       "output-type": "dynamic",
@@ -1273,13 +1325,14 @@
       "link-option": "",
       "native-link-option": "",
       "requires": [
-        "magic.agent",
+        "magic.agent.base",
         "magic.agent_executor.common",
         "magic.agent_executor.react",
         "magic.core.agent",
         "magic.core.message",
         "magic.core.model",
         "magic.dsl",
+        "magic.interaction",
         "magic.jsonable",
         "magic.log",
         "magic.model",
@@ -1289,7 +1342,8 @@
         "stdx.encoding.json"
       ],
       "std-requires": [
-        "std.collection"
+        "std.collection",
+        "std.sync"
       ],
       "c_libs": {},
       "hasTestFiles": false,
@@ -1299,8 +1353,8 @@
     },
     {
       "rootPackageName": "magic",
-      "modulePath": "D:\\CangjieAgent\\CangjieMagic\\CangjieMagic",
-      "packagePath": "D:\\CangjieAgent\\CangjieMagic\\CangjieMagic\\src\\agent_executor\\tool_loop",
+      "modulePath": "D:\\CangjieAgent\\Cangjie-CLI\\Cangjie-CLI\\CangjieMagic",
+      "packagePath": "D:\\CangjieAgent\\Cangjie-CLI\\Cangjie-CLI\\CangjieMagic\\src\\agent_executor\\tool_loop",
       "fullName": "magic.agent_executor.tool_loop",
       "isMacroPackage": false,
       "output-type": "dynamic",
@@ -1332,8 +1386,8 @@
     },
     {
       "rootPackageName": "magic",
-      "modulePath": "D:\\CangjieAgent\\CangjieMagic\\CangjieMagic",
-      "packagePath": "D:\\CangjieAgent\\CangjieMagic\\CangjieMagic\\src\\agent_executor",
+      "modulePath": "D:\\CangjieAgent\\Cangjie-CLI\\Cangjie-CLI\\CangjieMagic",
+      "packagePath": "D:\\CangjieAgent\\Cangjie-CLI\\Cangjie-CLI\\CangjieMagic\\src\\agent_executor",
       "fullName": "magic.agent_executor",
       "isMacroPackage": false,
       "output-type": "dynamic",
@@ -1362,8 +1416,48 @@
     },
     {
       "rootPackageName": "magic",
-      "modulePath": "D:\\CangjieAgent\\CangjieMagic\\CangjieMagic",
-      "packagePath": "D:\\CangjieAgent\\CangjieMagic\\CangjieMagic\\src\\rag",
+      "modulePath": "D:\\CangjieAgent\\Cangjie-CLI\\Cangjie-CLI\\CangjieMagic",
+      "packagePath": "D:\\CangjieAgent\\Cangjie-CLI\\Cangjie-CLI\\CangjieMagic\\src\\agent",
+      "fullName": "magic.agent",
+      "isMacroPackage": false,
+      "output-type": "dynamic",
+      "compile-option": "-Woff unused -Woff deprecated --cfg \"faiss=disable,sqlite=disable,llamacpp=disable,http=curl\"  --cfg \"ohos=false\"",
+      "native-compile-option": "",
+      "customized-option": {},
+      "link-option": "",
+      "native-link-option": "",
+      "requires": [
+        "magic.agent.base",
+        "magic.agent_executor",
+        "magic.config",
+        "magic.core",
+        "magic.core.agent",
+        "magic.core.message",
+        "magic.core.model",
+        "magic.core.tool",
+        "magic.interaction",
+        "magic.jsonable",
+        "magic.log",
+        "magic.model",
+        "magic.parser",
+        "magic.prompt",
+        "magic.tool",
+        "stdx.encoding.json"
+      ],
+      "std-requires": [
+        "std.collection",
+        "std.console"
+      ],
+      "c_libs": {},
+      "hasTestFiles": false,
+      "hasProdFiles": true,
+      "hasTestsInProdFiles": false,
+      "accessLevel": "public"
+    },
+    {
+      "rootPackageName": "magic",
+      "modulePath": "D:\\CangjieAgent\\Cangjie-CLI\\Cangjie-CLI\\CangjieMagic",
+      "packagePath": "D:\\CangjieAgent\\Cangjie-CLI\\Cangjie-CLI\\CangjieMagic\\src\\rag",
       "fullName": "magic.rag",
       "isMacroPackage": false,
       "output-type": "dynamic",
@@ -1374,6 +1468,7 @@
       "native-link-option": "",
       "requires": [
         "magic.agent",
+        "magic.agent.base",
         "magic.agent_executor",
         "magic.config",
         "magic.core",
@@ -1403,8 +1498,8 @@
     },
     {
       "rootPackageName": "magic",
-      "modulePath": "D:\\CangjieAgent\\CangjieMagic\\CangjieMagic",
-      "packagePath": "D:\\CangjieAgent\\CangjieMagic\\CangjieMagic\\src\\prelude",
+      "modulePath": "D:\\CangjieAgent\\Cangjie-CLI\\Cangjie-CLI\\CangjieMagic",
+      "packagePath": "D:\\CangjieAgent\\Cangjie-CLI\\Cangjie-CLI\\CangjieMagic\\src\\prelude",
       "fullName": "magic.prelude",
       "isMacroPackage": false,
       "output-type": "dynamic",
@@ -1415,6 +1510,7 @@
       "native-link-option": "",
       "requires": [
         "magic.agent",
+        "magic.agent.base",
         "magic.agent_executor",
         "magic.agent_executor.dsl",
         "magic.agent_group",
@@ -1439,33 +1535,9 @@
       "accessLevel": "public"
     },
     {
-      "rootPackageName": "cli",
-      "modulePath": ".",
-      "packagePath": "D:\\CangjieAgent\\Cangjie-CLI\\Cangjie-CLI\\src",
-      "fullName": "cli",
-      "isMacroPackage": false,
-      "output-type": "executable",
-      "compile-option": "",
-      "native-compile-option": "",
-      "customized-option": {},
-      "link-option": "",
-      "native-link-option": "",
-      "requires": [
-        "magic.config",
-        "magic.dsl",
-        "magic.prelude"
-      ],
-      "std-requires": [],
-      "c_libs": {},
-      "hasTestFiles": false,
-      "hasProdFiles": true,
-      "hasTestsInProdFiles": false,
-      "accessLevel": "public"
-    },
-    {
       "rootPackageName": "magic",
-      "modulePath": "D:\\CangjieAgent\\CangjieMagic\\CangjieMagic",
-      "packagePath": "D:\\CangjieAgent\\CangjieMagic\\CangjieMagic\\src\\examples\\doc_generator",
+      "modulePath": "D:\\CangjieAgent\\Cangjie-CLI\\Cangjie-CLI\\CangjieMagic",
+      "packagePath": "D:\\CangjieAgent\\Cangjie-CLI\\Cangjie-CLI\\CangjieMagic\\src\\examples\\doc_generator",
       "fullName": "magic.examples.doc_generator",
       "isMacroPackage": false,
       "output-type": "executable",
@@ -1496,8 +1568,8 @@
     },
     {
       "rootPackageName": "magic",
-      "modulePath": "D:\\CangjieAgent\\CangjieMagic\\CangjieMagic",
-      "packagePath": "D:\\CangjieAgent\\CangjieMagic\\CangjieMagic\\src\\examples\\file_assistant",
+      "modulePath": "D:\\CangjieAgent\\Cangjie-CLI\\Cangjie-CLI\\CangjieMagic",
+      "packagePath": "D:\\CangjieAgent\\Cangjie-CLI\\Cangjie-CLI\\CangjieMagic\\src\\examples\\file_assistant",
       "fullName": "magic.examples.file_assistant",
       "isMacroPackage": false,
       "output-type": "executable",
@@ -1507,9 +1579,9 @@
       "link-option": "",
       "native-link-option": "",
       "requires": [
-        "magic.agent_executor.common",
         "magic.config",
         "magic.dsl",
+        "magic.interaction",
         "magic.prelude"
       ],
       "std-requires": [],
@@ -1521,8 +1593,8 @@
     },
     {
       "rootPackageName": "magic",
-      "modulePath": "D:\\CangjieAgent\\CangjieMagic\\CangjieMagic",
-      "packagePath": "D:\\CangjieAgent\\CangjieMagic\\CangjieMagic\\src\\examples\\fun_idea",
+      "modulePath": "D:\\CangjieAgent\\Cangjie-CLI\\Cangjie-CLI\\CangjieMagic",
+      "packagePath": "D:\\CangjieAgent\\Cangjie-CLI\\Cangjie-CLI\\CangjieMagic\\src\\examples\\fun_idea",
       "fullName": "magic.examples.fun_idea",
       "isMacroPackage": false,
       "output-type": "executable",
@@ -1557,8 +1629,8 @@
     },
     {
       "rootPackageName": "magic",
-      "modulePath": "D:\\CangjieAgent\\CangjieMagic\\CangjieMagic",
-      "packagePath": "D:\\CangjieAgent\\CangjieMagic\\CangjieMagic\\src\\examples\\health_monitor",
+      "modulePath": "D:\\CangjieAgent\\Cangjie-CLI\\Cangjie-CLI\\CangjieMagic",
+      "packagePath": "D:\\CangjieAgent\\Cangjie-CLI\\Cangjie-CLI\\CangjieMagic\\src\\examples\\health_monitor",
       "fullName": "magic.examples.health_monitor",
       "isMacroPackage": false,
       "output-type": "executable",
@@ -1582,8 +1654,8 @@
     },
     {
       "rootPackageName": "magic",
-      "modulePath": "D:\\CangjieAgent\\CangjieMagic\\CangjieMagic",
-      "packagePath": "D:\\CangjieAgent\\CangjieMagic\\CangjieMagic\\src\\examples\\magic_agent",
+      "modulePath": "D:\\CangjieAgent\\Cangjie-CLI\\Cangjie-CLI\\CangjieMagic",
+      "packagePath": "D:\\CangjieAgent\\Cangjie-CLI\\Cangjie-CLI\\CangjieMagic\\src\\examples\\magic_agent",
       "fullName": "magic.examples.magic_agent",
       "isMacroPackage": false,
       "output-type": "executable",
@@ -1593,9 +1665,9 @@
       "link-option": "",
       "native-link-option": "",
       "requires": [
-        "magic.agent_executor.common",
         "magic.config",
         "magic.dsl",
+        "magic.interaction",
         "magic.prelude"
       ],
       "std-requires": [
@@ -1609,8 +1681,8 @@
     },
     {
       "rootPackageName": "magic",
-      "modulePath": "D:\\CangjieAgent\\CangjieMagic\\CangjieMagic",
-      "packagePath": "D:\\CangjieAgent\\CangjieMagic\\CangjieMagic\\src\\examples\\markdown_qa",
+      "modulePath": "D:\\CangjieAgent\\Cangjie-CLI\\Cangjie-CLI\\CangjieMagic",
+      "packagePath": "D:\\CangjieAgent\\Cangjie-CLI\\Cangjie-CLI\\CangjieMagic\\src\\examples\\markdown_qa",
       "fullName": "magic.examples.markdown_qa",
       "isMacroPackage": false,
       "output-type": "executable",
@@ -1634,8 +1706,8 @@
     },
     {
       "rootPackageName": "magic",
-      "modulePath": "D:\\CangjieAgent\\CangjieMagic\\CangjieMagic",
-      "packagePath": "D:\\CangjieAgent\\CangjieMagic\\CangjieMagic\\src\\examples\\mcp_client",
+      "modulePath": "D:\\CangjieAgent\\Cangjie-CLI\\Cangjie-CLI\\CangjieMagic",
+      "packagePath": "D:\\CangjieAgent\\Cangjie-CLI\\Cangjie-CLI\\CangjieMagic\\src\\examples\\mcp_client",
       "fullName": "magic.examples.mcp_client",
       "isMacroPackage": false,
       "output-type": "executable",
@@ -1658,8 +1730,8 @@
     },
     {
       "rootPackageName": "magic",
-      "modulePath": "D:\\CangjieAgent\\CangjieMagic\\CangjieMagic",
-      "packagePath": "D:\\CangjieAgent\\CangjieMagic\\CangjieMagic\\src\\examples\\mcp_server",
+      "modulePath": "D:\\CangjieAgent\\Cangjie-CLI\\Cangjie-CLI\\CangjieMagic",
+      "packagePath": "D:\\CangjieAgent\\Cangjie-CLI\\Cangjie-CLI\\CangjieMagic\\src\\examples\\mcp_server",
       "fullName": "magic.examples.mcp_server",
       "isMacroPackage": false,
       "output-type": "executable",
@@ -1683,8 +1755,8 @@
     },
     {
       "rootPackageName": "magic",
-      "modulePath": "D:\\CangjieAgent\\CangjieMagic\\CangjieMagic",
-      "packagePath": "D:\\CangjieAgent\\CangjieMagic\\CangjieMagic\\src\\examples\\quick_start",
+      "modulePath": "D:\\CangjieAgent\\Cangjie-CLI\\Cangjie-CLI\\CangjieMagic",
+      "packagePath": "D:\\CangjieAgent\\Cangjie-CLI\\Cangjie-CLI\\CangjieMagic\\src\\examples\\quick_start",
       "fullName": "magic.examples.quick_start",
       "isMacroPackage": false,
       "output-type": "executable",
@@ -1707,8 +1779,8 @@
     },
     {
       "rootPackageName": "magic",
-      "modulePath": "D:\\CangjieAgent\\CangjieMagic\\CangjieMagic",
-      "packagePath": "D:\\CangjieAgent\\CangjieMagic\\CangjieMagic\\src\\rag\\graph",
+      "modulePath": "D:\\CangjieAgent\\Cangjie-CLI\\Cangjie-CLI\\CangjieMagic",
+      "packagePath": "D:\\CangjieAgent\\Cangjie-CLI\\Cangjie-CLI\\CangjieMagic\\src\\rag\\graph",
       "fullName": "magic.rag.graph",
       "isMacroPackage": false,
       "output-type": "dynamic",
@@ -1718,7 +1790,7 @@
       "link-option": "",
       "native-link-option": "",
       "requires": [
-        "magic.agent",
+        "magic.agent.base",
         "magic.agent_executor.naive",
         "magic.core.agent",
         "magic.core.message",
@@ -1754,8 +1826,8 @@
     },
     {
       "rootPackageName": "magic",
-      "modulePath": "D:\\CangjieAgent\\CangjieMagic\\CangjieMagic",
-      "packagePath": "D:\\CangjieAgent\\CangjieMagic\\CangjieMagic\\src\\examples\\mini_rag",
+      "modulePath": "D:\\CangjieAgent\\Cangjie-CLI\\Cangjie-CLI\\CangjieMagic",
+      "packagePath": "D:\\CangjieAgent\\Cangjie-CLI\\Cangjie-CLI\\CangjieMagic\\src\\examples\\mini_rag",
       "fullName": "magic.examples.mini_rag",
       "isMacroPackage": false,
       "output-type": "executable",
@@ -1787,6 +1859,56 @@
   "binDeps": {
     "magic": {
       "package-requires": {
+        "stdx.compress": {
+          "isMacroPackage": false,
+          "requires": [],
+          "std-requires": [],
+          "cjPath": "D:\\CangjieAgent\\Cangjie-CLI\\Cangjie-CLI\\CangjieMagic\\libs\\cangjie-stdx-windows-x64-1.0.0.1\\windows_x86_64_llvm\\dynamic",
+          "libPath": "D:\\CangjieAgent\\Cangjie-CLI\\Cangjie-CLI\\CangjieMagic\\libs\\cangjie-stdx-windows-x64-1.0.0.1\\windows_x86_64_llvm\\dynamic\\stdx",
+          "libName": "stdx.compress"
+        },
+        "stdx": {
+          "isMacroPackage": false,
+          "requires": [],
+          "std-requires": [],
+          "cjPath": "D:\\CangjieAgent\\Cangjie-CLI\\Cangjie-CLI\\CangjieMagic\\libs\\cangjie-stdx-windows-x64-1.0.0.1\\windows_x86_64_llvm\\dynamic",
+          "libPath": "D:\\CangjieAgent\\Cangjie-CLI\\Cangjie-CLI\\CangjieMagic\\libs\\cangjie-stdx-windows-x64-1.0.0.1\\windows_x86_64_llvm\\dynamic\\stdx",
+          "libName": "stdx"
+        },
+        "stdx.crypto.crypto": {
+          "isMacroPackage": false,
+          "requires": [
+            "stdx.crypto.digest"
+          ],
+          "std-requires": [
+            "std.crypto.cipher",
+            "std.io",
+            "std.math",
+            "std.sync"
+          ],
+          "cjPath": "D:\\CangjieAgent\\Cangjie-CLI\\Cangjie-CLI\\CangjieMagic\\libs\\cangjie-stdx-windows-x64-1.0.0.1\\windows_x86_64_llvm\\dynamic",
+          "libPath": "D:\\CangjieAgent\\Cangjie-CLI\\Cangjie-CLI\\CangjieMagic\\libs\\cangjie-stdx-windows-x64-1.0.0.1\\windows_x86_64_llvm\\dynamic\\stdx",
+          "libName": "stdx.crypto.crypto"
+        },
+        "stdx.compress.zlib": {
+          "isMacroPackage": false,
+          "requires": [],
+          "std-requires": [
+            "std.collection",
+            "std.io"
+          ],
+          "cjPath": "D:\\CangjieAgent\\Cangjie-CLI\\Cangjie-CLI\\CangjieMagic\\libs\\cangjie-stdx-windows-x64-1.0.0.1\\windows_x86_64_llvm\\dynamic",
+          "libPath": "D:\\CangjieAgent\\Cangjie-CLI\\Cangjie-CLI\\CangjieMagic\\libs\\cangjie-stdx-windows-x64-1.0.0.1\\windows_x86_64_llvm\\dynamic\\stdx",
+          "libName": "stdx.compress.zlib"
+        },
+        "stdx.crypto": {
+          "isMacroPackage": false,
+          "requires": [],
+          "std-requires": [],
+          "cjPath": "D:\\CangjieAgent\\Cangjie-CLI\\Cangjie-CLI\\CangjieMagic\\libs\\cangjie-stdx-windows-x64-1.0.0.1\\windows_x86_64_llvm\\dynamic",
+          "libPath": "D:\\CangjieAgent\\Cangjie-CLI\\Cangjie-CLI\\CangjieMagic\\libs\\cangjie-stdx-windows-x64-1.0.0.1\\windows_x86_64_llvm\\dynamic\\stdx",
+          "libName": "stdx.crypto"
+        },
         "stdx.crypto.x509": {
           "isMacroPackage": false,
           "requires": [
@@ -1802,40 +1924,42 @@
             "std.io",
             "std.time"
           ],
-          "cjPath": "D:\\CangjieAgent\\CangjieMagic\\CangjieMagic\\libs\\cangjie-stdx-windows-x64-1.0.0.1\\windows_x86_64_llvm\\dynamic",
-          "libPath": "D:\\CangjieAgent\\CangjieMagic\\CangjieMagic\\libs\\cangjie-stdx-windows-x64-1.0.0.1\\windows_x86_64_llvm\\dynamic\\stdx",
+          "cjPath": "D:\\CangjieAgent\\Cangjie-CLI\\Cangjie-CLI\\CangjieMagic\\libs\\cangjie-stdx-windows-x64-1.0.0.1\\windows_x86_64_llvm\\dynamic",
+          "libPath": "D:\\CangjieAgent\\Cangjie-CLI\\Cangjie-CLI\\CangjieMagic\\libs\\cangjie-stdx-windows-x64-1.0.0.1\\windows_x86_64_llvm\\dynamic\\stdx",
           "libName": "stdx.crypto.x509"
         },
-        "stdx.encoding.base64": {
+        "stdx.crypto.keys": {
           "isMacroPackage": false,
-          "requires": [],
-          "std-requires": [],
-          "cjPath": "D:\\CangjieAgent\\CangjieMagic\\CangjieMagic\\libs\\cangjie-stdx-windows-x64-1.0.0.1\\windows_x86_64_llvm\\dynamic",
-          "libPath": "D:\\CangjieAgent\\CangjieMagic\\CangjieMagic\\libs\\cangjie-stdx-windows-x64-1.0.0.1\\windows_x86_64_llvm\\dynamic\\stdx",
-          "libName": "stdx.encoding.base64"
+          "requires": [
+            "stdx.crypto.digest",
+            "stdx.crypto.x509"
+          ],
+          "std-requires": [
+            "std.crypto.digest",
+            "std.io",
+            "std.math.numeric",
+            "std.sync"
+          ],
+          "cjPath": "D:\\CangjieAgent\\Cangjie-CLI\\Cangjie-CLI\\CangjieMagic\\libs\\cangjie-stdx-windows-x64-1.0.0.1\\windows_x86_64_llvm\\dynamic",
+          "libPath": "D:\\CangjieAgent\\Cangjie-CLI\\Cangjie-CLI\\CangjieMagic\\libs\\cangjie-stdx-windows-x64-1.0.0.1\\windows_x86_64_llvm\\dynamic\\stdx",
+          "libName": "stdx.crypto.keys"
         },
-        "stdx": {
+        "stdx.crypto.digest": {
           "isMacroPackage": false,
           "requires": [],
-          "std-requires": [],
-          "cjPath": "D:\\CangjieAgent\\CangjieMagic\\CangjieMagic\\libs\\cangjie-stdx-windows-x64-1.0.0.1\\windows_x86_64_llvm\\dynamic",
-          "libPath": "D:\\CangjieAgent\\CangjieMagic\\CangjieMagic\\libs\\cangjie-stdx-windows-x64-1.0.0.1\\windows_x86_64_llvm\\dynamic\\stdx",
-          "libName": "stdx"
-        },
-        "stdx.encoding": {
-          "isMacroPackage": false,
-          "requires": [],
-          "std-requires": [],
-          "cjPath": "D:\\CangjieAgent\\CangjieMagic\\CangjieMagic\\libs\\cangjie-stdx-windows-x64-1.0.0.1\\windows_x86_64_llvm\\dynamic",
-          "libPath": "D:\\CangjieAgent\\CangjieMagic\\CangjieMagic\\libs\\cangjie-stdx-windows-x64-1.0.0.1\\windows_x86_64_llvm\\dynamic\\stdx",
-          "libName": "stdx.encoding"
+          "std-requires": [
+            "std.crypto.digest"
+          ],
+          "cjPath": "D:\\CangjieAgent\\Cangjie-CLI\\Cangjie-CLI\\CangjieMagic\\libs\\cangjie-stdx-windows-x64-1.0.0.1\\windows_x86_64_llvm\\dynamic",
+          "libPath": "D:\\CangjieAgent\\Cangjie-CLI\\Cangjie-CLI\\CangjieMagic\\libs\\cangjie-stdx-windows-x64-1.0.0.1\\windows_x86_64_llvm\\dynamic\\stdx",
+          "libName": "stdx.crypto.digest"
         },
         "stdx.encoding.hex": {
           "isMacroPackage": false,
           "requires": [],
           "std-requires": [],
-          "cjPath": "D:\\CangjieAgent\\CangjieMagic\\CangjieMagic\\libs\\cangjie-stdx-windows-x64-1.0.0.1\\windows_x86_64_llvm\\dynamic",
-          "libPath": "D:\\CangjieAgent\\CangjieMagic\\CangjieMagic\\libs\\cangjie-stdx-windows-x64-1.0.0.1\\windows_x86_64_llvm\\dynamic\\stdx",
+          "cjPath": "D:\\CangjieAgent\\Cangjie-CLI\\Cangjie-CLI\\CangjieMagic\\libs\\cangjie-stdx-windows-x64-1.0.0.1\\windows_x86_64_llvm\\dynamic",
+          "libPath": "D:\\CangjieAgent\\Cangjie-CLI\\Cangjie-CLI\\CangjieMagic\\libs\\cangjie-stdx-windows-x64-1.0.0.1\\windows_x86_64_llvm\\dynamic\\stdx",
           "libName": "stdx.encoding.hex"
         },
         "stdx.encoding.json": {
@@ -1847,24 +1971,17 @@
             "std.collection",
             "std.convert"
           ],
-          "cjPath": "D:\\CangjieAgent\\CangjieMagic\\CangjieMagic\\libs\\cangjie-stdx-windows-x64-1.0.0.1\\windows_x86_64_llvm\\dynamic",
-          "libPath": "D:\\CangjieAgent\\CangjieMagic\\CangjieMagic\\libs\\cangjie-stdx-windows-x64-1.0.0.1\\windows_x86_64_llvm\\dynamic\\stdx",
+          "cjPath": "D:\\CangjieAgent\\Cangjie-CLI\\Cangjie-CLI\\CangjieMagic\\libs\\cangjie-stdx-windows-x64-1.0.0.1\\windows_x86_64_llvm\\dynamic",
+          "libPath": "D:\\CangjieAgent\\Cangjie-CLI\\Cangjie-CLI\\CangjieMagic\\libs\\cangjie-stdx-windows-x64-1.0.0.1\\windows_x86_64_llvm\\dynamic\\stdx",
           "libName": "stdx.encoding.json"
         },
-        "stdx.crypto.crypto": {
+        "stdx.encoding": {
           "isMacroPackage": false,
-          "requires": [
-            "stdx.crypto.digest"
-          ],
-          "std-requires": [
-            "std.crypto.cipher",
-            "std.io",
-            "std.math",
-            "std.sync"
-          ],
-          "cjPath": "D:\\CangjieAgent\\CangjieMagic\\CangjieMagic\\libs\\cangjie-stdx-windows-x64-1.0.0.1\\windows_x86_64_llvm\\dynamic",
-          "libPath": "D:\\CangjieAgent\\CangjieMagic\\CangjieMagic\\libs\\cangjie-stdx-windows-x64-1.0.0.1\\windows_x86_64_llvm\\dynamic\\stdx",
-          "libName": "stdx.crypto.crypto"
+          "requires": [],
+          "std-requires": [],
+          "cjPath": "D:\\CangjieAgent\\Cangjie-CLI\\Cangjie-CLI\\CangjieMagic\\libs\\cangjie-stdx-windows-x64-1.0.0.1\\windows_x86_64_llvm\\dynamic",
+          "libPath": "D:\\CangjieAgent\\Cangjie-CLI\\Cangjie-CLI\\CangjieMagic\\libs\\cangjie-stdx-windows-x64-1.0.0.1\\windows_x86_64_llvm\\dynamic\\stdx",
+          "libName": "stdx.encoding"
         },
         "stdx.encoding.url": {
           "isMacroPackage": false,
@@ -1872,17 +1989,29 @@
           "std-requires": [
             "std.collection"
           ],
-          "cjPath": "D:\\CangjieAgent\\CangjieMagic\\CangjieMagic\\libs\\cangjie-stdx-windows-x64-1.0.0.1\\windows_x86_64_llvm\\dynamic",
-          "libPath": "D:\\CangjieAgent\\CangjieMagic\\CangjieMagic\\libs\\cangjie-stdx-windows-x64-1.0.0.1\\windows_x86_64_llvm\\dynamic\\stdx",
+          "cjPath": "D:\\CangjieAgent\\Cangjie-CLI\\Cangjie-CLI\\CangjieMagic\\libs\\cangjie-stdx-windows-x64-1.0.0.1\\windows_x86_64_llvm\\dynamic",
+          "libPath": "D:\\CangjieAgent\\Cangjie-CLI\\Cangjie-CLI\\CangjieMagic\\libs\\cangjie-stdx-windows-x64-1.0.0.1\\windows_x86_64_llvm\\dynamic\\stdx",
           "libName": "stdx.encoding.url"
         },
-        "stdx.compress": {
+        "stdx.encoding.base64": {
           "isMacroPackage": false,
           "requires": [],
           "std-requires": [],
-          "cjPath": "D:\\CangjieAgent\\CangjieMagic\\CangjieMagic\\libs\\cangjie-stdx-windows-x64-1.0.0.1\\windows_x86_64_llvm\\dynamic",
-          "libPath": "D:\\CangjieAgent\\CangjieMagic\\CangjieMagic\\libs\\cangjie-stdx-windows-x64-1.0.0.1\\windows_x86_64_llvm\\dynamic\\stdx",
-          "libName": "stdx.compress"
+          "cjPath": "D:\\CangjieAgent\\Cangjie-CLI\\Cangjie-CLI\\CangjieMagic\\libs\\cangjie-stdx-windows-x64-1.0.0.1\\windows_x86_64_llvm\\dynamic",
+          "libPath": "D:\\CangjieAgent\\Cangjie-CLI\\Cangjie-CLI\\CangjieMagic\\libs\\cangjie-stdx-windows-x64-1.0.0.1\\windows_x86_64_llvm\\dynamic\\stdx",
+          "libName": "stdx.encoding.base64"
+        },
+        "stdx.log": {
+          "isMacroPackage": false,
+          "requires": [],
+          "std-requires": [
+            "std.collection",
+            "std.sync",
+            "std.time"
+          ],
+          "cjPath": "D:\\CangjieAgent\\Cangjie-CLI\\Cangjie-CLI\\CangjieMagic\\libs\\cangjie-stdx-windows-x64-1.0.0.1\\windows_x86_64_llvm\\dynamic",
+          "libPath": "D:\\CangjieAgent\\Cangjie-CLI\\Cangjie-CLI\\CangjieMagic\\libs\\cangjie-stdx-windows-x64-1.0.0.1\\windows_x86_64_llvm\\dynamic\\stdx",
+          "libName": "stdx.log"
         },
         "stdx.logger": {
           "isMacroPackage": false,
@@ -1897,39 +2026,75 @@
             "std.sync",
             "std.time"
           ],
-          "cjPath": "D:\\CangjieAgent\\CangjieMagic\\CangjieMagic\\libs\\cangjie-stdx-windows-x64-1.0.0.1\\windows_x86_64_llvm\\dynamic",
-          "libPath": "D:\\CangjieAgent\\CangjieMagic\\CangjieMagic\\libs\\cangjie-stdx-windows-x64-1.0.0.1\\windows_x86_64_llvm\\dynamic\\stdx",
+          "cjPath": "D:\\CangjieAgent\\Cangjie-CLI\\Cangjie-CLI\\CangjieMagic\\libs\\cangjie-stdx-windows-x64-1.0.0.1\\windows_x86_64_llvm\\dynamic",
+          "libPath": "D:\\CangjieAgent\\Cangjie-CLI\\Cangjie-CLI\\CangjieMagic\\libs\\cangjie-stdx-windows-x64-1.0.0.1\\windows_x86_64_llvm\\dynamic\\stdx",
           "libName": "stdx.logger"
         },
-        "stdx.log": {
+        "stdx.encoding.json.stream": {
           "isMacroPackage": false,
           "requires": [],
           "std-requires": [
             "std.collection",
-            "std.sync",
+            "std.convert",
+            "std.io",
+            "std.math.numeric",
             "std.time"
           ],
-          "cjPath": "D:\\CangjieAgent\\CangjieMagic\\CangjieMagic\\libs\\cangjie-stdx-windows-x64-1.0.0.1\\windows_x86_64_llvm\\dynamic",
-          "libPath": "D:\\CangjieAgent\\CangjieMagic\\CangjieMagic\\libs\\cangjie-stdx-windows-x64-1.0.0.1\\windows_x86_64_llvm\\dynamic\\stdx",
-          "libName": "stdx.log"
+          "cjPath": "D:\\CangjieAgent\\Cangjie-CLI\\Cangjie-CLI\\CangjieMagic\\libs\\cangjie-stdx-windows-x64-1.0.0.1\\windows_x86_64_llvm\\dynamic",
+          "libPath": "D:\\CangjieAgent\\Cangjie-CLI\\Cangjie-CLI\\CangjieMagic\\libs\\cangjie-stdx-windows-x64-1.0.0.1\\windows_x86_64_llvm\\dynamic\\stdx",
+          "libName": "stdx.encoding.json.stream"
         },
-        "stdx.crypto.digest": {
+        "stdx.serialization.serialization": {
           "isMacroPackage": false,
           "requires": [],
           "std-requires": [
-            "std.crypto.digest"
+            "std.collection"
           ],
-          "cjPath": "D:\\CangjieAgent\\CangjieMagic\\CangjieMagic\\libs\\cangjie-stdx-windows-x64-1.0.0.1\\windows_x86_64_llvm\\dynamic",
-          "libPath": "D:\\CangjieAgent\\CangjieMagic\\CangjieMagic\\libs\\cangjie-stdx-windows-x64-1.0.0.1\\windows_x86_64_llvm\\dynamic\\stdx",
-          "libName": "stdx.crypto.digest"
+          "cjPath": "D:\\CangjieAgent\\Cangjie-CLI\\Cangjie-CLI\\CangjieMagic\\libs\\cangjie-stdx-windows-x64-1.0.0.1\\windows_x86_64_llvm\\dynamic",
+          "libPath": "D:\\CangjieAgent\\Cangjie-CLI\\Cangjie-CLI\\CangjieMagic\\libs\\cangjie-stdx-windows-x64-1.0.0.1\\windows_x86_64_llvm\\dynamic\\stdx",
+          "libName": "stdx.serialization.serialization"
         },
         "stdx.net": {
           "isMacroPackage": false,
           "requires": [],
           "std-requires": [],
-          "cjPath": "D:\\CangjieAgent\\CangjieMagic\\CangjieMagic\\libs\\cangjie-stdx-windows-x64-1.0.0.1\\windows_x86_64_llvm\\dynamic",
-          "libPath": "D:\\CangjieAgent\\CangjieMagic\\CangjieMagic\\libs\\cangjie-stdx-windows-x64-1.0.0.1\\windows_x86_64_llvm\\dynamic\\stdx",
+          "cjPath": "D:\\CangjieAgent\\Cangjie-CLI\\Cangjie-CLI\\CangjieMagic\\libs\\cangjie-stdx-windows-x64-1.0.0.1\\windows_x86_64_llvm\\dynamic",
+          "libPath": "D:\\CangjieAgent\\Cangjie-CLI\\Cangjie-CLI\\CangjieMagic\\libs\\cangjie-stdx-windows-x64-1.0.0.1\\windows_x86_64_llvm\\dynamic\\stdx",
           "libName": "stdx.net"
+        },
+        "stdx.unittest": {
+          "isMacroPackage": false,
+          "requires": [],
+          "std-requires": [],
+          "cjPath": "D:\\CangjieAgent\\Cangjie-CLI\\Cangjie-CLI\\CangjieMagic\\libs\\cangjie-stdx-windows-x64-1.0.0.1\\windows_x86_64_llvm\\dynamic",
+          "libPath": "D:\\CangjieAgent\\Cangjie-CLI\\Cangjie-CLI\\CangjieMagic\\libs\\cangjie-stdx-windows-x64-1.0.0.1\\windows_x86_64_llvm\\dynamic\\stdx",
+          "libName": "stdx.unittest"
+        },
+        "stdx.unittest.data": {
+          "isMacroPackage": false,
+          "requires": [
+            "stdx.encoding.json",
+            "stdx.serialization.serialization"
+          ],
+          "std-requires": [
+            "std.collection",
+            "std.convert",
+            "std.fs",
+            "std.io",
+            "std.math",
+            "std.unittest.common"
+          ],
+          "cjPath": "D:\\CangjieAgent\\Cangjie-CLI\\Cangjie-CLI\\CangjieMagic\\libs\\cangjie-stdx-windows-x64-1.0.0.1\\windows_x86_64_llvm\\dynamic",
+          "libPath": "D:\\CangjieAgent\\Cangjie-CLI\\Cangjie-CLI\\CangjieMagic\\libs\\cangjie-stdx-windows-x64-1.0.0.1\\windows_x86_64_llvm\\dynamic\\stdx",
+          "libName": "stdx.unittest.data"
+        },
+        "stdx.serialization": {
+          "isMacroPackage": false,
+          "requires": [],
+          "std-requires": [],
+          "cjPath": "D:\\CangjieAgent\\Cangjie-CLI\\Cangjie-CLI\\CangjieMagic\\libs\\cangjie-stdx-windows-x64-1.0.0.1\\windows_x86_64_llvm\\dynamic",
+          "libPath": "D:\\CangjieAgent\\Cangjie-CLI\\Cangjie-CLI\\CangjieMagic\\libs\\cangjie-stdx-windows-x64-1.0.0.1\\windows_x86_64_llvm\\dynamic\\stdx",
+          "libName": "stdx.serialization"
         },
         "stdx.net.http": {
           "isMacroPackage": false,
@@ -1956,17 +2121,9 @@
             "std.time",
             "std.unicode"
           ],
-          "cjPath": "D:\\CangjieAgent\\CangjieMagic\\CangjieMagic\\libs\\cangjie-stdx-windows-x64-1.0.0.1\\windows_x86_64_llvm\\dynamic",
-          "libPath": "D:\\CangjieAgent\\CangjieMagic\\CangjieMagic\\libs\\cangjie-stdx-windows-x64-1.0.0.1\\windows_x86_64_llvm\\dynamic\\stdx",
+          "cjPath": "D:\\CangjieAgent\\Cangjie-CLI\\Cangjie-CLI\\CangjieMagic\\libs\\cangjie-stdx-windows-x64-1.0.0.1\\windows_x86_64_llvm\\dynamic",
+          "libPath": "D:\\CangjieAgent\\Cangjie-CLI\\Cangjie-CLI\\CangjieMagic\\libs\\cangjie-stdx-windows-x64-1.0.0.1\\windows_x86_64_llvm\\dynamic\\stdx",
           "libName": "stdx.net.http"
-        },
-        "stdx.crypto": {
-          "isMacroPackage": false,
-          "requires": [],
-          "std-requires": [],
-          "cjPath": "D:\\CangjieAgent\\CangjieMagic\\CangjieMagic\\libs\\cangjie-stdx-windows-x64-1.0.0.1\\windows_x86_64_llvm\\dynamic",
-          "libPath": "D:\\CangjieAgent\\CangjieMagic\\CangjieMagic\\libs\\cangjie-stdx-windows-x64-1.0.0.1\\windows_x86_64_llvm\\dynamic\\stdx",
-          "libName": "stdx.crypto"
         },
         "stdx.net.tls": {
           "isMacroPackage": false,
@@ -1982,94 +2139,9 @@
             "std.sync",
             "std.time"
           ],
-          "cjPath": "D:\\CangjieAgent\\CangjieMagic\\CangjieMagic\\libs\\cangjie-stdx-windows-x64-1.0.0.1\\windows_x86_64_llvm\\dynamic",
-          "libPath": "D:\\CangjieAgent\\CangjieMagic\\CangjieMagic\\libs\\cangjie-stdx-windows-x64-1.0.0.1\\windows_x86_64_llvm\\dynamic\\stdx",
+          "cjPath": "D:\\CangjieAgent\\Cangjie-CLI\\Cangjie-CLI\\CangjieMagic\\libs\\cangjie-stdx-windows-x64-1.0.0.1\\windows_x86_64_llvm\\dynamic",
+          "libPath": "D:\\CangjieAgent\\Cangjie-CLI\\Cangjie-CLI\\CangjieMagic\\libs\\cangjie-stdx-windows-x64-1.0.0.1\\windows_x86_64_llvm\\dynamic\\stdx",
           "libName": "stdx.net.tls"
-        },
-        "stdx.serialization": {
-          "isMacroPackage": false,
-          "requires": [],
-          "std-requires": [],
-          "cjPath": "D:\\CangjieAgent\\CangjieMagic\\CangjieMagic\\libs\\cangjie-stdx-windows-x64-1.0.0.1\\windows_x86_64_llvm\\dynamic",
-          "libPath": "D:\\CangjieAgent\\CangjieMagic\\CangjieMagic\\libs\\cangjie-stdx-windows-x64-1.0.0.1\\windows_x86_64_llvm\\dynamic\\stdx",
-          "libName": "stdx.serialization"
-        },
-        "stdx.unittest": {
-          "isMacroPackage": false,
-          "requires": [],
-          "std-requires": [],
-          "cjPath": "D:\\CangjieAgent\\CangjieMagic\\CangjieMagic\\libs\\cangjie-stdx-windows-x64-1.0.0.1\\windows_x86_64_llvm\\dynamic",
-          "libPath": "D:\\CangjieAgent\\CangjieMagic\\CangjieMagic\\libs\\cangjie-stdx-windows-x64-1.0.0.1\\windows_x86_64_llvm\\dynamic\\stdx",
-          "libName": "stdx.unittest"
-        },
-        "stdx.serialization.serialization": {
-          "isMacroPackage": false,
-          "requires": [],
-          "std-requires": [
-            "std.collection"
-          ],
-          "cjPath": "D:\\CangjieAgent\\CangjieMagic\\CangjieMagic\\libs\\cangjie-stdx-windows-x64-1.0.0.1\\windows_x86_64_llvm\\dynamic",
-          "libPath": "D:\\CangjieAgent\\CangjieMagic\\CangjieMagic\\libs\\cangjie-stdx-windows-x64-1.0.0.1\\windows_x86_64_llvm\\dynamic\\stdx",
-          "libName": "stdx.serialization.serialization"
-        },
-        "stdx.encoding.json.stream": {
-          "isMacroPackage": false,
-          "requires": [],
-          "std-requires": [
-            "std.collection",
-            "std.convert",
-            "std.io",
-            "std.math.numeric",
-            "std.time"
-          ],
-          "cjPath": "D:\\CangjieAgent\\CangjieMagic\\CangjieMagic\\libs\\cangjie-stdx-windows-x64-1.0.0.1\\windows_x86_64_llvm\\dynamic",
-          "libPath": "D:\\CangjieAgent\\CangjieMagic\\CangjieMagic\\libs\\cangjie-stdx-windows-x64-1.0.0.1\\windows_x86_64_llvm\\dynamic\\stdx",
-          "libName": "stdx.encoding.json.stream"
-        },
-        "stdx.unittest.data": {
-          "isMacroPackage": false,
-          "requires": [
-            "stdx.encoding.json",
-            "stdx.serialization.serialization"
-          ],
-          "std-requires": [
-            "std.collection",
-            "std.convert",
-            "std.fs",
-            "std.io",
-            "std.math",
-            "std.unittest.common"
-          ],
-          "cjPath": "D:\\CangjieAgent\\CangjieMagic\\CangjieMagic\\libs\\cangjie-stdx-windows-x64-1.0.0.1\\windows_x86_64_llvm\\dynamic",
-          "libPath": "D:\\CangjieAgent\\CangjieMagic\\CangjieMagic\\libs\\cangjie-stdx-windows-x64-1.0.0.1\\windows_x86_64_llvm\\dynamic\\stdx",
-          "libName": "stdx.unittest.data"
-        },
-        "stdx.crypto.keys": {
-          "isMacroPackage": false,
-          "requires": [
-            "stdx.crypto.digest",
-            "stdx.crypto.x509"
-          ],
-          "std-requires": [
-            "std.crypto.digest",
-            "std.io",
-            "std.math.numeric",
-            "std.sync"
-          ],
-          "cjPath": "D:\\CangjieAgent\\CangjieMagic\\CangjieMagic\\libs\\cangjie-stdx-windows-x64-1.0.0.1\\windows_x86_64_llvm\\dynamic",
-          "libPath": "D:\\CangjieAgent\\CangjieMagic\\CangjieMagic\\libs\\cangjie-stdx-windows-x64-1.0.0.1\\windows_x86_64_llvm\\dynamic\\stdx",
-          "libName": "stdx.crypto.keys"
-        },
-        "stdx.compress.zlib": {
-          "isMacroPackage": false,
-          "requires": [],
-          "std-requires": [
-            "std.collection",
-            "std.io"
-          ],
-          "cjPath": "D:\\CangjieAgent\\CangjieMagic\\CangjieMagic\\libs\\cangjie-stdx-windows-x64-1.0.0.1\\windows_x86_64_llvm\\dynamic",
-          "libPath": "D:\\CangjieAgent\\CangjieMagic\\CangjieMagic\\libs\\cangjie-stdx-windows-x64-1.0.0.1\\windows_x86_64_llvm\\dynamic\\stdx",
-          "libName": "stdx.compress.zlib"
         }
       },
       "packageRequiresSort": [
