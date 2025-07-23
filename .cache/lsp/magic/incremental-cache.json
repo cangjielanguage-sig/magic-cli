@@ -1,0 +1,494 @@
+{
+  "packageInformation": {
+    "magic.agent_group": {
+      "rootPackageName": "magic",
+      "fileNameHash": "-8537083282709523024",
+      "timeStamp": 1753088357,
+      "isBuilt": true,
+      "exeName": "",
+      "hasSubPkgs": false
+    },
+    "magic": {
+      "rootPackageName": "magic",
+      "fileNameHash": "-3926320569494158252",
+      "timeStamp": 1753088357,
+      "isBuilt": true,
+      "exeName": "",
+      "hasSubPkgs": true
+    },
+    "magic.examples": {
+      "rootPackageName": "magic",
+      "fileNameHash": "4862096819067733835",
+      "timeStamp": 1753088357,
+      "isBuilt": true,
+      "exeName": "",
+      "hasSubPkgs": false
+    },
+    "magic.core": {
+      "rootPackageName": "magic",
+      "fileNameHash": "7033732449141715492",
+      "timeStamp": 1753088357,
+      "isBuilt": true,
+      "exeName": "",
+      "hasSubPkgs": true
+    },
+    "magic.config": {
+      "rootPackageName": "magic",
+      "fileNameHash": "7205328938724856291",
+      "timeStamp": 1753088357,
+      "isBuilt": true,
+      "exeName": "",
+      "hasSubPkgs": false
+    },
+    "magic.agent_executor": {
+      "rootPackageName": "magic",
+      "fileNameHash": "6886477444884537115",
+      "timeStamp": 1753088357,
+      "isBuilt": true,
+      "exeName": "",
+      "hasSubPkgs": true
+    },
+    "magic.dsl": {
+      "rootPackageName": "magic",
+      "fileNameHash": "-728427050274835270",
+      "timeStamp": 1753088357,
+      "isBuilt": true,
+      "exeName": "",
+      "hasSubPkgs": false
+    },
+    "magic.agent": {
+      "rootPackageName": "magic",
+      "fileNameHash": "918099992046455888",
+      "timeStamp": 1753088357,
+      "isBuilt": true,
+      "exeName": "",
+      "hasSubPkgs": true
+    },
+    "magic.interaction": {
+      "rootPackageName": "magic",
+      "fileNameHash": "-5427823733045630896",
+      "timeStamp": 1753088357,
+      "isBuilt": true,
+      "exeName": "",
+      "hasSubPkgs": false
+    },
+    "magic.prelude": {
+      "rootPackageName": "magic",
+      "fileNameHash": "-2881282393231168411",
+      "timeStamp": 1753088357,
+      "isBuilt": true,
+      "exeName": "",
+      "hasSubPkgs": false
+    },
+    "magic.parser": {
+      "rootPackageName": "magic",
+      "fileNameHash": "-2125749211262011103",
+      "timeStamp": 1753088357,
+      "isBuilt": true,
+      "exeName": "",
+      "hasSubPkgs": false
+    },
+    "magic.jsonable": {
+      "rootPackageName": "magic",
+      "fileNameHash": "-4861092414660958814",
+      "timeStamp": 1753088357,
+      "isBuilt": true,
+      "exeName": "",
+      "hasSubPkgs": false
+    },
+    "magic.log": {
+      "rootPackageName": "magic",
+      "fileNameHash": "4904828848059867110",
+      "timeStamp": 1753088357,
+      "isBuilt": true,
+      "exeName": "",
+      "hasSubPkgs": false
+    },
+    "magic.memory": {
+      "rootPackageName": "magic",
+      "fileNameHash": "5951532188732103759",
+      "timeStamp": 1753088357,
+      "isBuilt": true,
+      "exeName": "",
+      "hasSubPkgs": false
+    },
+    "magic.model": {
+      "rootPackageName": "magic",
+      "fileNameHash": "-2530370474335032100",
+      "timeStamp": 1753088357,
+      "isBuilt": true,
+      "exeName": "",
+      "hasSubPkgs": true
+    },
+    "magic.mcp": {
+      "rootPackageName": "magic",
+      "fileNameHash": "2939873122917918015",
+      "timeStamp": 1753088357,
+      "isBuilt": true,
+      "exeName": "",
+      "hasSubPkgs": false
+    },
+    "magic.prompt": {
+      "rootPackageName": "magic",
+      "fileNameHash": "-3882291047816741216",
+      "timeStamp": 1753088357,
+      "isBuilt": true,
+      "exeName": "",
+      "hasSubPkgs": false
+    },
+    "magic.rag": {
+      "rootPackageName": "magic",
+      "fileNameHash": "2952042898667817898",
+      "timeStamp": 1753088357,
+      "isBuilt": true,
+      "exeName": "",
+      "hasSubPkgs": true
+    },
+    "magic.storage": {
+      "rootPackageName": "magic",
+      "fileNameHash": "1587214033007041141",
+      "timeStamp": 1753088357,
+      "isBuilt": true,
+      "exeName": "",
+      "hasSubPkgs": true
+    },
+    "magic.tokenizer": {
+      "rootPackageName": "magic",
+      "fileNameHash": "5343473138209895897",
+      "timeStamp": 1753088357,
+      "isBuilt": true,
+      "exeName": "",
+      "hasSubPkgs": false
+    },
+    "magic.utils": {
+      "rootPackageName": "magic",
+      "fileNameHash": "2051309156331360123",
+      "timeStamp": 1753088357,
+      "isBuilt": true,
+      "exeName": "",
+      "hasSubPkgs": true
+    },
+    "magic.vdb": {
+      "rootPackageName": "magic",
+      "fileNameHash": "-7337015565865753248",
+      "timeStamp": 1753088357,
+      "isBuilt": true,
+      "exeName": "",
+      "hasSubPkgs": false
+    },
+    "magic.agent.base": {
+      "rootPackageName": "magic",
+      "fileNameHash": "-8510043752766839507",
+      "timeStamp": 1753088357,
+      "isBuilt": true,
+      "exeName": "",
+      "hasSubPkgs": false
+    },
+    "magic.tool": {
+      "rootPackageName": "magic",
+      "fileNameHash": "-2419790804540691743",
+      "timeStamp": 1753088357,
+      "isBuilt": true,
+      "exeName": "",
+      "hasSubPkgs": false
+    },
+    "magic.core.interaction": {
+      "rootPackageName": "magic",
+      "fileNameHash": "-8537923498291158259",
+      "timeStamp": 1753088357,
+      "isBuilt": true,
+      "exeName": "",
+      "hasSubPkgs": false
+    },
+    "magic.agent_executor.dsl": {
+      "rootPackageName": "magic",
+      "fileNameHash": "5465927369307917039",
+      "timeStamp": 1753088357,
+      "isBuilt": true,
+      "exeName": "",
+      "hasSubPkgs": false
+    },
+    "magic.agent_executor.common": {
+      "rootPackageName": "magic",
+      "fileNameHash": "-909823513120501125",
+      "timeStamp": 1753088357,
+      "isBuilt": true,
+      "exeName": "",
+      "hasSubPkgs": false
+    },
+    "magic.agent_executor.naive": {
+      "rootPackageName": "magic",
+      "fileNameHash": "3441582081943952499",
+      "timeStamp": 1753088357,
+      "isBuilt": true,
+      "exeName": "",
+      "hasSubPkgs": false
+    },
+    "magic.core.agent": {
+      "rootPackageName": "magic",
+      "fileNameHash": "-5138827873748922826",
+      "timeStamp": 1753088357,
+      "isBuilt": true,
+      "exeName": "",
+      "hasSubPkgs": false
+    },
+    "magic.agent_executor.tool_loop": {
+      "rootPackageName": "magic",
+      "fileNameHash": "8148085020191624066",
+      "timeStamp": 1753088357,
+      "isBuilt": true,
+      "exeName": "",
+      "hasSubPkgs": false
+    },
+    "magic.agent_executor.react": {
+      "rootPackageName": "magic",
+      "fileNameHash": "-8289806679757583711",
+      "timeStamp": 1753088357,
+      "isBuilt": true,
+      "exeName": "",
+      "hasSubPkgs": false
+    },
+    "magic.agent_executor.plan_react": {
+      "rootPackageName": "magic",
+      "fileNameHash": "1597351026388289966",
+      "timeStamp": 1753088357,
+      "isBuilt": true,
+      "exeName": "",
+      "hasSubPkgs": false
+    },
+    "magic.core.message": {
+      "rootPackageName": "magic",
+      "fileNameHash": "-1371577656275405747",
+      "timeStamp": 1753088357,
+      "isBuilt": true,
+      "exeName": "",
+      "hasSubPkgs": false
+    },
+    "magic.core.memory": {
+      "rootPackageName": "magic",
+      "fileNameHash": "548773265222108111",
+      "timeStamp": 1753088357,
+      "isBuilt": true,
+      "exeName": "",
+      "hasSubPkgs": false
+    },
+    "magic.core.model": {
+      "rootPackageName": "magic",
+      "fileNameHash": "-5656144193441136639",
+      "timeStamp": 1753088357,
+      "isBuilt": true,
+      "exeName": "",
+      "hasSubPkgs": false
+    },
+    "magic.core.tokenizer": {
+      "rootPackageName": "magic",
+      "fileNameHash": "-8031048414657930361",
+      "timeStamp": 1753088357,
+      "isBuilt": true,
+      "exeName": "",
+      "hasSubPkgs": false
+    },
+    "magic.examples.file_assistant": {
+      "rootPackageName": "magic",
+      "fileNameHash": "-7996657058717691805",
+      "timeStamp": 1753088357,
+      "isBuilt": true,
+      "exeName": "",
+      "hasSubPkgs": false
+    },
+    "magic.core.rag": {
+      "rootPackageName": "magic",
+      "fileNameHash": "-729354393936625183",
+      "timeStamp": 1753088357,
+      "isBuilt": true,
+      "exeName": "",
+      "hasSubPkgs": false
+    },
+    "magic.core.tool": {
+      "rootPackageName": "magic",
+      "fileNameHash": "-6899082809408822913",
+      "timeStamp": 1753088357,
+      "isBuilt": true,
+      "exeName": "",
+      "hasSubPkgs": false
+    },
+    "magic.examples.doc_generator": {
+      "rootPackageName": "magic",
+      "fileNameHash": "7615780727801273410",
+      "timeStamp": 1753088357,
+      "isBuilt": true,
+      "exeName": "",
+      "hasSubPkgs": false
+    },
+    "magic.examples.health_monitor": {
+      "rootPackageName": "magic",
+      "fileNameHash": "2149925087520383739",
+      "timeStamp": 1753088357,
+      "isBuilt": true,
+      "exeName": "",
+      "hasSubPkgs": false
+    },
+    "magic.examples.fun_idea": {
+      "rootPackageName": "magic",
+      "fileNameHash": "-4344470365796106033",
+      "timeStamp": 1753088357,
+      "isBuilt": true,
+      "exeName": "",
+      "hasSubPkgs": false
+    },
+    "magic.examples.magic_agent": {
+      "rootPackageName": "magic",
+      "fileNameHash": "-6390813685139811579",
+      "timeStamp": 1753088357,
+      "isBuilt": true,
+      "exeName": "",
+      "hasSubPkgs": false
+    },
+    "magic.examples.markdown_qa": {
+      "rootPackageName": "magic",
+      "fileNameHash": "-983427652272679935",
+      "timeStamp": 1753088357,
+      "isBuilt": true,
+      "exeName": "",
+      "hasSubPkgs": false
+    },
+    "magic.examples.quick_start": {
+      "rootPackageName": "magic",
+      "fileNameHash": "-585151238019797917",
+      "timeStamp": 1753088357,
+      "isBuilt": true,
+      "exeName": "",
+      "hasSubPkgs": false
+    },
+    "magic.examples.mcp_client": {
+      "rootPackageName": "magic",
+      "fileNameHash": "-7259457573686589355",
+      "timeStamp": 1753088357,
+      "isBuilt": true,
+      "exeName": "",
+      "hasSubPkgs": false
+    },
+    "magic.examples.mcp_server": {
+      "rootPackageName": "magic",
+      "fileNameHash": "-3522367163809375275",
+      "timeStamp": 1753088357,
+      "isBuilt": true,
+      "exeName": "",
+      "hasSubPkgs": false
+    },
+    "magic.examples.mini_rag": {
+      "rootPackageName": "magic",
+      "fileNameHash": "6671354809799150940",
+      "timeStamp": 1753088357,
+      "isBuilt": true,
+      "exeName": "",
+      "hasSubPkgs": false
+    },
+    "magic.model.ollama": {
+      "rootPackageName": "magic",
+      "fileNameHash": "541169903019429442",
+      "timeStamp": 1753088357,
+      "isBuilt": true,
+      "exeName": "",
+      "hasSubPkgs": false
+    },
+    "magic.model.dashscope": {
+      "rootPackageName": "magic",
+      "fileNameHash": "7261256534340525370",
+      "timeStamp": 1753088357,
+      "isBuilt": true,
+      "exeName": "",
+      "hasSubPkgs": false
+    },
+    "magic.model.llamacpp": {
+      "rootPackageName": "magic",
+      "fileNameHash": "-7026959714168434532",
+      "timeStamp": 1753088357,
+      "isBuilt": true,
+      "exeName": "",
+      "hasSubPkgs": false
+    },
+    "magic.model.siliconflow": {
+      "rootPackageName": "magic",
+      "fileNameHash": "-206734167475560519",
+      "timeStamp": 1753088357,
+      "isBuilt": true,
+      "exeName": "",
+      "hasSubPkgs": false
+    },
+    "magic.model.zhipuai": {
+      "rootPackageName": "magic",
+      "fileNameHash": "-5778685116291528133",
+      "timeStamp": 1753088357,
+      "isBuilt": true,
+      "exeName": "",
+      "hasSubPkgs": false
+    },
+    "magic.rag.splitter": {
+      "rootPackageName": "magic",
+      "fileNameHash": "533857925604214649",
+      "timeStamp": 1753088357,
+      "isBuilt": true,
+      "exeName": "",
+      "hasSubPkgs": false
+    },
+    "magic.model.openai": {
+      "rootPackageName": "magic",
+      "fileNameHash": "-7869265915975639244",
+      "timeStamp": 1753088357,
+      "isBuilt": true,
+      "exeName": "",
+      "hasSubPkgs": false
+    },
+    "magic.rag.graph": {
+      "rootPackageName": "magic",
+      "fileNameHash": "3387427048845521596",
+      "timeStamp": 1753088357,
+      "isBuilt": true,
+      "exeName": "",
+      "hasSubPkgs": false
+    },
+    "magic.storage.graph": {
+      "rootPackageName": "magic",
+      "fileNameHash": "5241916156622454829",
+      "timeStamp": 1753088357,
+      "isBuilt": true,
+      "exeName": "",
+      "hasSubPkgs": false
+    },
+    "magic.storage.kv": {
+      "rootPackageName": "magic",
+      "fileNameHash": "2649468609819050302",
+      "timeStamp": 1753088357,
+      "isBuilt": true,
+      "exeName": "",
+      "hasSubPkgs": false
+    },
+    "magic.storage.vdb": {
+      "rootPackageName": "magic",
+      "fileNameHash": "-4590234621732689217",
+      "timeStamp": 1753088357,
+      "isBuilt": true,
+      "exeName": "",
+      "hasSubPkgs": false
+    },
+    "magic.utils.ohos": {
+      "rootPackageName": "magic",
+      "fileNameHash": "8794318389073987494",
+      "timeStamp": 1753088357,
+      "isBuilt": true,
+      "exeName": "",
+      "hasSubPkgs": false
+    },
+    "magic.utils.http": {
+      "rootPackageName": "magic",
+      "fileNameHash": "8558205133262031550",
+      "timeStamp": 1753088357,
+      "isBuilt": true,
+      "exeName": "",
+      "hasSubPkgs": false
+    }
+  },
+  "jsonHash": "-7537124200828473826",
+  "rootPackageName": "magic"
+}

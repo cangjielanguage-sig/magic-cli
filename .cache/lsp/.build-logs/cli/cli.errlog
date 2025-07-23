@@ -1,0 +1,9 @@
+[33mwarning[0m: property 'stdOut' is deprecated. Use `public prop stdOutPipe: InputStream` instead.
+  [36m==>[0m D:\CangjieAgent\Cangjie-CLI\Cangjie-CLI\src\bash_tool.cj:13:59:
+   [36m| [0m
+[36m13[0m [36m| [0m        let outReader = StringReader<InputStream>(process.stdOut)[0m
+   [36m| [0m                                                          [33m^^^^^^ deprecated[0m
+   [36m| [0m
+   [36m#[0m [0mnote[0m: this warning can be suppressed by setting the compiler option `-Woff deprecated`
+
+1 warning generated, 1 warning printed.
