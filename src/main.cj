@@ -7,25 +7,29 @@ import magic.interaction.ConsolePrinter
 import std.env.*
 
 main(): Int64 {
-    // 从环境变量读取 API 密钥
-    let apiKey = getVariable("DEEPSEEK_API_KEY")
-    if (apiKey.isSome()) {
-        Config.env["DEEPSEEK_API_KEY"] = apiKey.get()
-    } else {
-        println("错误: 未找到 DEEPSEEK_API_KEY 环境变量")
-        return 1
+    Config.env["DEEPSEEK_API_KEY"] = "sk-58bf671cc604489c85abfe66c5af0bec"
+
+    let agent = CodeAgent()
+    let conversation = Conversation()
+
+    while (true) {
+        print("用户: ")
+        let input = readln()
+
+        if (input.contains("exit")) {
+            println("退出程序")
+            break
+        }
+
+        // let asyncResp = agent.asyncChat(AgentRequest(input, verbose: true))
+        // ConsolePrinter.print(asyncResp, verbose: true)
+
+        let response = agent.chat(
+            AgentRequest(input, conversation: conversation)
+        )
+        conversation.addChatRound(response.execution.chatRound)
+        println("助手: ${response.execution.response}\n")
     }
-
-    let agent = FSAgent()
-
-    print("用户: ")
-    let input = readln()
-
-    // let asyncResp = agent.asyncChat(input, verbose: true)
-    // ConsolePrinter.print(asyncResp, verbose: true)
-
-    let response = agent.chat(input)
-    println("助手: ${response}\n")
 
     return 0    
 }
