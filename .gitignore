@@ -4,6 +4,9 @@ target/
 # Log files
 logs/
 
+# Cache files
+.cache/
+
 # IDE files
 .vscode/
 .idea/
