@@ -28,7 +28,7 @@ main(): Int64 {
             AgentRequest(input, conversation: conversation)
         )
         conversation.addChatRound(response.execution.chatRound)
-        println("助手: ${response.execution.response}\n")
+        println("助手: ${response.content}\n")
     }
 
     return 0    

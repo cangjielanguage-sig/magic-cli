@@ -24,7 +24,7 @@ class FSAgent {
         "请注意，你需要根据用户的输入提炼出需要执行的文件系统操作。\n\n"
         "请注意，请注意！你需要向用户请求确认当且仅当：\n"
         "1. 执行的操作可能会导致数据丢失，如删除文件或目录\n"
-        "2. 执行的操作可能会覆盖现有文件，如写入文件内容或修改文件内容\n"
+        "2. 执行的操作可能会覆盖现有文件，如写入文件内容或修改文件内容或创建并写入文件\n"
         "3. 执行的操作需要修改文件权限\n"
         "请注意，当用户同意执行操作后，你需要执行该操作并返回结果；如果用户不同意，则直接退出Agent，返回'用户取消执行操作'。\n\n"
         "注意你需要尽力完成用户的任务，如果你在执行操作时遇到错误，包括但不限于语法错误、权限问题等，你需要将错误信息简洁易懂地反馈给用户，并提供解决方案，寻求用户的确认。\n"
@@ -304,6 +304,30 @@ class FSAgent {
             return "路径为空或包含非法字符"
         } catch (e: Exception) {
             return "修改权限失败：${e}"
+        }
+    }
+
+    @tool[
+        description: "修改文件内容，返回修改结果",
+        parameters: { filePath: "文件路径", oldContent: "原本文件的内容，必须是文件里出现的部分", newContent: "即将覆盖的内容" }
+    ]
+    public func editFileContent(filePath: String, oldContent: String, newContent: String): String {
+        try {
+            let file = File(filePath, ReadWrite)
+            let content = File.readFrom(filePath).toString()
+            if (!content.contains(oldContent)) {
+                return "文件 ${filePath} 中不包含指定的内容 '${oldContent}'，无法进行修改"
+            }
+            let updatedContent = content.replace(oldContent, newContent)
+            file.write(updatedContent.toArray())
+            file.close()
+            return "文件 ${filePath} 内容已成功修改"
+        } catch (e: FSException) {
+            return "文件路径错误或文件不可读写"
+        } catch (e: IllegalArgumentException) {
+            return "文件路径为空或包含非法字符"
+        } catch (e: Exception) {
+            return "修改文件内容失败：${e}"
         }
     }
 
