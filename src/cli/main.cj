@@ -1,4 +1,4 @@
-package cli
+package cli.cli
 
 import magic.dsl.*
 import magic.prelude.*
