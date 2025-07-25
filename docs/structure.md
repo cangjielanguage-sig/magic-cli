@@ -10,7 +10,7 @@ Cangjie-CLI 是一个基于仓颉语言开发的AI助手命令行工具，集成
 src/
 ├── core/                   # 核心模块
 │   ├── tool/               # 工具集合
-│   │   ├── bash_tool.cj    # Bash命令执行工具
+│   │   ├── shell_tool.cj   # Shell命令执行工具
 │   │   ├── fs_tool.cj      # 文件系统操作工具
 │   │   └── ...             # 其他工具
 │   └── code_agent.cj       # 核心代码代理
