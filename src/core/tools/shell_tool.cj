@@ -5,9 +5,23 @@ import std.process.*
 import std.io.*
 import std.env.*
 
-class ShellTool {
+public class ShellTool {
     // execute shell command
     // need confirmation : true
+
+    public static func confirm(message: String): Bool { // 前端可以实现一个confirm对话框，之后直接调用
+        println(message)
+        print("用户是否同意执行？(yes/no): ")
+        var response = readln()
+        if (response.isEmpty()) {
+            response = "yes"
+        }
+        if (response.toAsciiLower().contains("yes")) {
+            return true
+        } else {
+            return false
+        }
+    }
 
     public static func execute(command: String): String {
         let message = "即将执行以下命令：\n${command}\n"
@@ -40,20 +54,6 @@ class ShellTool {
             
         } catch (e: Exception) {
             return "执行命令时发生异常: ${e.message}\n命令: ${command}"
-        }
-    }
-
-    public func confirm(message: String): bool { // 前端可以实现一个confirm对话框，之后直接调用
-        println(message)
-        print("用户是否同意执行？(yes/no): ")
-        var response = readln()
-        if (response.isEmpty()) {
-            response = "yes"
-        }
-        if (response.toAsciiLower().contains("yes")) {
-            return true
-        } else {
-            return false
         }
     }
 }

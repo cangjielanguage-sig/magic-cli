@@ -7,7 +7,21 @@ import std.env.*
 import std.posix.*
 import std.collection.*
 
-class FSTool {
+public class FSTool {
+    public static func confirm(message: String): Bool {
+        println(message)
+        print("用户是否同意执行？(yes/no): ")
+        var response = readln()
+        if (response.isEmpty()) {
+            response = "yes"
+        }
+        if (response.toAsciiLower().contains("yes")) {
+            return true
+        } else {
+            return false
+        }
+    }
+
     public static func createDirectory(path: String): String {
         try {
             Directory.create(path, recursive: true)
@@ -274,20 +288,6 @@ class FSTool {
             return "文件路径为空或包含非法字符"
         } catch (e: Exception) {
             return "修改文件内容失败：${e}"
-        }
-    }
-
-    public func confirm(message: String): Bool {
-        println(message)
-        print("用户是否同意执行？(yes/no): ")
-        var response = readln()
-        if (response.isEmpty()) {
-            response = "yes"
-        }
-        if (response.toAsciiLower().contains("yes")) {
-            return true
-        } else {
-            return false
         }
     }
 }
