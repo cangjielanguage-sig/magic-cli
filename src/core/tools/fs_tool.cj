@@ -257,10 +257,6 @@ class FSTool {
         }
     }
 
-    @tool[
-        description: "修改文件内容，返回修改结果",
-        parameters: { filePath: "文件路径", oldContent: "原本文件的内容，必须是文件里出现的部分", newContent: "即将覆盖的内容" }
-    ]
     public static func editFileContent(filePath: String, oldContent: String, newContent: String): String {
         try {
             let file = File(filePath, ReadWrite)
