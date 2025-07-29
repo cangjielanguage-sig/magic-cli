@@ -22,6 +22,21 @@ public class FSTool {
         }
     }
 
+    public static func changeDirectory(path: String): String {
+        try {
+            let exitCode = chdir(path)
+            if (exitCode == 0) {
+                return "已切换到目录：${path}"
+            } else {
+                return "切换目录失败，错误代码：${exitCode}"
+            }
+        } catch (e: IllegalArgumentException) {
+            return "路径为空或包含非法字符"
+        } catch (e: Exception) {
+            return "切换目录失败：${e}"
+        }
+    }
+
     public static func createDirectory(path: String): String {
         try {
             Directory.create(path, recursive: true)
