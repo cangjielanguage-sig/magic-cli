@@ -26,20 +26,17 @@ main(): Int64 {
             break
         }
 
-        // let asyncResp = agent.asyncChat(AgentRequest(input, verbose: true))
-        // ConsolePrinter.print(asyncResp, verbose: true)
-
-        let response = agent.chat(
-            AgentRequest(input, conversation: conversation)
-        )
-        conversation.addChatRound(response.execution.chatRound)
-        println("助手: ${response.content}\n")
-
-        // let asyncResp = agent.asyncChat(
-        //     AgentRequest(input, verbose: true, conversation: conversation)
+        // let response = agent.chat(
+        //     AgentRequest(input, conversation: conversation)
         // )
-        // conversation.addChatRound(asyncResp.execution.chatRound)
-        // ConsolePrinter.print(asyncResp, verbose: true)
+        // conversation.addChatRound(response.execution.chatRound)
+        // println("助手: ${response.content}\n")
+
+        let asyncResp = agent.asyncChat(
+            AgentRequest(input, verbose: true, conversation: conversation)
+        )
+        ConsolePrinter.print(asyncResp, verbose: true)
+        conversation.addChatRound(asyncResp.execution.chatRound)
     }
 
     return 0    

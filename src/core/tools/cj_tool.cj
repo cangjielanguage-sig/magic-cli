@@ -2,10 +2,12 @@ package cli.core.tools
 
 import std.env.*
 import stdx.net.http.*
-import std.collection.ArrayList
+import std.collection.*
 import stdx.encoding.json.*
 import std.io.*
 import std.process.*
+
+import magic.jsonable.*
 
 class ApiClient {
     public static func post(url: String, jsonBody: JsonValue): String {
@@ -40,7 +42,7 @@ public class CJTool{
     public static func repair_code(query: String, code: String): String {
         let url = "http://119.3.125.66:5384/code_repair"
         let requestMap = HashMap<String, JsonValue>()
-        requestMap.add("query",JsonString(query))
+        requestMap.add("query", JsonString(query))
         requestMap.add("response", JsonString("```cangjie\n ${code} \n```"))
         let request = JsonObject(requestMap)
         let responseData = JsonValue.fromStr(extractLastSseData(ApiClient.post(url, request)))
@@ -164,7 +166,7 @@ public class CJTool{
         }
     }
 
-    func extractLastSseData(stream: String): String {
+    static func extractLastSseData(stream: String): String {
         let lines = stream.split('\n')
         var lastJsonData = ""
 

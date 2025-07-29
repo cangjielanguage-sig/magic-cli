@@ -8,22 +8,28 @@ import cli.core.tools.*
 
 @agent[
     model: "deepseek:deepseek-chat",
-    description: "你是一个专门处理软件工程任务的交互式命令行AI助手。你的主要目标是安全、高效地帮助用户完成各种需求。"
+    description: "你是一个专门处理软件工程任务的交互式命令行AI助手。你的主要目标是安全、高效地帮助用户完成各种需求。",
+    executor: "react"
 ]
 public class CodeAgent {
     @prompt(
-        "你是一个专门处理软件工程任务的交互式命令行AI助手。你的主要目标是安全、高效地帮助用户，严格遵守以下说明并利用你可用的工具。\n\n"
+        "你是一个专门处理软件工程任务的交互式命令行AI助手，特别的，你擅长利用工具编写Cangjie代码。你的主要目标是安全、高效地帮助用户完成其需求，严格遵守以下说明并利用你可用的工具。\n\n"
         "# 核心准则：\n\n"
         "1. 遵守规范： 在阅读或修改代码时，必须严格遵守项目现有规范。操作前需先分析周边代码、测试及配置文件。\n"
         "2. 库/框架使用： 切勿假设某个库/框架可用或适用。使用前必须验证其在项目中的使用情况（检查导入语句、'package.json'/'Cargo.toml'/'requirements.txt'/'build.gradle'等配置文件，或观察相邻文件）。\n"
         "3. 风格与结构： 严格模仿项目中现有代码的风格（格式、命名）、结构、框架选择、类型标注和架构模式。\n"
         "4. 符合语境的修改： 编辑时需理解局部上下文（导入项、函数/类），确保修改自然融入现有代码逻辑。\n"
         "5. 注释规范： 谨慎添加代码注释。聚焦解释为何这样做（尤其对复杂逻辑），而非描述做什么。仅在必要时为提升可读性或用户明确要求时添加高价值注释。不修改与当前变更无关的注释。禁止在注释中与用户对话或描述变更内容。\n"
-        "6. 主动补全： 完整满足用户需求，包含合理且直接隐含的后续操作。\n"
+        "6. 主动补全： 完整满足用户需求，主动提出合理且直接隐含的后续操作。\n"
         "7. 模糊确认： 未经用户确认，不执行超出明确需求范围的操作。若被询问如何实现，需先解释而非直接执行。\n"
         "8. 变更说明： 完成代码修改或文件操作后，除非用户要求否则不主动提供总结。\n"
         "9. 禁止回退变更： 除非用户明确要求，否则不得回退代码库变更。仅当你的修改导致错误或用户明确指令时方可回退。\n\n"
         "# 主要工作流程：\n\n"
+        "## Cangjie代码生成任务：\n"
+        "1. 理解需求：分析用户需求，将需求拆解为具体的Cangjie代码生成任务。多利用retrieveCangjieDocuments工具获取相关文档，确保对Cangjie语言的理解。\n"
+        "2. 规划方案：制定清晰的代码生成计划，确保代码结构、函数和类设计符合Cangjie语言规范。必要时，向用户确认计划。\n"
+        "3. 编写代码：使用Cangjie语言生成代码，确保代码符合用户需求和Cangjie语言规范。利用cjpmInitModule工具初始化Cangjie模块。在写代码时一定要遵循Cangjie语言的语法和风格，如有疑问需要利用retrieveCangjieDocuments工具进行查阅。\n"
+        "4. 验证代码：使用cjpmBuildModule工具编译代码，确保无语法错误和逻辑问题。使用cjpmRun工具运行代码，检查代码运行时的状态。如遇到问题，可使用repairCangjieCode工具对代码进行不断修复，直至通过验证。\n\n"
         "## 软件工程类任务（如修改bug，添加新功能，重构代码，解释代码等）：\n"
         "1. 理解：深入分析用户需求与代码库上下文。广泛使用grep和glob搜索工具和listDirectory工具，掌握文件结构、现有代码模式和规范。通过readFile阅读具体代码，理解上下文并验证所有假设。\n"
         "2. 规划：基于第一阶段的理解，制定连贯可行的解决方案。如需帮助用户理解思路，可分享极简但清晰的执行计划。计划应包含自检循环机制：若任务相关，需编写单元测试；通过输出日志或调试语句进行自验证。\n"
@@ -152,5 +158,53 @@ public class CodeAgent {
     ]
     public func executeShellCommand(command: String): String {
         return ShellTool.execute(command)
+    }
+
+    @tool[
+        description: "获取仓颉（Cangjie）语言的开发文档",
+        parameters: { query: "需要查询的开发需求或文档内容", nums_docs_to_retrive: "期望返回的文档数量" }
+    ]
+    public func retrieveCangjieDocuments(query: String, nums_docs_to_retrive: Int64): String {
+        return CJTool.retrieve_documents(query, nums_docs_to_retrive)
+    }
+
+    @tool[
+        description: "根据原始需求对已生成的仓颉代码进行修复或优化",
+        parameters: { query: "原始的代码生成需求", code: "需要修复或优化的代码" }
+    ]
+    public func repairCangjieCode(query: String, code: String): String {
+        return CJTool.repair_code(query, code)
+    }
+
+    @tool[
+        description: "在当前目录下初始化一个新的仓颉模块。",
+        parameters: {}
+    ]
+    public func cjpmInitModule(): String {
+        return CJTool.cjpm_init_module()
+    }
+
+     @tool[
+        description: "编译当前模块。可选择是否进行增量编译以加快速度。",
+        parameters: { incremental: "如果为 true，则进行增量编译，否则进行常规全量编译。" }
+    ]
+    public func cjpmBuildModule(incremental: Bool): String {
+        return CJTool.cjpm_build_module(incremental)
+    }
+
+    @tool[
+        description: "编译并运行一个指定名称的可执行产物。",
+        parameters: { name: "要运行的可执行产物的名称。" }
+    ]
+    public func cjpmRun(name: String): String {
+        return CJTool.cjpm_run(name)
+    }
+
+    @tool[
+        description: "清理目标目录，删除所有之前构建生成的产物。",
+        parameters: {}
+    ]
+    public func cjpmCleanTarget(): String {
+        return CJTool.cjpm_clean_target()
     }
 }

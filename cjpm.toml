@@ -13,3 +13,6 @@
 
 [dependencies]
   magic = { path = "./CangjieMagic" }
+
+[target.x86_64-w64-mingw32.bin-dependencies]
+  path-option = ["./CangjieMagic/libs/cangjie-stdx-windows-x64-1.0.0.1/windows_x86_64_llvm/dynamic/stdx"]
