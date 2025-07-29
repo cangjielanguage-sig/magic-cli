@@ -36,7 +36,7 @@ class ApiClient {
     }
 }
 
-class CJTool{
+public class CJTool{
     public static func repair_code(query: String, code: String): String {
         let url = "http://119.3.125.66:5384/code_repair"
         let requestMap = HashMap<String, JsonValue>()
