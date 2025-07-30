@@ -70,6 +70,14 @@ public class CodeAgent {
     )
 
     @tool[
+        description: "获取当前工作目录的绝对路径",
+        parameters: {}
+    ]
+    public func getWorkingDirectory(): String {
+        return FSTool.getWorkingDirectory()
+    }
+
+    @tool[
         description: "切换当前的工作目录",
         parameters: { path: "要切换到的目录路径" }
     ]

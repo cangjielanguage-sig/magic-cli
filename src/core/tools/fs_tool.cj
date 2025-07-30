@@ -22,6 +22,10 @@ public class FSTool {
         }
     }
 
+    public static func getWorkingDirectory(): String {
+        return canonicalize(".").toString()
+    }
+
     public static func changeDirectory(path: String): String {
         try {
             let exitCode = chdir(path)
