@@ -27,6 +27,10 @@ public class FSTool {
     }
 
     public static func changeDirectory(path: String): String {
+        if (!Path(path).isAbsolute()) {
+            return "目录路径必须是绝对路径"
+        }
+
         try {
             let exitCode = chdir(path)
             if (exitCode == 0) {
@@ -42,6 +46,10 @@ public class FSTool {
     }
 
     public static func createDirectory(path: String): String {
+        if (!Path(path).isAbsolute()) {
+            return "目录路径必须是绝对路径"
+        }
+        
         try {
             Directory.create(path, recursive: true)
             return "目录 ${path} 创建成功！"
@@ -55,6 +63,10 @@ public class FSTool {
     }
 
     public static func createFile(content: String, filePath: String): String {
+        if (!Path(filePath).isAbsolute()) {
+            return "文件路径必须是绝对路径"
+        }
+
         let message = "你正在尝试创建文件 ${filePath}，内容为：\n${content}\n"
         if (!confirm(message)) {
             return "操作已取消"
@@ -71,6 +83,10 @@ public class FSTool {
     }
 
     public static func deleteFileOrDirectory(path: String): String {
+        if (!Path(path).isAbsolute()) {
+            return "文件或目录路径必须是绝对路径"
+        }
+
         let message = "你正在尝试删除文件或目录 ${path}，请确认是否继续？\n"
         if (!confirm(message)) {
             return "操作已取消"
@@ -89,6 +105,10 @@ public class FSTool {
     }
     
     public static func listDirectory(path: String): String {
+        if (!Path(path).isAbsolute()) {
+            return "目录路径必须是绝对路径"
+        }
+
         try {
             if (Directory.isEmpty(path)) {
                 return "目录 ${path} 为空"
@@ -114,6 +134,10 @@ public class FSTool {
     }
 
     public static func readFile(filePath: String): String {
+        if (!Path(filePath).isAbsolute()) {
+            return "文件路径必须是绝对路径"
+        }
+
         try {
             let fileContent = File.readFrom(filePath)
             return "文件内容:\n${String.fromUtf8(fileContent)}"
@@ -127,6 +151,10 @@ public class FSTool {
     }
 
     public static func writeFile(filePath: String, content: String): String {
+        if (!Path(filePath).isAbsolute()) {
+            return "文件路径必须是绝对路径"
+        }
+
         let message = "你正在尝试写入文件 ${filePath}，内容为：\n${content}\n"
         if (!confirm(message)) {
             return "操作已取消"
@@ -181,6 +209,10 @@ public class FSTool {
     }
 
     public static func glob(path: String, extension: String): String {
+        if (!Path(path).isAbsolute()) {
+            return "目录路径必须是绝对路径"
+        }
+
         try {
             if (!exists(path)) {
                 return "目录 ${path} 不存在"
@@ -225,6 +257,10 @@ public class FSTool {
     }
 
     public static func getPermissions(path: String): String {
+        if (!Path(path).isAbsolute()) {
+            return "文件或目录路径必须是绝对路径"
+        }
+
         try {
             let fileInfo = FileInfo(path)
             var result = "路径: ${path}\n"
@@ -255,6 +291,10 @@ public class FSTool {
     }
 
     public static func setPermissions(path: String, permissions: String): String {
+        if (!Path(path).isAbsolute()) {
+            return "文件或目录路径必须是绝对路径"
+        }
+
         let message = "你正在尝试修改文件或目录 ${path} 的权限为：${permissions}\n"
         if (!confirm(message)) {
             return "操作已取消"
@@ -291,6 +331,10 @@ public class FSTool {
     }
 
     public static func editFileContent(filePath: String, oldContent: String, newContent: String): String {
+        if (!Path(filePath).isAbsolute()) {
+            return "文件路径必须是绝对路径"
+        }
+
         let message = "你正在尝试修改文件 ${filePath} 的内容，将 '${oldContent}' 替换为 '${newContent}'\n"
         if (!confirm(message)) {
             return "操作已取消"
