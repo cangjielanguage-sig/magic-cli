@@ -24,6 +24,7 @@ public class CodeAgent {
         "7. 模糊确认： 未经用户确认，不执行超出明确需求范围的操作。若被询问如何实现，需先解释而非直接执行。"
         "8. 变更说明： 完成代码修改或文件操作后，除非用户要求否则不主动提供总结。"
         "9. 禁止回退变更： 除非用户明确要求，否则不得回退代码库变更。仅当你的修改导致错误或用户明确指令时方可回退。"
+        "10. 路径安全： 在执行文件操作时，始终使用绝对路径。禁止使用相对路径或当前工作目录。"
         "# 主要工作流程："
         "## 软件工程类任务（如修改bug，添加新功能，重构代码，解释代码等）："
         "1. 理解：深入分析用户需求与代码库上下文。广泛使用grep和glob搜索工具和listDirectory工具，掌握文件结构、现有代码模式和规范。通过readFile阅读具体代码，理解上下文并验证所有假设。"
@@ -101,7 +102,7 @@ public class CodeAgent {
 
     @tool[
         description: "创建目录，可递归创建，返回创建结果",
-        parameters: { path: "目录路径" }
+        parameters: { path: "目录路径，必须是绝对路径" }
     ]
     public func createDirectory(path: String): String {
         return FSTool.createDirectory(path)
@@ -109,7 +110,7 @@ public class CodeAgent {
 
     @tool[
         description: "创建文件并写入内容，返回创建结果",
-        parameters: { content: "文件内容", filePath: "文件路径" }
+        parameters: { content: "文件内容", filePath: "文件路径，必须是绝对路径" }
     ]
     public func createFile(content: String, filePath: String): String {
         return FSTool.createFile(content, filePath)
@@ -117,7 +118,7 @@ public class CodeAgent {
 
     @tool[
         description: "删除文件或目录，删除目录为递归删除，返回删除结果",
-        parameters: { path: "文件或目录路径" }
+        parameters: { path: "文件或目录路径，必须是绝对路径" }
     ]
     public func deleteFileOrDirectory(path: String): String {
         return FSTool.deleteFileOrDirectory(path)
@@ -125,7 +126,7 @@ public class CodeAgent {
 
     @tool[
         description: "列出目录下的所有文件和子目录，返回列表",
-        parameters: { path: "目录路径" }
+        parameters: { path: "目录路径，必须是绝对路径" }
     ]
     public func listDirectory(path: String): String {
         return FSTool.listDirectory(path)
@@ -133,7 +134,7 @@ public class CodeAgent {
 
     @tool[
         description: "读取单个文件的内容，返回文件内容",
-        parameters: { filePath: "文件路径" }
+        parameters: { filePath: "文件路径，必须是绝对路径" }
     ]
     public func readFile(filePath: String): String {
         return FSTool.readFile(filePath)
@@ -141,7 +142,7 @@ public class CodeAgent {
 
     @tool[
         description: "写入内容到单个文件，返回写入结果",
-        parameters: { filePath: "文件路径", content: "要写入的内容" }
+        parameters: { filePath: "文件路径，必须是绝对路径", content: "要写入的内容" }
     ]
     public func writeFile(filePath: String, content: String): String {
         return FSTool.writeFile(filePath, content)
@@ -157,7 +158,7 @@ public class CodeAgent {
 
     @tool[
         description: "在指定目录下基于模式匹配查找特定后缀名的文件",
-        parameters: { path: "目录路径", extension: "文件后缀名，形如：.cs, .txt" }
+        parameters: { path: "目录路径，必须是绝对路径", extension: "文件后缀名，形如：.cs, .txt" }
     ]
     public func glob(path: String, extension: String): String {
         return FSTool.glob(path, extension)
@@ -165,7 +166,7 @@ public class CodeAgent {
 
     @tool[
         description: "查询文件或目录的权限，返回权限信息",
-        parameters: { path: "文件或目录路径" }
+        parameters: { path: "文件或目录路径，必须是绝对路径" }
     ]
     public func getPermissions(path: String): String {
         return FSTool.getPermissions(path)
@@ -173,7 +174,7 @@ public class CodeAgent {
 
     @tool[
         description: "修改文件或目录的权限，返回修改结果",
-        parameters: { path: "文件或目录路径", permissions: "设置当前用户的权限，形如：rwx, rw-, --x" }
+        parameters: { path: "文件或目录路径，必须是绝对路径", permissions: "设置当前用户的权限，形如：rwx, rw-, --x" }
     ]
     public func setPermissions(path: String, permissions: String): String {
         return FSTool.setPermissions(path, permissions)
@@ -181,7 +182,7 @@ public class CodeAgent {
 
     @tool[
         description: "修改文件内容，返回修改结果",
-        parameters: { filePath: "文件路径", oldContent: "原本文件的内容，必须是文件里出现的部分", newContent: "即将覆盖的内容" }
+        parameters: { filePath: "文件路径，必须是绝对路径", oldContent: "原本文件的内容，必须是文件里出现的部分", newContent: "即将覆盖的内容" }
     ]
     public func editFileContent(filePath: String, oldContent: String, newContent: String): String {
         return FSTool.editFileContent(filePath, oldContent, newContent)
