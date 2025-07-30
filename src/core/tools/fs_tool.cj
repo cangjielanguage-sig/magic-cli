@@ -116,7 +116,7 @@ public class FSTool {
     public static func readFile(filePath: String): String {
         try {
             let fileContent = File.readFrom(filePath)
-            return "文件内容:\n${fileContent.toString()}"
+            return "文件内容:\n${String.fromUtf8(fileContent)}"
         } catch (e: FSException) {
             return "文件路径为空、文件不可读或文件读取失败"
         } catch (e: IllegalArgumentException) {
