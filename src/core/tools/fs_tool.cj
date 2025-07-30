@@ -291,9 +291,14 @@ public class FSTool {
     }
 
     public static func editFileContent(filePath: String, oldContent: String, newContent: String): String {
+        let message = "你正在尝试修改文件 ${filePath} 的内容，将 '${oldContent}' 替换为 '${newContent}'\n"
+        if (!confirm(message)) {
+            return "操作已取消"
+        }
+
         try {
             let file = File(filePath, ReadWrite)
-            let content = File.readFrom(filePath).toString()
+            let content = String.fromUtf8(File.readFrom(filePath))
             if (!content.contains(oldContent)) {
                 return "文件 ${filePath} 中不包含指定的内容 '${oldContent}'，无法进行修改"
             }
