@@ -6,6 +6,7 @@ import std.collection.*
 import stdx.encoding.json.*
 import std.io.*
 import std.process.*
+import std.fs.*
 
 import magic.jsonable.*
 
@@ -59,13 +60,13 @@ public class CJTool{
         return responseData.toJsonString()
     }
 
-    public static func cjpm_init_module(): String {
+    public static func cjpm_init_module(path: String): String {
         try {
             let cmd = "cjpm"
             let args: Array<String> = ["init"]
 
             eprintln("正在执行命令: ${cmd} ${args}")
-            let (exitCode, stdOutData, stdErrData) = executeWithOutput(cmd, args)
+            let (exitCode, stdOutData, stdErrData) = executeWithOutput(cmd, args, workingDirectory: Path(path))
 
             if (exitCode == 0) {
                 let outputString = String.fromUtf8(stdOutData)
@@ -85,7 +86,7 @@ public class CJTool{
         }
     }
 
-    public static func cjpm_build_module(incremental: Bool): String {
+    public static func cjpm_build_module(incremental: Bool, path: String): String {
         try {
             let cmd = "cjpm"
             var args: Array<String> = ["build"]
@@ -94,7 +95,7 @@ public class CJTool{
             }
 
             eprintln("正在执行命令: ${cmd} ${args}")
-            let (exitCode, stdOutData, stdErrData) = executeWithOutput(cmd, args)
+            let (exitCode, stdOutData, stdErrData) = executeWithOutput(cmd, args, workingDirectory: Path(path))
 
             if (exitCode == 0) {
                 let outputString = String.fromUtf8(stdOutData)
@@ -114,13 +115,13 @@ public class CJTool{
         }
     }
 
-    public static func cjpm_run(name: String): String {
+    public static func cjpm_run(name: String, path: String): String {
         try {
             let cmd = "cjpm"
             let args: Array<String> = ["run", "--name", name]
 
             eprintln("正在执行命令: ${cmd} ${args}")
-            let (exitCode, stdOutData, stdErrData) = executeWithOutput(cmd, args)
+            let (exitCode, stdOutData, stdErrData) = executeWithOutput(cmd, args, workingDirectory: Path(path))
 
             if (exitCode == 0) {
                 let outputString = String.fromUtf8(stdOutData)
@@ -140,13 +141,13 @@ public class CJTool{
         }
     }
 
-    public static func cjpm_clean_target(): String {
+    public static func cjpm_clean_target(path: String): String {
         try {
             let cmd = "cjpm"
             let args: Array<String> = ["clean"]
 
             eprintln("正在执行命令: ${cmd} ${args}")
-            let (exitCode, stdOutData, stdErrData) = executeWithOutput(cmd, args)
+            let (exitCode, stdOutData, stdErrData) = executeWithOutput(cmd, args, workingDirectory: Path(path))
 
             if (exitCode == 0) {
                 let outputString = String.fromUtf8(stdOutData)

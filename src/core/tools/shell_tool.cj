@@ -23,7 +23,7 @@ public class ShellTool {
         }
     }
 
-    public static func execute(command: String): String {
+    public static func execute(path:String, command: String): String {
         let message = "即将执行以下命令：\n${command}\n"
         if (!confirm(message)) {
             return "用户取消执行命令"
@@ -32,60 +32,20 @@ public class ShellTool {
         try {
             let osName = getVariable("OS") ?? "Unknown"
             let isWindows = osName.toAsciiLower().contains("windows")
-
-            // let cmd = if (isWindows) {
-            //     "powershell"
-            // } else {
-            //     "/bin/bash"
-            // }
-
-            // let args = if (isWindows) {
-            //     ["-Command", command]
-            // } else {
-            //     ["-c", command]
-            // }
-
-            // let (exitCode, stdOutData, stdErrData) = executeWithOutput(cmd, args)
-
-            // if (exitCode == 0) {
-            //     let outputString = String.fromUtf8(stdOutData)
-            //     if (outputString.trimAscii().size == 0) {
-            //         return "命令执行成功"
-            //     } else {
-            //         return outputString
-            //     }
-            // } else {
-            //     let errorString = String.fromUtf8(stdErrData)
-            //     return "命令执行错误: " + errorString
-            // }
             
-            let process = if (isWindows) {
-                launch("powershell", ["-Command", command], stdOut: ProcessRedirect.Pipe, stdErr: ProcessRedirect.Pipe)
+            let (exitCode, stdOutData, stdErrData) = if (isWindows) {
+                executeWithOutput("powershell", ["-Command", command], workingDirectory: Path(path))
             } else {
-                launch("/bin/bash", ["-c", command], stdOut: ProcessRedirect.Pipe, stdErr: ProcessRedirect.Pipe)
+                executeWithOutput("/bin/bash", ["-c", command], workingDirectory: Path(path))
             }
 
-            let outReader = StringReader<InputStream>(process.stdOutPipe)
-            let output = outReader.readToEnd()
-            let errReader = StringReader<InputStream>(process.stdErrPipe)
-            let errorOutput = errReader.readToEnd()
-            let exitCode = process.wait()
-
-            var result = "命令: ${command}\n" + "退出码: ${exitCode}\n"
-            if (!output.isEmpty()) {
-                result += "输出:\n${output}\n"
-            }
-            if (!errorOutput.isEmpty()) {
-                result += "错误输出:\n${errorOutput}\n"
-            }
             if (exitCode == 0) {
-                result += "状态: 执行成功"
+                let outString = String.fromUtf8(stdOutData).trimAscii()
+                return "命令执行成功，输出:\n${outString}"
             } else {
-                result += "状态: 执行失败"
+                let errString = String.fromUtf8(stdErrData).trimAscii()
+                return "命令执行失败，错误输出:\n${errString}"
             }
-
-            return result
-            
         } catch (e: Exception) {
             return "执行命令时发生异常: ${e}\n命令: ${command}"
         }

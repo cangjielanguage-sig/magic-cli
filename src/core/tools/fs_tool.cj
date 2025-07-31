@@ -174,7 +174,7 @@ public class FSTool {
         }
     }
 
-    public static func grep(pattern: String, fileType: String): String {
+    public static func grep(path: String, pattern: String, fileType: String): String {
         try {
             let osName = getVariable("OS") ?? "Unknown"
             let isWindows = osName.toAsciiLower().contains("windows")
@@ -185,24 +185,19 @@ public class FSTool {
                 "grep -rl --include=\"${fileType}\" \"${pattern}\" ."
             }
 
-            let process = if (isWindows) {
-                launch("powershell", ["-Command", command], stdOut: ProcessRedirect.Pipe)
+            let (exitCode, stdOutData, stdErrData) = if (isWindows) {
+                executeWithOutput("powershell", ["-Command", command], workingDirectory: Path(path))
             } else {
-                launch("/bin/bash", ["-c", command], stdOut: ProcessRedirect.Pipe)
+                executeWithOutput("/bin/bash", ["-c", command], workingDirectory: Path(path))
             }
 
-            let outReader = StringReader<InputStream>(process.stdOutPipe)
-            let output = outReader.readToEnd()
-            let exitCode = process.wait()
-
-            var result = "搜索结果：\n${output}\n"
             if (exitCode == 0) {
-                result += "状态: 搜索成功"
+                let outString = String.fromUtf8(stdOutData).trimAscii()
+                return "搜索结果：\n${outString}\n状态： 搜索成功"
             } else {
-                result += "状态: 搜索失败"
+                let errString = String.fromUtf8(stdErrData).trimAscii()
+                return "搜索失败：${errString}"
             }
-
-            return result
         } catch (e: Exception) {
             return "搜索文件失败：${e}"
         }

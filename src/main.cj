@@ -10,6 +10,9 @@ import cli.core.*
 
 main(): Int64 {
     Config.env["DEEPSEEK_API_KEY"] = "sk-58bf671cc604489c85abfe66c5af0bec"
+    Config.logFile = "./cli-agent.log"
+    Config.logLevel = "DEBUG"
+
 
     let agent = CodeAgent()
     let conversation = Conversation()
