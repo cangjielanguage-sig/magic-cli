@@ -3,6 +3,7 @@ target/
 
 # Log files
 logs/
+*.log
 
 # Cache files
 .cache/
