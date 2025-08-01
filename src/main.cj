@@ -9,10 +9,9 @@ import std.env.*
 import cli.core.*
 
 main(): Int64 {
-    Config.env["DEEPSEEK_API_KEY"] = "sk-58bf671cc604489c85abfe66c5af0bec"
+    Config.env["ARK_API_KEY"] = "c41e4017-e9fe-47e0-9b35-eca879eb4a13"
     Config.logFile = "./cli-agent.log"
     Config.logLevel = "DEBUG"
-
 
     let agent = CodeAgent()
     let conversation = Conversation()

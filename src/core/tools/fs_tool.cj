@@ -110,24 +110,22 @@ public class FSTool {
         }
 
         try {
-            if (Directory.isEmpty(path)) {
-                return "目录 ${path} 为空"
+            let osName = getVariable("OS") ?? "Unknown"
+            let isWindows = osName.toAsciiLower().contains("windows")
+            
+            let (exitCode, stdOutData, stdErrData) = if (isWindows) {
+                executeWithOutput("powershell", ["-Command", "dir"], workingDirectory: Path(path))
+            } else {
+                executeWithOutput("/bin/bash", ["-c", "ls -la"], workingDirectory: Path(path))
             }
-            var result = "目录 ${path} 的内容：\n"
-            for (item in Directory.readFrom(path)) {
-                result += "- ${item.name}"
-                if (item.isDirectory()) {
-                    result += " (目录)"
-                } else {
-                    result += " (文件)"
-                }
-                result += "\n"
+
+            if (exitCode == 0) {
+                let outString = String.fromUtf8(stdOutData).trimAscii()
+                return "目录内容如下：\n${outString}"
+            } else {
+                let errString = String.fromUtf8(stdErrData).trimAscii()
+                return "获取目录内容失败，错误输出:\n${errString}"
             }
-            return result
-        } catch (e: FSException) {
-            return "目录不存在或该路径不是一个目录"
-        } catch (e: IllegalArgumentException) {
-            return "指定路径为空或包含空字符"
         } catch (e: Exception) {
             return "列出目录失败：${e}"
         }

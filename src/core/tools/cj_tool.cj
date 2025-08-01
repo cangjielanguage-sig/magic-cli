@@ -86,6 +86,32 @@ public class CJTool{
         }
     }
 
+    public static func cj_compiler(path: String, name: String): String {
+        try {
+            let cmd = "cjc"
+            var args: Array<String> = [name]
+
+            eprintln("正在执行命令: ${cmd} ${args}")
+            let (exitCode, stdOutData, stdErrData) = executeWithOutput(cmd, args, workingDirectory: Path(path))
+
+            if (exitCode == 0) {
+                let outputString = String.fromUtf8(stdOutData)
+                if (outputString.trimAscii().size == 0) {
+                    return "编译成功。"
+                } else {
+                    return outputString
+                }
+            } else {
+                let errorString = String.fromUtf8(stdErrData)
+                return "错误: " + errorString
+            }
+        } catch (e: ProcessException) {
+            return "进程执行错误: ${e}"
+        } catch (e: Exception) {
+            return "发生未知错误: ${e}"
+        }
+    }
+
     public static func cjpm_build_module(incremental: Bool, path: String): String {
         try {
             let cmd = "cjpm"

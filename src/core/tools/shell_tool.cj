@@ -23,7 +23,7 @@ public class ShellTool {
         }
     }
 
-    public static func execute(path:String, command: String): String {
+    public static func execute(path: String, command: String): String {
         let message = "即将执行以下命令：\n${command}\n"
         if (!confirm(message)) {
             return "用户取消执行命令"
