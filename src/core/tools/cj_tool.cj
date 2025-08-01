@@ -57,7 +57,19 @@ public class CJTool{
         requestMap.add("nums_docs_to_retrive",nums_docs_to_retrive.toJsonValue())
         let request = JsonObject(requestMap)
         let responseData = JsonValue.fromStr(ApiClient.post(url, request))
-        return responseData.toJsonString()
+        let resultJsonString = match (responseData) {
+            case jsonObj: JsonObject =>
+                let filteredMap = HashMap<String, JsonValue>()
+                let docsOpt = jsonObj.get("docs")
+                if (let Some(docsValue) <- docsOpt) {
+                    filteredMap.add("docs", docsValue)
+                }
+                let filteredJson = JsonObject(filteredMap)
+                filteredJson.toJsonString()
+            case _ =>
+                responseData.toJsonString()
+        }
+        return resultJsonString
     }
 
     public static func cjpm_init_module(path: String): String {

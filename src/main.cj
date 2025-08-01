@@ -7,6 +7,7 @@ import magic.interaction.ConsolePrinter
 import std.env.*
 
 import cli.core.*
+import cli.core.utils.*
 
 main(): Int64 {
     Config.env["ARK_API_KEY"] = "c41e4017-e9fe-47e0-9b35-eca879eb4a13"
@@ -15,7 +16,8 @@ main(): Int64 {
 
     let agent = CodeAgent()
     let conversation = Conversation()
-
+    let banner = Banner()
+    banner.printBanner()
     println("欢迎使用Cangjie CLI助手！")
     println("输入 'exit' 退出程序")
 
