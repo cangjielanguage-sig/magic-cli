@@ -8,6 +8,9 @@ import std.io.*
 import std.process.*
 import std.fs.*
 
+import magic.dsl.*
+import magic.prelude.*
+import magic.config.Config
 import magic.jsonable.*
 
 class ApiClient {
@@ -39,6 +42,23 @@ class ApiClient {
     }
 }
 
+@agent[
+    model: "ark:ep-20250208101010-dx2ph", 
+    description: "一个根据用户查询，提炼和总结仓颉编程语言技术文档的AI助手。",
+    executor: "naive"
+]
+public class DocSummaryAssistant {
+    @prompt("""
+    You are an expert programming assistant. 
+    Your task is to distill technical documentation for another AI agent that will write Cangjie code.
+    Based on the user's original query, extract ONLY the most relevant information from the provided documents.
+    Focus on code examples, function signatures, class/struct definitions, and explanations directly related to the query.
+    Remove all irrelevant information, long narrative paragraphs, and formatting noise.
+    The output must be concise and directly usable for code generation.
+    """)
+}
+
+
 public class CJTool{
     public static func repair_code(query: String, code: String): String {
         let url = "http://119.3.125.66:5384/code_repair"
@@ -69,7 +89,17 @@ public class CJTool{
             case _ =>
                 responseData.toJsonString()
         }
-        return resultJsonString
+        Config.env["ARK_API_KEY"] = "f3c853c7-2505-4219-b9d5-73f4a945707a" // dsv3
+        let docSummaryAssistant = DocSummaryAssistant()
+        let promptForSummarizer = """
+            Original User Query: "${query}"
+
+            --- Retrieved Documents ---
+            ${resultJsonString}
+            --- End of Documents ---
+        """
+        let summary = docSummaryAssistant.chat(promptForSummarizer)
+        return summary
     }
 
     public static func cjpm_init_module(path: String): String {
