@@ -69,7 +69,7 @@ public class FSTool {
 
         let message = "你正在尝试创建文件 ${filePath}，内容为：\n${content}\n"
         if (!confirm(message)) {
-            return "操作已取消"
+            return "用户取消执行该操作"
         }
         
         try {
@@ -89,7 +89,7 @@ public class FSTool {
 
         let message = "你正在尝试删除文件或目录 ${path}，请确认是否继续？\n"
         if (!confirm(message)) {
-            return "操作已取消"
+            return "用户取消执行该操作"
         }
 
         try {
@@ -155,7 +155,7 @@ public class FSTool {
 
         let message = "你正在尝试写入文件 ${filePath}，内容为：\n${content}\n"
         if (!confirm(message)) {
-            return "操作已取消"
+            return "用户取消执行该操作"
         }
 
         try {
@@ -290,7 +290,7 @@ public class FSTool {
 
         let message = "你正在尝试修改文件或目录 ${path} 的权限为：${permissions}\n"
         if (!confirm(message)) {
-            return "操作已取消"
+            return "用户取消执行该操作"
         }
 
         try {
@@ -330,7 +330,7 @@ public class FSTool {
 
         let message = "你正在尝试修改文件 ${filePath} 的内容，将 '${oldContent}' 替换为 '${newContent}'\n"
         if (!confirm(message)) {
-            return "操作已取消"
+            return "用户取消执行该操作"
         }
 
         try {

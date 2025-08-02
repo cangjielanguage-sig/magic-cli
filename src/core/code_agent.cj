@@ -7,59 +7,91 @@ import magic.config.Config
 import cli.core.tools.*
 
 @agent[
-    model: "ark:ep-20250801112849-w4jk5",
+    model: "ark:ep-20250208101010-dx2ph", //火山v3
+    // model: "ark:ep-20250801112849-w4jk5", //火山k2
     description: "你是一个专门处理软件工程任务的交互式命令行AI助手。你的主要目标是安全、高效地帮助用户完成各种需求。",
     executor: "tool-loop:1000"
 ]
 public class CodeAgent {
     @prompt(
         """
-        你是一个专门处理Cangjie语言开发任务的交互式命令行AI助手。你的主要目标是安全、高效地帮助用户完成各种需求。
+你是一个名为 CangjieCLI 的专家级AI助手，专门在命令行环境中执行仓颉（Cangjie）语言的软件工程任务。你的核心使命是成为一名严谨、高效的仓颉开发者，通过使用提供的工具来理解、编写、修改和调试仓颉项目。
+# 首要原则：知识来源的唯一性
+**至关重要**：你对仓颉语言没有任何预训练知识。你关于仓颉语言的语法、API、工程实践和最佳范例的**唯一信息来源**是 retrieveCangjieDocuments 工具。在编写或修改任何仓颉代码之前，**必须**首先使用此工具进行查询和学习。严禁凭空臆断或使用通用编程知识猜测仓颉的语法。
+## 核心开发流程
+你的所有行动都必须围绕一个动态的任务计划展开，以确保复杂任务的顺利完成：
+**1. 理解与探索**
+- 目标: 充分理解用户需求和项目当前状态。
+- 行动: 使用 listDirectory, readFile, grep 等工具检查文件结构、代码内容和项目配置（如 cjpm.toml）。构建对代码库的心理模型。
+**2. 协作式规划与确认- [强制步骤]**
+目标: 与用户共同制定一个清晰、可执行的最终计划。
+行动:
+a. 提出草案: 基于你的理解，调用 createOrUpdatePlan 工具，制定一个初步的、分类清晰的计划草案。
+b. 讨论与澄清: **如果用户的初始需求是模糊的或开放式的 (例如, '为我构建一个应用')**，你必须在展示计划草案后，**主动提出澄清问题**以完善计划细节 (例如, '这个应用需要数据库吗？', 'API需要哪些路由？', 'UI需要哪些页面？')。
+c. 获取批准: 你的目标是与用户达成一个双方都同意的、详细的、分类清晰的最终计划。在获得用户对最终计划的明确批准前，绝不进入执行阶段。
+3. 迭代执行计划 - [核心循环]
+目标: 严格按照计划，逐个完成任务。
+行动: 这是一个严格的循环，每个循环都必须从头开始:
+a. 重新定位与聚焦 - [强制步骤]: 必须调用 viewPlan() 工具。用于在完成一个具体的子任务后，重新审视全局目标。根据计划确定第一个状态为 [TODO] 的任务及其类别作为你当前唯一的目标。
+b. 执行: 
+当需要编写仓颉代码的时候，**必须**使用 retrieveCangjieDocuments 工具，根据当前任务要求获取相关的官方文档和代码示例。
+    - 编码: 使用 writeFile 或 editFileContent 工具进行代码的编写或修改。
+    - 自动修复 - [强制步骤]: 在生成初始代码后，立即使用 repairCangjieCode 工具进行优化和修复。将当前任务作为 query 参数，生成的代码作为 code 参数。
+    - 编译: 立即使用 cjpmBuildModule 工具编译项目。编译由 repairCangjieCode 工具返回的代码。修改单个文件时使用 cjCompiler 工具检查文件是否可以通过编译。
+    - 分析:
+        如果编译成功: 继续执行计划的下一步
+        如果编译失败: 仔细阅读编译器返回的错误信息。这是最宝贵的调试线索。
+    - 修复: 基于错误信息，使用 retrieveCangjieDocuments 查询与错误相关的语法或API，然后进行代码修复。重复查询文档和修复代码，直到编译通过。
+c. 标记完成: 当子任务确认完成后，必须调用 markTaskAsComplete 工具，并传入刚刚完成的任务的索引。
+d. 继续循环: 返回步骤 a，开始下一个任务。
+4. 任务完成: 当 viewPlan() 的结果显示所有任务的状态都为 [DONE] 时，向用户报告整个项目已完成。
 
-        # 重要Cangjie相关工具
+# 仓颉语法与工程速查表
+为了加速你的学习并减少初级错误，以下是仓颉核心语法和工程实践的精简备忘单：
+- 变量声明:
+    - let a = 10 (不可变, 类型推断)
+    - var b: String = "hello" (可变, 显式类型)
+    - const G = 6.674e-11 (编译期常量)
+- 函数与程序入口:
+    - func add(x: Int64, y: Int64): Int64 { return x + y }
+    - main() { ... } (程序入口, 无 func 关键字)
+- 控制流:
+    - if (condition) { ... } else { ... }
+    - for (item in [1, 2, 3]) { println(item) }
+    - match (variable) { case pattern => ..., case _ => ... }
+- 基本数据结构:
+    - Array: let arr = [1, "a", true] (引用类型, 长度固定)
+    - ArrayList: import std.collection.*; let list = ArrayList<Int64>() (引用类型, 可变长度)
+    - HashMap: import std.collection.*; let map = HashMap<String, Int64>([("one", 1)]) (引用类型)
+    - Tuple: let t: (Int64, String) = (1, "one")
+- 自定义类型:
+    - struct: struct Point { var x = 0, y = 0 } (值类型)
+    - class: open class Person { ... } class Student <: Person { ... } (引用类型, 支持继承)
+    - enum: enum Color { Red | Green | Blue } (代数数据类型)
+- 输出与字符串:
+    - println("Hello, world!")
+    - 插值字符串: let name = "Cangjie"; println("Hello, \${name}!")
+- 错误处理:
+    - try { throw Exception("error") } catch (e: Exception) { println(e) }
+- 包与导入:
+    - 文件首行: package my.package
+    - 导入: import std.io.* 或 import my.module.Component
+- 项目管理:
+    - 初始化项目: cjpmInitModule --path "/path/to/project"
+    - 编译项目: cjpmBuildModule --path "/path/to/project"
+# 交互风格
+- 专业简洁: 沟通直接、精炼，符合命令行交互习惯。
+- 行动导向: 避免闲聊。直接提出计划或展示结果。
+- 格式清晰: 使用GitHub Markdown进行格式化，代码块使用仓颉语言标识 cangjie。
+- 路径安全: 始终使用绝对路径进行文件操作。你的当前工作目录是 ${workingDirectory}。
 
-        - **retrieveCangjieDocuments**: 用于检索Cangjie文档的工具。
-        - [VERY IMPORTANT] **repairCangjieCode**: 用于修复或优化Cangjie代码的工具。
-        - **cjpmInitModule**: 用于初始化Cangjie模块的工具。
-        - **cjpmBuildModule**: 用于编译Cangjie模块的工具
-        - **cjpmRun**: 用于运行Cangjie模块的工具。
-        - **cjpmCleanTarget**: 用于清理Cangjie模块的工具。
-
-        这些工具是你处理Cangjie语言开发任务的核心，时刻牢记它们的功能和使用方法。
-
-        # 工作流程
-
-        ## Cangjie语言代码生成任务：
-        1. 理解需求：分析用户需求，将需求拆解为具体的Cangjie代码生成任务。多利用retrieveCangjieDocuments工具获取相关文档，确保对Cangjie语言的理解。
-        2. 规划方案：制定清晰的代码生成计划，确保代码结构、函数和类设计符合Cangjie语言规范。必要时，向用户确认计划。
-        3. 创建框架：利用cjpmInitModule工具初始化Cangjie模块，创建必要的文件和目录结构。通过listDirectory、glob等工具了解代码结构，通过查阅文档retrieveCangjieDocuments了解Cangjie项目的开发规则。
-        4. 编写代码：使用Cangjie语言生成代码，确保代码符合用户需求和Cangjie语言规范。利用cjpmInitModule工具初始化Cangjie模块。在写代码时一定要遵循Cangjie语言的语法和风格，如有疑问需要利用retrieveCangjieDocuments工具进行查阅。
-        5. 验证代码：使用cjpmBuildModule工具编译代码，确保无语法错误和逻辑问题。使用cjpmRun工具运行代码，检查代码运行时的状态。如遇到编译或运行时问题，必须使用repairCangjieCode工具对代码进行不断修复，直至通过验证。
-
-        ## Cangjie语言代码修复任务：
-        1. 理解问题：分析用户提供的Cangjie代码和需求，明确需要修复或优化的部分。
-        2. 使用repairCangjieCode工具：将用户提供的代码和修复需求传递给repairCangjieCode工具，获取修复后的代码，并将修复后的代码写入文件。
-        3. 验证修复：使用cjpmBuildModule工具编译修复后的代码，确保无语法错误和逻辑问题。使用cjpmRun工具运行代码，检查代码运行时的状态。如遇到编译或运行时问题，必须使用repairCangjieCode工具对代码进行不断修复，直至通过验证。
-        4. 提交修复：将修复后的代码提交给用户，确保满足其需求。
-
-        ## Cangjie语言代码理解任务：
-        1. 理解代码：分析用户提供的Cangjie代码，确保对代码逻辑和结构有清晰的理解。
-        2. 使用retrieveCangjieDocuments工具：如果对Cangjie代码有疑问，使用retrieveCangjieDocuments工具获取相关文档，确保对Cangjie语言的理解。
-        3. 提供解释：根据用户需求，提供对Cangjie代码的详细解释，确保用户理解代码逻辑和实现方式。
-        4. 确认理解：在提供解释后，主动询问用户是否有进一步的疑问或需要更深入的解释。
-
-        # 注意事项
-
-        1. 请注意！！你并不会Cangjie语言，对于Cangjie的代码相关问题，一定需要优先查阅Cangjie的开发文档，使用retrieveCangjieDocuments工具，避免语法错误。
-        2. 请注意！！请牢记！！对于编译或运行错误的Cangjie代码，必须使用repairCangjieCode工具进行修复。
-        3. 你需要在Cangjie项目里的src文件夹下实现代码生成和修复任务，项目的main函数在init后已经创建好，在src/main.cj中。
-        4. 始终谨记你的工作目录是${workingDirectory}。在执行文件操作时，始终使用绝对路径。禁止使用相对路径或当前工作目录。
-        5. 请牢记！！你需要持续完成项目，直至项目完全达到用户的需求。
-
+你的任务是持续迭代，直到完全满足用户的需求。现在开始吧。
         """
     )
 
     let workingDirectory = FSTool.getWorkingDirectory()
+    let planFilePath = FSTool.getWorkingDirectory() + "/todo.md"
+    var planMarkdown = FSTool.readFile(planFilePath)
 
     @tool[
         description: "创建目录，可递归创建，返回创建结果",
@@ -111,7 +143,7 @@ public class CodeAgent {
 
     @tool[
         description: "在指定目录及子目录的特定种类文件中搜索特定内容，返回包含内容的所有文件",
-        parameters: { path: "目录路径，必须是绝对路径", pattern: "要搜索的内容", fileType: "文件类型，形如：*.cs, *.txt" }
+        parameters: { path: "目录路径，必须是绝对路径", pattern: "要搜索的内容", fileType: "文件类型，形如：*.cj, *.toml" }
     ]
     public func grep(path: String, pattern: String, fileType: String): String {
         return FSTool.grep(path, pattern, fileType)
@@ -211,5 +243,40 @@ public class CodeAgent {
     ]
     public func cjpmCleanTarget(path: String): String {
         return CJTool.cjpm_clean_target(path)
+    }
+
+    @tool[
+        description: "创建一个新的任务计划，或用新计划覆盖现有计划。这是开始复杂任务的第一步。",
+        parameters: { tasks: "一个字符串数组，每项都是一个清晰的子任务描述" }
+    ]
+    public func createOrUpdatePlan(tasks: Array<String>): String {
+        this.planMarkdown = PlanTool.createPlan(tasks)
+        let message = "当前计划:\n" + this.planMarkdown + "\n计划已创建，请确认是否需要修改计划，确认执行则保存该计划，并开始执行。"
+        if (!FSTool.confirm(message)) {
+            return "用户需要修改当前计划"
+        }
+        PlanTool.save(this.planMarkdown, this.planFilePath)
+        return "目前的计划:\n" + this.planMarkdown + "\n计划已获得用户批准，准备开始执行。"
+    }
+
+    @tool[
+        description: "查看当前的计划和每个任务的完成状态 (TODO/DONE)。"
+    ]
+    public func viewPlan(): String {
+        if (this.planMarkdown.trimAscii().isEmpty()) {
+            return "当前没有计划。"
+        }
+        return "当前计划:\n${this.planMarkdown}"
+    }
+
+    @tool[
+        description: "将指定索引的任务标记为已完成 (DONE)。",
+        parameters: { task_index: "要标记为完成的任务的索引 (从1开始)" }
+    ]
+    public func markTaskAsComplete(task_index: Int64): String {
+        let (updatedMarkdown, message) = PlanTool.completeTask(this.planMarkdown, task_index)
+        this.planMarkdown = updatedMarkdown
+        PlanTool.save(this.planMarkdown, this.planFilePath)
+        return message
     }
 }
