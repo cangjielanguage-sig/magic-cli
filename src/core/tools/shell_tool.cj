@@ -9,24 +9,11 @@ public class ShellTool {
     // execute shell command
     // need confirmation : true
 
-    public static func confirm(message: String): Bool { // 前端可以实现一个confirm对话框，之后直接调用
-        println(message)
-        print("用户是否同意执行？(yes/no): ")
-        var response = readln()
-        if (response.isEmpty()) {
-            response = "yes"
-        }
-        if (response.toAsciiLower().contains("yes")) {
-            return true
-        } else {
-            return false
-        }
-    }
-
     public static func execute(path: String, command: String): String {
         let message = "即将执行以下命令：\n${command}\n"
-        if (!confirm(message)) {
-            return "用户取消执行命令"
+        let confirmation = ConfirmTool.confirm(message)
+        if (confirmation != "yes") {
+            return "用户取消执行该操作，用户意见反馈：${confirmation}"
         }
 
         try {

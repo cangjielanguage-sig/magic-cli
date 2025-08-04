@@ -8,20 +8,6 @@ import std.posix.*
 import std.collection.*
 
 public class FSTool {
-    public static func confirm(message: String): Bool {
-        println(message)
-        print("用户是否同意执行？(yes/no): ")
-        var response = readln()
-        if (response.isEmpty()) {
-            response = "yes"
-        }
-        if (response.toAsciiLower().contains("yes")) {
-            return true
-        } else {
-            return false
-        }
-    }
-
     public static func getWorkingDirectory(): String {
         return canonicalize(".").toString()
     }
@@ -49,6 +35,12 @@ public class FSTool {
         if (!Path(path).isAbsolute()) {
             return "目录路径必须是绝对路径"
         }
+
+        let message = "你正在尝试创建目录 ${path}，请确认是否继续？\n"
+        let confirmation = ConfirmTool.confirm(message)
+        if (confirmation != "yes") {
+            return "用户取消执行该操作，用户意见反馈：${confirmation}"
+        }
         
         try {
             Directory.create(path, recursive: true)
@@ -68,8 +60,9 @@ public class FSTool {
         }
 
         let message = "你正在尝试创建文件 ${filePath}，内容为：\n${content}\n"
-        if (!confirm(message)) {
-            return "用户取消执行该操作"
+        let confirmation = ConfirmTool.confirm(message)
+        if (confirmation != "yes") {
+            return "用户取消执行该操作，用户意见反馈：${confirmation}"
         }
         
         try {
@@ -88,8 +81,9 @@ public class FSTool {
         }
 
         let message = "你正在尝试删除文件或目录 ${path}，请确认是否继续？\n"
-        if (!confirm(message)) {
-            return "用户取消执行该操作"
+        let confirmation = ConfirmTool.confirm(message)
+        if (confirmation != "yes") {
+            return "用户取消执行该操作，用户意见反馈：${confirmation}"
         }
 
         try {
@@ -154,8 +148,9 @@ public class FSTool {
         }
 
         let message = "你正在尝试写入文件 ${filePath}，内容为：\n${content}\n"
-        if (!confirm(message)) {
-            return "用户取消执行该操作"
+        let confirmation = ConfirmTool.confirm(message)
+        if (confirmation != "yes") {
+            return "用户取消执行该操作，用户意见反馈：${confirmation}"
         }
 
         try {
@@ -289,8 +284,9 @@ public class FSTool {
         }
 
         let message = "你正在尝试修改文件或目录 ${path} 的权限为：${permissions}\n"
-        if (!confirm(message)) {
-            return "用户取消执行该操作"
+        let confirmation = ConfirmTool.confirm(message)
+        if (confirmation != "yes") {
+            return "用户取消执行该操作，用户意见反馈：${confirmation}"
         }
 
         try {
@@ -329,17 +325,18 @@ public class FSTool {
         }
 
         let message = "你正在尝试修改文件 ${filePath} 的内容，将 '${oldContent}' 替换为 '${newContent}'\n"
-        if (!confirm(message)) {
-            return "用户取消执行该操作"
+        let confirmation = ConfirmTool.confirm(message)
+        if (confirmation != "yes") {
+            return "用户取消执行该操作，用户意见反馈：${confirmation}"
         }
 
         try {
-            let file = File(filePath, ReadWrite)
             let content = String.fromUtf8(File.readFrom(filePath))
             if (!content.contains(oldContent)) {
                 return "文件 ${filePath} 中不包含指定的内容 '${oldContent}'，无法进行修改"
             }
             let updatedContent = content.replace(oldContent, newContent)
+            let file = File(filePath, Write)
             file.write(updatedContent.toArray())
             file.close()
             return "文件 ${filePath} 内容已成功修改"

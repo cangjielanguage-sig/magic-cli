@@ -10,7 +10,7 @@ import cli.core.*
 import cli.core.utils.*
 
 main(): Int64 {
-    Config.env["ARK_API_KEY"] = "c41e4017-e9fe-47e0-9b35-eca879eb4a13"
+    Config.env["ARK_API_KEY"] = "f3c853c7-2505-4219-b9d5-73f4a945707a"
     Config.logFile = "./cli-agent.log"
     Config.logLevel = "DEBUG"
 

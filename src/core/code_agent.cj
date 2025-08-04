@@ -78,6 +78,7 @@ d. 继续循环: 返回步骤 a，开始下一个任务。
     - 导入: import std.io.* 或 import my.module.Component
 - 项目管理:
     - 初始化项目: cjpmInitModule --path "/path/to/project"
+    - 编写项目：在项目目录下的src目录中编写仓颉代码。
     - 编译项目: cjpmBuildModule --path "/path/to/project"
 # 交互风格
 - 专业简洁: 沟通直接、精炼，符合命令行交互习惯。
@@ -157,29 +158,29 @@ d. 继续循环: 返回步骤 a，开始下一个任务。
         return FSTool.glob(path, extension)
     }
 
-    @tool[
-        description: "查询文件或目录的权限，返回权限信息",
-        parameters: { path: "文件或目录路径，必须是绝对路径" }
-    ]
-    public func getPermissions(path: String): String {
-        return FSTool.getPermissions(path)
-    }
-
-    @tool[
-        description: "修改文件或目录的权限，返回修改结果",
-        parameters: { path: "文件或目录路径，必须是绝对路径", permissions: "设置当前用户的权限，形如：rwx, rw-, --x" }
-    ]
-    public func setPermissions(path: String, permissions: String): String {
-        return FSTool.setPermissions(path, permissions)
-    }
+    // @tool[
+    //     description: "查询文件或目录的权限，返回权限信息",
+    //     parameters: { path: "文件或目录路径，必须是绝对路径" }
+    // ]
+    // public func getPermissions(path: String): String {
+    //     return FSTool.getPermissions(path)
+    // }
 
     // @tool[
-    //     description: "修改文件内容，返回修改结果",
-    //     parameters: { filePath: "文件路径，必须是绝对路径", oldContent: "原本文件的内容，必须是文件里出现的部分", newContent: "即将覆盖的内容" }
+    //     description: "修改文件或目录的权限，返回修改结果",
+    //     parameters: { path: "文件或目录路径，必须是绝对路径", permissions: "设置当前用户的权限，形如：rwx, rw-, --x" }
     // ]
-    // public func editFileContent(filePath: String, oldContent: String, newContent: String): String {
-    //     return FSTool.editFileContent(filePath, oldContent, newContent)
+    // public func setPermissions(path: String, permissions: String): String {
+    //     return FSTool.setPermissions(path, permissions)
     // }
+
+    @tool[
+        description: "修改文件内容，必须一次至少修改一个函数的内容，返回修改结果",
+        parameters: { filePath: "文件路径，必须是绝对路径", oldContent: "原本文件的内容，必须是文件里出现的部分，必须至少包含原文件中的一个函数", newContent: "即将覆盖的内容" }
+    ]
+    public func editFileContent(filePath: String, oldContent: String, newContent: String): String {
+        return FSTool.editFileContent(filePath, oldContent, newContent)
+    }
 
     @tool[
         description: "在指定目录下执行Shell命令，返回运行结果",
@@ -252,8 +253,9 @@ d. 继续循环: 返回步骤 a，开始下一个任务。
     public func createOrUpdatePlan(tasks: Array<String>): String {
         this.planMarkdown = PlanTool.createPlan(tasks)
         let message = "当前计划:\n" + this.planMarkdown + "\n计划已创建，请确认是否需要修改计划，确认执行则保存该计划，并开始执行。"
-        if (!FSTool.confirm(message)) {
-            return "用户需要修改当前计划"
+        let confirmation = ConfirmTool.confirm(message)
+        if (confirmation != "yes") {
+            return "用户取消执行该计划，用户意见反馈：${confirmation}"
         }
         PlanTool.save(this.planMarkdown, this.planFilePath)
         return "目前的计划:\n" + this.planMarkdown + "\n计划已获得用户批准，准备开始执行。"
