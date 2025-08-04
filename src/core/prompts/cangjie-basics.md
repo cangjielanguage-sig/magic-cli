@@ -1,5 +1,5 @@
 
-# Cangjie 语言基础发育
+# Cangjie 语言基础语法
 
 ## 1. cangjie语言在定义function时，前缀为func，不要定义为fn或者function
 
