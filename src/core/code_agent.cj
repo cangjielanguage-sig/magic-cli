@@ -174,7 +174,7 @@ public class CodeAgent {
     }
 
     @tool[
-        description: "在指定目录下编译单个Cangjie文件",
+        description: "在指定目录下编译单个Cangjie文件，生成可执行文件main",
         parameters: { path: "Cangjie文件对应目录路径，必须是绝对路径", name: "要编译的Cangjie文件名，例如test.cj" }
     ]
     public func cjCompiler(path: String, name: String): String {
