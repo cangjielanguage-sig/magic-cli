@@ -1,9 +1,13 @@
 package cli.core.utils
 
-import std.console.*
+import std.env.*
 
 struct AnsiColor {
-    public AnsiColor(let code: String) {}
+    public let code: String
+    
+    public AnsiColor(code: String) {
+        this.code = code
+    }
 
     public static func rgb(r: Int64, g: Int64, b: Int64): AnsiColor {
         return AnsiColor("\u{1b}[38;2;${r};${g};${b}m")
@@ -18,123 +22,37 @@ struct AnsiColor {
 
 public class Banner {
     public func printBanner() {
-        let c = [
-            "  █████▒  ",
-            " ██▒▒▒██  ",
-            " █▒▒      ",
-            " █▒▒      ",
-            " █▒▒      ",
-            " ██▒▒▒██  ",
-            "  █████▒  "
-        ]
+        let c1 = AnsiColor.rgb(110, 80, 200).code
+        let c2 = AnsiColor.rgb(145, 82, 185).code
+        let c3 = AnsiColor.rgb(180, 85, 165).code
+        let c4 = AnsiColor.rgb(215, 90, 140).code
+        let c5 = AnsiColor.rgb(255, 110, 110).code
+        let c6 = AnsiColor.rgb(100, 100, 100).code // Separator color
+        let c7 = AnsiColor.rgb(255, 150, 80).code
+        let c8 = AnsiColor.rgb(255, 170, 80).code
+        let c9 = AnsiColor.rgb(255, 190, 80).code
+        let reset = AnsiColor.reset
+
+        println("${c1}████▒▒████  ${c2}  ██████    ${c3}  ██████    ${c4}▒████████▒  ${c5}  ██████    ${c6}  ${c7}  ██████    ${c8}██▒▒        ${c9}▒████████▒  ${reset}")
+        println("${c1}████▒▒████  ${c2} ██▒▒▒▒██   ${c3} ██▒▒▒▒██   ${c4}▒▒▒▒██▒▒▒▒  ${c5} ██▒▒▒▒██   ${c6}  ${c7} ██▒▒▒▒██   ${c8}██▒▒        ${c9}▒▒▒▒██▒▒▒▒  ${reset}")
+        println("${c1}██▒████▒██  ${c2}██▒▒▒▒▒▒██  ${c3}██▒▒        ${c4}▒▒▒▒██▒▒▒▒  ${c5}██▒▒        ${c6}  ${c7}██▒▒        ${c8}██▒▒        ${c9}▒▒▒▒██▒▒▒▒  ${reset}")
+        println("${c1}██▒▒██▒▒██  ${c2}██████████  ${c3}██▒▒  ████  ${c4}▒▒▒▒██▒▒▒▒  ${c5}██▒▒        ${c6}  ${c7}██▒▒        ${c8}██▒▒        ${c9}▒▒▒▒██▒▒▒▒  ${reset}")
+        println("${c1}██▒▒▒▒▒▒██  ${c2}██▒▒▒▒▒▒██  ${c3}██▒▒   ███  ${c4}▒▒▒▒██▒▒▒▒  ${c5}██▒▒        ${c6}  ${c7}██▒▒        ${c8}██▒▒        ${c9}▒▒▒▒██▒▒▒▒  ${reset}")
+        println("${c1}██▒▒▒▒▒▒██  ${c2}██▒▒▒▒▒▒██  ${c3} ██▒▒▒▒██   ${c4}▒▒▒▒██▒▒▒▒  ${c5} ██▒▒▒▒██   ${c6}  ${c7} ██▒▒▒▒██   ${c8}██▒▒        ${c9}▒▒▒▒██▒▒▒▒  ${reset}")
+        println("${c1}██▒▒▒▒▒▒██  ${c2}██▒▒▒▒▒▒██  ${c3}  ██████    ${c4}▒████████▒  ${c5}  ██████    ${c6}  ${c7}  ██████    ${c8}██████████  ${c9}▒████████▒  ${reset}")
+
+        let taglineColor = AnsiColor.rgb(220, 180, 80)
+        let tagline = "Powered By CangjieMagic Framework"
+        let totalWidth = 100
+        let taglinePadding = (totalWidth - tagline.size) / 2
         
-        let a = [
-            "   ████   ",
-            "  ██▒▒██  ",
-            " ██▒▒▒▒██ ",
-            " ████████ ",
-            " ██▒▒▒▒██ ",
-            " ██▒▒▒▒██ ",
-            " ██▒▒▒▒██ "
-        ]
-
-        let n = [
-            " ██▒▒▒▒██ ",
-            " ███▒▒▒██ ",
-            " ██▒█▒▒██ ",
-            " ██▒▒█▒██ ",
-            " ██▒▒▒███ ",
-            " ██▒▒▒███ ",
-            " ██▒▒▒▒██ "
-        ]
-
-        let g = [
-            "  █████▒  ",
-            " ██▒▒▒██  ",
-            " █▒▒      ",
-            " █▒▒ ████ ",
-            " █▒▒ ▒▒██ ",
-            " ██▒▒▒██  ",
-            "  █████▒  "
-        ]
-
-        let j = [
-            "      ███ ",
-            "      ███ ",
-            "      ███ ",
-            "      ███ ",
-            "      ███ ",
-            " ██▒▒ ███ ",
-            "  █████▒  "
-        ]
-        
-        let i = [
-            " ███████  ",
-            " ▒▒███▒▒  ",
-            " ▒▒███▒▒  ",
-            " ▒▒███▒▒  ",
-            " ▒▒███▒▒  ",
-            " ▒▒███▒▒  ",
-            " ███████  "
-        ]
-
-        let e = [
-            " ███████  ",
-            " ██▒▒▒▒▒  ",
-            " ██▒▒▒▒▒  ",
-            " ███████  ",
-            " ██▒▒▒▒▒  ",
-            " ██▒▒▒▒▒  ",
-            " ███████  "
-        ]
-
-        let l = [
-            " ██▒▒▒▒▒  ",
-            " ██▒▒▒▒▒  ",
-            " ██▒▒▒▒▒  ",
-            " ██▒▒▒▒▒  ",
-            " ██▒▒▒▒▒  ",
-            " ██▒▒▒▒▒  ",
-            " ███████  "
-        ]
-
-        let separator = [
-            "    ",
-            "    ",
-            "    ",
-            "    ",
-            "    ",
-            "    ",
-            "    "
-        ]
-        
-        let cangjieCliArt = [c, a, n, g, j, i, e, separator, c, l, i]
-        
-        let colors = [
-            AnsiColor.rgb(110, 80, 200),
-            AnsiColor.rgb(135, 80, 190),
-            AnsiColor.rgb(160, 80, 175),
-            AnsiColor.rgb(190, 85, 150),
-            AnsiColor.rgb(220, 90, 130),
-            AnsiColor.rgb(240, 110, 110),
-            AnsiColor.rgb(255, 130, 90),
-            AnsiColor.rgb(200, 200, 200),
-            AnsiColor.rgb(255, 150, 80),
-            AnsiColor.rgb(255, 170, 80),
-            AnsiColor.rgb(255, 190, 80)
-        ]
-
-        let height = c.size
-        
-        for (lineIndex in 0..=height - 1) {
-            for (charIndex in 0..=cangjieCliArt.size - 1) {
-                let letterArt = cangjieCliArt[charIndex]
-                let color = colors[charIndex]
-                Console.stdOut.write("${color.code}${letterArt[lineIndex]}")
-            }
-            Console.stdOut.writeln(AnsiColor.reset)
+        var paddingString = ""
+        var paddingCounter: Int64 = 0
+        while (paddingCounter < taglinePadding) {
+            paddingString += " "
+            paddingCounter += 1
         }
         
-        Console.stdOut.flush()
+        println("\n${taglineColor.code}${paddingString}${tagline}${AnsiColor.reset}")
     }
 }
