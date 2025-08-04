@@ -66,7 +66,15 @@ public class CJTool{
         requestMap.add("query", JsonString(query))
         requestMap.add("response", JsonString("```cangjie\n ${code} \n```"))
         let request = JsonObject(requestMap)
-        let responseData = JsonValue.fromStr(extractLastSseData(ApiClient.post(url, request)))
+        let rawResponse = ApiClient.post(url, request)
+        if (rawResponse.isEmpty()) {
+            return "服务器返回为空，请稍后重试"
+        }
+        let extractedData = extractLastSseData(rawResponse)
+        if (extractedData.isEmpty()) {
+            return "待修复代码中没有检测到带有 `main` 函数的代码块，暂不支持修复代码片段"
+        }
+        let responseData = JsonValue.fromStr(extractedData)
         return responseData.toJsonString()
     }
 
