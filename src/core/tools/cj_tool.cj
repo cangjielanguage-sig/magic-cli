@@ -85,15 +85,9 @@ public class CJTool{
         requestMap.add("nums_docs_to_retrive",nums_docs_to_retrive.toJsonValue())
         let request = JsonObject(requestMap)
         let responseData = JsonValue.fromStr(ApiClient.post(url, request))
-        let resultJsonString = match (responseData) {
+        let resultJson = match (responseData) {
             case jsonObj: JsonObject =>
-                let filteredMap = HashMap<String, JsonValue>()
-                let docsOpt = jsonObj.get("docs")
-                if (let Some(docsValue) <- docsOpt) {
-                    filteredMap.add("docs", docsValue)
-                }
-                let filteredJson = JsonObject(filteredMap)
-                filteredJson.toJsonString()
+                filterChunks(jsonObj).toJsonString()
             case _ =>
                 responseData.toJsonString()
         }
@@ -103,11 +97,37 @@ public class CJTool{
             Original User Query: "${query}"
 
             --- Retrieved Documents ---
-            ${resultJsonString}
+            ${resultJson}
             --- End of Documents ---
         """
         let summary = docSummaryAssistant.chat(promptForSummarizer)
         return summary
+    }
+
+     private static func filterChunks(jsonObj: JsonObject): JsonObject {
+        let filteredChunks = ArrayList<JsonValue>()
+        
+        if (let Some(docsValue) <- jsonObj.get("docs")) {
+            let chunksArrays = docsValue as JsonArray
+            
+            if (let Some(chunksArray) <- chunksArrays) {
+                for (i in 0..chunksArray.size()) {
+                    let chunk = chunksArray[i]
+                    match (chunk) {
+                        case jsonStr: JsonString =>
+                            if (jsonStr.getValue().contains("```cangjie")) {
+                                filteredChunks.add(chunk)
+                            }
+                        case _ =>
+                            ()
+                    }
+                }
+            }
+        }
+        
+        let resultMap = HashMap<String, JsonValue>()
+        resultMap.add("docs", JsonArray(filteredChunks))
+        return JsonObject(resultMap)
     }
 
     public static func cjpm_init_module(path: String): String {
