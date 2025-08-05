@@ -58,9 +58,13 @@ public class DocSummaryAssistant {
     """)
 }
 
-
+@toolset[]
 public class CJTool{
-    public static func repair_code(query: String, code: String): String {
+    @tool[
+        description: "根据原始需求对已生成的仓颉代码进行修复或优化",
+        parameters: { query: "原始的代码生成需求", code: "需要修复或优化的代码" }
+    ]
+    public func repair_code(query: String, code: String): String {
         let url = "http://119.3.125.66:5384/code_repair"
         let requestMap = HashMap<String, JsonValue>()
         requestMap.add("query", JsonString(query))
@@ -78,7 +82,11 @@ public class CJTool{
         return responseData.toJsonString()
     }
 
-    public static func retrieve_documents(query: String, nums_docs_to_retrive: Int64): String {
+    @tool[
+        description: "获取仓颉（Cangjie）语言的开发文档",
+        parameters: { query: "需要查询的开发需求或文档内容", nums_docs_to_retrive: "期望返回的文档数量" }
+    ]
+    public func retrieve_documents(query: String, nums_docs_to_retrive: Int64): String {
         let url = "http://119.3.125.66:5384/retrieve"
         let requestMap = HashMap<String, JsonValue>()
         requestMap.add("query",JsonString(query))
@@ -104,7 +112,7 @@ public class CJTool{
         return summary
     }
 
-     private static func filterChunks(jsonObj: JsonObject): JsonObject {
+     private func filterChunks(jsonObj: JsonObject): JsonObject {
         let filteredChunks = ArrayList<JsonValue>()
         
         if (let Some(docsValue) <- jsonObj.get("docs")) {
@@ -130,7 +138,11 @@ public class CJTool{
         return JsonObject(resultMap)
     }
 
-    public static func cjpm_init_module(path: String): String {
+    @tool[
+        description: "在指定目录下初始化一个新的仓颉模块。",
+        parameters: { path: "仓颉模块的路径，必须是绝对路径" }
+    ]
+    public func cjpm_init_module(path: String): String {
         try {
             let cmd = "cjpm"
             let args: Array<String> = ["init"]
@@ -156,7 +168,11 @@ public class CJTool{
         }
     }
 
-    public static func cj_compiler(path: String, name: String): String {
+    @tool[
+        description: "在指定目录下编译单个Cangjie文件，生成可执行文件main",
+        parameters: { path: "Cangjie文件对应目录路径，必须是绝对路径", name: "要编译的Cangjie文件名，例如test.cj" }
+    ]
+    public func cj_compiler(path: String, name: String): String {
         try {
             let cmd = "cjc"
             var args: Array<String> = [name]
@@ -182,7 +198,11 @@ public class CJTool{
         }
     }
 
-    public static func cjpm_build_module(incremental: Bool, path: String): String {
+    @tool[
+        description: "编译指定路径的Cangjie模块。可选择是否进行增量编译以加快速度。",
+        parameters: { incremental: "如果为 true，则进行增量编译，否则进行常规全量编译。", path: "仓颉模块的路径，必须是绝对路径" }
+    ]
+    public func cjpm_build_module(incremental: Bool, path: String): String {
         try {
             let cmd = "cjpm"
             var args: Array<String> = ["build"]
@@ -211,7 +231,11 @@ public class CJTool{
         }
     }
 
-    public static func cjpm_run(name: String, path: String): String {
+    @tool[
+        description: "编译并运行一个指定名称的可执行产物。",
+        parameters: { name: "要运行的可执行产物的名称。", path: "仓颉模块的路径，必须是绝对路径" }
+    ]
+    public func cjpm_run(name: String, path: String): String {
         try {
             let cmd = "cjpm"
             let args: Array<String> = ["run", "--name", name]
@@ -237,7 +261,11 @@ public class CJTool{
         }
     }
 
-    public static func cjpm_clean_target(path: String): String {
+    @tool[
+        description: "清理目标目录，删除所有之前构建生成的产物。",
+        parameters: {  path: "仓颉模块的路径，必须是绝对路径" }
+    ]
+    public func cjpm_clean_target(path: String): String {
         try {
             let cmd = "cjpm"
             let args: Array<String> = ["clean"]
