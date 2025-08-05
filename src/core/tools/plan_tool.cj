@@ -9,7 +9,7 @@ import magic.prelude.*
 @toolset[]
 public class PlanTool {
     let planFilePath = FSTool.getWorkingDirectory() + "/todo.md"
-    var planMarkdown = load(planFilePath)
+    var planMarkdown = FSTool.load(planFilePath)
 
     @tool[
         description: "创建一个新的任务计划，或用新计划覆盖现有计划。这是开始复杂任务的第一步。",
@@ -98,19 +98,6 @@ public class PlanTool {
             println("todo.md保存成功！")
         } catch(e: Exception) {
             println("错误：无法保存计划文件到 ${filePath}。 详情: ${e}")
-        }
-    }
-
-    public static func load(filePath: String): String {
-        try {
-            let fileContent = File.readFrom(filePath)
-            return "文件内容:\n${String.fromUtf8(fileContent)}"
-        } catch (e: FSException) {
-            return "文件路径为空、文件不可读或文件读取失败"
-        } catch (e: IllegalArgumentException) {
-            return "文件路径包含空字符"
-        } catch (e: Exception) {
-            return "读取文件失败：${e}"
         }
     }
 }

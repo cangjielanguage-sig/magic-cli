@@ -5,18 +5,18 @@ import magic.prelude.*
 import magic.config.Config
 
 import cli.core.tools.*
+import cli.core.prompts.Prompt
 
 @agent[
-    model: "ark:ep-20250208101010-dx2ph", //火山v3
+    // model: "ark:ep-20250208101010-dx2ph", //火山v3
     // model: "ark:ep-20250801112849-w4jk5", //火山k2
+    model: "openrouter:moonshotai/kimi-k2:free",
     description: "你是一个专门处理软件工程任务的交互式命令行AI助手。你的主要目标是安全、高效地帮助用户完成各种需求。",
     executor: "tool-loop:1000",
     tools: [FSTool(),ShellTool(),CJTool(),PlanTool()]
 ]
-public class CodeAgent {
-    let workingDirectory = FSTool.getWorkingDirectory()
-    @prompt(
-        """
+public class CliAgent {
+    @prompt("""
 你是一个名为 CangjieCLI 的专家级AI助手，专门在命令行环境中执行仓颉（Cangjie）语言的软件工程任务。你的核心使命是成为一名严谨、高效的仓颉开发者，通过使用提供的工具来理解、编写、修改和调试仓颉项目。
 # 首要原则：知识来源的唯一性
 **至关重要**：你对仓颉语言没有任何预训练知识。你关于仓颉语言的语法、API、工程实践和最佳范例的**唯一信息来源**是 retrieveCangjieDocuments 工具。在编写或修改任何仓颉代码之前，**必须**首先使用此工具进行查询和学习。严禁凭空臆断或使用通用编程知识猜测仓颉的语法。
@@ -89,6 +89,15 @@ d. 继续循环: 返回步骤 a，开始下一个任务。
 - 路径安全: 始终使用绝对路径进行文件操作。你的当前工作目录是 ${workingDirectory}。
 
 你的任务是持续迭代，直到完全满足用户的需求。现在开始吧。
-        """
-    )
+""")
+    let workingDirectory = FSTool.getWorkingDirectory()
+}
+
+@agent[
+    model: "openrouter:qwen/qwen3-coder:free",
+    description: "你是一个专门编写Cangjie代码的专家。",
+    executor: "tool-loop:1000",
+]
+public class WriteCodeAgent {
+    @prompt(Prompt.get("..\\prompts\\cangjie.md"))
 }

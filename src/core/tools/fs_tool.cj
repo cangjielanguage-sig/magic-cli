@@ -150,20 +150,7 @@ public class FSTool {
         parameters: { filePath: "文件路径，必须是绝对路径" }
     ]
     public func readFile(filePath: String): String {
-        if (!Path(filePath).isAbsolute()) {
-            return "文件路径必须是绝对路径"
-        }
-
-        try {
-            let fileContent = File.readFrom(filePath)
-            return "文件内容:\n${String.fromUtf8(fileContent)}"
-        } catch (e: FSException) {
-            return "文件路径为空、文件不可读或文件读取失败"
-        } catch (e: IllegalArgumentException) {
-            return "文件路径包含空字符"
-        } catch (e: Exception) {
-            return "读取文件失败：${e}"
-        }
+        return load(filePath)
     }
     
     @tool[
@@ -394,6 +381,23 @@ public class FSTool {
             return "文件路径为空或包含非法字符"
         } catch (e: Exception) {
             return "修改文件内容失败：${e}"
+        }
+    }
+
+    public static func load(filePath: String): String {
+        if (!Path(filePath).isAbsolute()) {
+            return "文件路径必须是绝对路径"
+        }
+
+        try {
+            let fileContent = File.readFrom(filePath)
+            return "文件内容:\n${String.fromUtf8(fileContent)}"
+        } catch (e: FSException) {
+            return "文件路径为空、文件不可读或文件读取失败"
+        } catch (e: IllegalArgumentException) {
+            return "文件路径包含空字符"
+        } catch (e: Exception) {
+            return "读取文件失败：${e}"
         }
     }
 }
