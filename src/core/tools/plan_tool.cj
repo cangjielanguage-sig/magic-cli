@@ -3,16 +3,55 @@ package cli.core.tools
 import std.collection.*
 import std.fs.*
 
+import magic.dsl.*
+import magic.prelude.*
+
+@toolset[]
 public class PlanTool {
-    public static func createPlan(tasks: Array<String>): String {
+    let planFilePath = FSTool.getWorkingDirectory() + "/todo.md"
+    var planMarkdown = load(planFilePath)
+
+    @tool[
+        description: "创建一个新的任务计划，或用新计划覆盖现有计划。这是开始复杂任务的第一步。",
+        parameters: { tasks: "一个字符串数组，每项都是一个清晰的子任务描述" }
+    ]
+    public func createOrUpdatePlan(tasks: Array<String>): String {
         var content = ""
         for (task in tasks) {
             content += "- [ ] ${task}\n"
         }
-        return content
+        this.planMarkdown = content
+        let message = "当前计划:\n" + this.planMarkdown + "\n计划已创建，请确认是否需要修改计划，确认执行则保存该计划，并开始执行。"
+        let confirmation = ConfirmTool.confirm(message)
+        if (confirmation != "yes") {
+            return "用户取消执行该计划，用户意见反馈：${confirmation}"
+        }
+        save(this.planMarkdown, this.planFilePath)
+        return "目前的计划:\n" + this.planMarkdown + "\n计划已获得用户批准，准备开始执行。"
     }
 
-    public static func completeTask(content: String, task_index: Int64): (String, String) {
+    @tool[
+        description: "查看当前的计划和每个任务的完成状态 (TODO/DONE)。"
+    ]
+    public func viewPlan(): String {
+        if (this.planMarkdown.trimAscii().isEmpty()) {
+            return "当前没有计划。"
+        }
+        return "当前计划:\n${this.planMarkdown}"
+    }
+
+    @tool[
+        description: "将指定索引的任务标记为已完成 (DONE)。",
+        parameters: { task_index: "要标记为完成的任务的索引 (从1开始)" }
+    ]
+    public func markTaskAsComplete(task_index: Int64): String {
+        let (updatedMarkdown, message) = completeTask(this.planMarkdown, task_index)
+        this.planMarkdown = updatedMarkdown
+        save(this.planMarkdown, this.planFilePath)
+        return message
+    }
+
+    public func completeTask(content: String, task_index: Int64): (String, String) {
         let lines = content.split("\n")
         let updatedLines = ArrayList<String>()
         var taskFound = false
@@ -59,6 +98,19 @@ public class PlanTool {
             println("todo.md保存成功！")
         } catch(e: Exception) {
             println("错误：无法保存计划文件到 ${filePath}。 详情: ${e}")
+        }
+    }
+
+    public static func load(filePath: String): String {
+        try {
+            let fileContent = File.readFrom(filePath)
+            return "文件内容:\n${String.fromUtf8(fileContent)}"
+        } catch (e: FSException) {
+            return "文件路径为空、文件不可读或文件读取失败"
+        } catch (e: IllegalArgumentException) {
+            return "文件路径包含空字符"
+        } catch (e: Exception) {
+            return "读取文件失败：${e}"
         }
     }
 }

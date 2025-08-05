@@ -5,11 +5,16 @@ import std.process.*
 import std.io.*
 import std.env.*
 
-public class ShellTool {
-    // execute shell command
-    // need confirmation : true
+import magic.dsl.*
+import magic.prelude.*
 
-    public static func execute(path: String, command: String): String {
+@toolset[]
+public class ShellTool {
+    @tool[
+        description: "在指定目录下执行Shell命令，返回运行结果",
+        parameters: { path: "执行命令的目录路径，必须是绝对路径", command: "要执行的shell命令" }
+    ]
+    public func execute(path: String, command: String): String {
         let message = "即将执行以下命令：\n${command}\n"
         let confirmation = ConfirmTool.confirm(message)
         if (confirmation != "yes") {

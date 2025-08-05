@@ -7,6 +7,10 @@ import std.env.*
 import std.posix.*
 import std.collection.*
 
+import magic.dsl.*
+import magic.prelude.*
+
+@toolset[]
 public class FSTool {
     public static func getWorkingDirectory(): String {
         return canonicalize(".").toString()
@@ -31,7 +35,11 @@ public class FSTool {
         }
     }
 
-    public static func createDirectory(path: String): String {
+    @tool[
+        description: "创建目录，可递归创建，返回创建结果",
+        parameters: { path: "目录路径，必须是绝对路径" }
+    ]
+    public func createDirectory(path: String): String {
         if (!Path(path).isAbsolute()) {
             return "目录路径必须是绝对路径"
         }
@@ -54,7 +62,11 @@ public class FSTool {
         }
     }
 
-    public static func createFile(content: String, filePath: String): String {
+    @tool[
+        description: "创建文件并写入内容，返回创建结果",
+        parameters: { content: "文件内容", filePath: "文件路径，必须是绝对路径" }
+    ]
+    public func createFile(content: String, filePath: String): String {
         if (!Path(filePath).isAbsolute()) {
             return "文件路径必须是绝对路径"
         }
@@ -75,7 +87,11 @@ public class FSTool {
         }
     }
 
-    public static func deleteFileOrDirectory(path: String): String {
+    @tool[
+        description: "删除文件或目录，删除目录为递归删除，返回删除结果",
+        parameters: { path: "文件或目录路径，必须是绝对路径" }
+    ]
+    public func deleteFileOrDirectory(path: String): String {
         if (!Path(path).isAbsolute()) {
             return "文件或目录路径必须是绝对路径"
         }
@@ -98,7 +114,11 @@ public class FSTool {
         }
     }
     
-    public static func listDirectory(path: String): String {
+    @tool[
+        description: "列出目录下的所有文件和子目录，返回列表",
+        parameters: { path: "目录路径，必须是绝对路径" }
+    ]
+    public func listDirectory(path: String): String {
         if (!Path(path).isAbsolute()) {
             return "目录路径必须是绝对路径"
         }
@@ -125,7 +145,11 @@ public class FSTool {
         }
     }
 
-    public static func readFile(filePath: String): String {
+    @tool[
+        description: "读取单个文件的内容，返回文件内容",
+        parameters: { filePath: "文件路径，必须是绝对路径" }
+    ]
+    public func readFile(filePath: String): String {
         if (!Path(filePath).isAbsolute()) {
             return "文件路径必须是绝对路径"
         }
@@ -141,8 +165,12 @@ public class FSTool {
             return "读取文件失败：${e}"
         }
     }
-
-    public static func writeFile(filePath: String, content: String): String {
+    
+    @tool[
+        description: "写入内容到单个文件，返回写入结果",
+        parameters: { filePath: "文件路径，必须是绝对路径", content: "要写入的内容" }
+    ]
+    public func writeFile(filePath: String, content: String): String {
         if (!Path(filePath).isAbsolute()) {
             return "文件路径必须是绝对路径"
         }
@@ -167,7 +195,11 @@ public class FSTool {
         }
     }
 
-    public static func grep(path: String, pattern: String, fileType: String): String {
+    @tool[
+        description: "在指定目录及子目录的特定种类文件中搜索特定内容，返回包含内容的所有文件",
+        parameters: { path: "目录路径，必须是绝对路径", pattern: "要搜索的内容", fileType: "文件类型，形如：*.cj, *.toml" }
+    ]
+    public func grep(path: String, pattern: String, fileType: String): String {
         try {
             let osName = getVariable("OS") ?? "Unknown"
             let isWindows = osName.toAsciiLower().contains("windows")
@@ -196,7 +228,11 @@ public class FSTool {
         }
     }
 
-    public static func glob(path: String, extension: String): String {
+    @tool[
+        description: "在指定目录下基于模式匹配查找特定后缀名的文件",
+        parameters: { path: "目录路径，必须是绝对路径", extension: "文件后缀名，形如：.cs, .txt" }
+    ]
+    public func glob(path: String, extension: String): String {
         if (!Path(path).isAbsolute()) {
             return "目录路径必须是绝对路径"
         }
@@ -244,7 +280,11 @@ public class FSTool {
         }
     }
 
-    public static func getPermissions(path: String): String {
+    // @tool[
+    //     description: "查询文件或目录的权限，返回权限信息",
+    //     parameters: { path: "文件或目录路径，必须是绝对路径" }
+    // ]
+    public func getPermissions(path: String): String {
         if (!Path(path).isAbsolute()) {
             return "文件或目录路径必须是绝对路径"
         }
@@ -278,7 +318,11 @@ public class FSTool {
         }
     }
 
-    public static func setPermissions(path: String, permissions: String): String {
+    // @tool[
+    //     description: "修改文件或目录的权限，返回修改结果",
+    //     parameters: { path: "文件或目录路径，必须是绝对路径", permissions: "设置当前用户的权限，形如：rwx, rw-, --x" }
+    // ]
+    public func setPermissions(path: String, permissions: String): String {
         if (!Path(path).isAbsolute()) {
             return "文件或目录路径必须是绝对路径"
         }
@@ -319,7 +363,11 @@ public class FSTool {
         }
     }
 
-    public static func editFileContent(filePath: String, oldContent: String, newContent: String): String {
+    @tool[
+        description: "修改文件内容，必须一次至少修改一个函数的内容，返回修改结果",
+        parameters: { filePath: "文件路径，必须是绝对路径", oldContent: "原本文件的内容，必须是文件里出现的部分，必须至少包含原文件中的一个函数", newContent: "即将覆盖的内容" }
+    ]
+    public func editFileContent(filePath: String, oldContent: String, newContent: String): String {
         if (!Path(filePath).isAbsolute()) {
             return "文件路径必须是绝对路径"
         }
