@@ -6,7 +6,7 @@ import std.fs.*
 import magic.dsl.*
 import magic.prelude.*
 
-@toolset[]
+@toolset
 public class PlanTool {
     let planFilePath = FSTool.getWorkingDirectory() + "/todo.md"
     var planMarkdown = FSTool.load(planFilePath)

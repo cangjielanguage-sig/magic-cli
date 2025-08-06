@@ -10,7 +10,7 @@ import std.collection.*
 import magic.dsl.*
 import magic.prelude.*
 
-@toolset[]
+@toolset
 public class FSTool {
     public static func getWorkingDirectory(): String {
         return canonicalize(".").toString()
