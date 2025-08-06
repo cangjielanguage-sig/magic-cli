@@ -8,7 +8,7 @@ import std.env.*
 import magic.dsl.*
 import magic.prelude.*
 
-@toolset[]
+@toolset
 public class ShellTool {
     @tool[
         description: "在指定目录下执行Shell命令，返回运行结果",
