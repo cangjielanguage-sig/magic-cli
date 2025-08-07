@@ -10,6 +10,8 @@ import std.collection.*
 import magic.dsl.*
 import magic.prelude.*
 
+import cli.cli.utils.*
+
 @toolset
 public class FSTool {
     public static func getWorkingDirectory(): String {
@@ -44,10 +46,10 @@ public class FSTool {
             return "目录路径必须是绝对路径"
         }
 
-        let message = "你正在尝试创建目录 ${path}，请确认是否继续？\n"
-        let confirmation = ConfirmTool.confirm(message)
-        if (confirmation != "yes") {
-            return "用户取消执行该操作，用户意见反馈：${confirmation}"
+        let message = path
+        let (confirmation, userInput) = ConfirmTool.confirm("Create Directory", message)
+        if (!confirmation) {
+            return "用户取消执行该操作，用户意见反馈：${userInput}"
         }
         
         try {
@@ -71,10 +73,10 @@ public class FSTool {
             return "文件路径必须是绝对路径"
         }
 
-        let message = "你正在尝试创建文件 ${filePath}，内容为：\n${content}\n"
-        let confirmation = ConfirmTool.confirm(message)
-        if (confirmation != "yes") {
-            return "用户取消执行该操作，用户意见反馈：${confirmation}"
+        let message = filePath + "\n" + content
+        let (confirmation, userInput) = ConfirmTool.confirm("Create File", message)
+        if (!confirmation) {
+            return "用户取消执行该操作，用户意见反馈：${userInput}"
         }
         
         try {
@@ -96,10 +98,10 @@ public class FSTool {
             return "文件或目录路径必须是绝对路径"
         }
 
-        let message = "你正在尝试删除文件或目录 ${path}，请确认是否继续？\n"
-        let confirmation = ConfirmTool.confirm(message)
-        if (confirmation != "yes") {
-            return "用户取消执行该操作，用户意见反馈：${confirmation}"
+        let message = path
+        let (confirmation, userInput) = ConfirmTool.confirm("Delete File or Directory", message)
+        if (!confirmation) {
+            return "用户取消执行该操作，用户意见反馈：${userInput}"
         }
 
         try {
@@ -122,6 +124,9 @@ public class FSTool {
         if (!Path(path).isAbsolute()) {
             return "目录路径必须是绝对路径"
         }
+
+        let message = path
+        printTool("List Directory", message)
 
         try {
             let osName = getVariable("OS") ?? "Unknown"
@@ -150,6 +155,9 @@ public class FSTool {
         parameters: { filePath: "文件路径，必须是绝对路径" }
     ]
     public func readFile(filePath: String): String {
+        let message = filePath
+        printTool("Read File", message)
+
         return load(filePath)
     }
     
@@ -162,10 +170,10 @@ public class FSTool {
             return "文件路径必须是绝对路径"
         }
 
-        let message = "你正在尝试写入文件 ${filePath}，内容为：\n${content}\n"
-        let confirmation = ConfirmTool.confirm(message)
-        if (confirmation != "yes") {
-            return "用户取消执行该操作，用户意见反馈：${confirmation}"
+        let message = filePath + "\n" + content
+        let (confirmation, userInput) = ConfirmTool.confirm("Write File", message)
+        if (!confirmation) {
+            return "用户取消执行该操作，用户意见反馈：${userInput}"
         }
 
         try {
@@ -187,6 +195,9 @@ public class FSTool {
         parameters: { path: "目录路径，必须是绝对路径", pattern: "要搜索的内容", fileType: "文件类型，形如：*.cj, *.toml" }
     ]
     public func grep(path: String, pattern: String, fileType: String): String {
+        let message = path + ", pattern: " + pattern + ", fileType: " + fileType
+        printTool("Grep", message)
+
         try {
             let osName = getVariable("OS") ?? "Unknown"
             let isWindows = osName.toAsciiLower().contains("windows")
@@ -223,6 +234,9 @@ public class FSTool {
         if (!Path(path).isAbsolute()) {
             return "目录路径必须是绝对路径"
         }
+
+        let message = path + ", extension: " + extension
+        printTool("Glob", message)
 
         try {
             if (!exists(path)) {
@@ -314,10 +328,10 @@ public class FSTool {
             return "文件或目录路径必须是绝对路径"
         }
 
-        let message = "你正在尝试修改文件或目录 ${path} 的权限为：${permissions}\n"
-        let confirmation = ConfirmTool.confirm(message)
-        if (confirmation != "yes") {
-            return "用户取消执行该操作，用户意见反馈：${confirmation}"
+        let message = "${path}  ${permissions}\n"
+        let (confirmation, userInput) = ConfirmTool.confirm("Set Permissions", message)
+        if (!confirmation) {
+            return "用户取消执行该操作，用户意见反馈：${userInput}"
         }
 
         try {
@@ -359,10 +373,10 @@ public class FSTool {
             return "文件路径必须是绝对路径"
         }
 
-        let message = "你正在尝试修改文件 ${filePath} 的内容，将 '${oldContent}' 替换为 '${newContent}'\n"
-        let confirmation = ConfirmTool.confirm(message)
-        if (confirmation != "yes") {
-            return "用户取消执行该操作，用户意见反馈：${confirmation}"
+        let message = filePath + "\nold content:\n" + oldContent + "\nnew content:\n" + newContent
+        let (confirmation, userInput) = ConfirmTool.confirm("Edit File Content", message)
+        if (!confirmation) {
+            return "用户取消执行该操作，用户意见反馈：${userInput}"
         }
 
         try {

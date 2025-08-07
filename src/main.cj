@@ -8,6 +8,8 @@ import std.env.*
 
 import cli.core.*
 import cli.core.utils.*
+import cli.cli.*
+import cli.cli.utils.*
 
 main(): Int64 {
     Config.env["ARK_API_KEY"] = "f3c853c7-2505-4219-b9d5-73f4a945707a"
@@ -16,27 +18,26 @@ main(): Int64 {
     Config.logFile = "./cli-agent.log"
     Config.logLevel = "INFO"
 
-    let banner = Banner()
-    banner.printBanner()
+    initialShow()
+
     let agent = CliAgent()
     let conversation = Conversation()
-    println("欢迎使用Cangjie CLI助手！")
-    println("输入 'exit' 退出程序")
 
     while (true) {
-        print("用户: ")
-        let input = readln()
+        let input = getUserInput()
 
-        if (input.contains("exit")) {
-            println("退出程序")
+        if (input == "exit") {
             break
         }
 
-        let asyncResp = agent.asyncChat(
-            AgentRequest(input, verbose: true, conversation: conversation)
+        let response = agent.chat(
+            AgentRequest(input, conversation: conversation)
         )
-        ConsolePrinter.print(asyncResp, verbose: true)
-        conversation.addChatRound(asyncResp.execution.chatRound)
+
+        printPrompt("Agent")
+        println(response.content)
+
+        conversation.addChatRound(response.execution.chatRound)
     }
 
     return 0    

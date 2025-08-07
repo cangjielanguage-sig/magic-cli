@@ -28,6 +28,7 @@ Thumbs.db
 # Temporary files
 *.tmp
 *.temp
+todo.md
 
 # Test files
 test/

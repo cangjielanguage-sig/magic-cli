@@ -19,6 +19,8 @@ import magic.config.Config
 import magic.jsonable.*
 import magic.log.LogUtils
 
+import cli.cli.utils.*
+
 class ApiClient {
     static public func post(url: String,
                                header: HashMap<String, String>,
@@ -161,6 +163,9 @@ public class CJTool{
         parameters: { query: "原始的代码生成需求", code: "需要修复或优化的代码" }
     ]
     public func repairCangjieCode(query: String, code: String): String {
+        let message = query
+        printTool("Repair Cangjie Code", message)
+
         let url = "http://119.3.125.66:5384/code_repair"
         let header = HashMap<String, String>([
             ("Content-Type", "application/json")
@@ -197,6 +202,9 @@ public class CJTool{
         parameters: { query: "需要查询的开发需求或文档内容", nums_docs_to_retrive: "期望返回的文档数量" }
     ]
     public static func retrieveCangjieDocuments(query: String, nums_docs_to_retrive: Int64): String {
+        let message = query
+        printTool("Retrieve Cangjie Documents", message)
+
         let url = "http://119.3.125.66:5384/retrieve"
         let header = HashMap<String, String>([
             ("Content-Type", "application/json")
@@ -265,6 +273,8 @@ public class CJTool{
         parameters: { path: "仓颉模块的路径，必须是绝对路径" }
     ]
     public func cjpmInitModule(path: String): String {
+        printTool("CJPM Init Module", path)
+
         try {
             let cmd = "cjpm"
             let args: Array<String> = ["init"]
@@ -295,6 +305,8 @@ public class CJTool{
         parameters: { path: "Cangjie文件对应目录路径，必须是绝对路径", name: "要编译的Cangjie文件名，例如test.cj" }
     ]
     public func cjCompiler(path: String, name: String): String {
+        printTool("CJ Compiler", path + "/" + name)
+
         try {
             let cmd = "cjc"
             var args: Array<String> = [name]
@@ -325,6 +337,8 @@ public class CJTool{
         parameters: { incremental: "如果为 true，则进行增量编译，否则进行常规全量编译。", path: "仓颉模块的路径，必须是绝对路径" }
     ]
     public func cjpmBuildModule(incremental: Bool, path: String): String {
+        printTool("CJPM Build Module", path)
+        
         try {
             let cmd = "cjpm"
             var args: Array<String> = ["build"]
@@ -358,6 +372,8 @@ public class CJTool{
         parameters: { name: "要运行的可执行产物的名称。", path: "仓颉模块的路径，必须是绝对路径" }
     ]
     public func cjpmRun(name: String, path: String): String {
+        printTool("CJPM Run", path + "  --name " + name)
+
         try {
             let cmd = "cjpm"
             let args: Array<String> = ["run", "--name", name]
@@ -388,6 +404,8 @@ public class CJTool{
         parameters: {  path: "仓颉模块的路径，必须是绝对路径" }
     ]
     public func cjpmCleanTarget(path: String): String {
+        printTool("CJPM Clean Target", path)
+
         try {
             let cmd = "cjpm"
             let args: Array<String> = ["clean"]

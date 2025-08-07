@@ -15,10 +15,10 @@ public class ShellTool {
         parameters: { path: "执行命令的目录路径，必须是绝对路径", command: "要执行的shell命令" }
     ]
     public func execute(path: String, command: String): String {
-        let message = "即将执行以下命令：\n${command}\n"
-        let confirmation = ConfirmTool.confirm(message)
-        if (confirmation != "yes") {
-            return "用户取消执行该操作，用户意见反馈：${confirmation}"
+        let message = command
+        let (confirmation, userInput) = ConfirmTool.confirm("Execute Shell Command", message)
+        if (!confirmation) {
+            return "用户取消执行该操作，用户意见反馈：${userInput}"
         }
 
         try {

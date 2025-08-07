@@ -21,10 +21,10 @@ public class PlanTool {
             content += "- [ ] ${task}\n"
         }
         this.planMarkdown = content
-        let message = "当前计划:\n" + this.planMarkdown + "\n计划已创建，请确认是否需要修改计划，确认执行则保存该计划，并开始执行。"
-        let confirmation = ConfirmTool.confirm(message)
-        if (confirmation != "yes") {
-            return "用户取消执行该计划，用户意见反馈：${confirmation}"
+        let message = "\n" + this.planMarkdown + "\n计划已创建，请确认是否需要修改计划，确认执行则保存该计划，并开始执行。"
+        let (confirmation, userInput) = ConfirmTool.confirm("Plan", message)
+        if (!confirmation) {
+            return "用户取消执行该操作，用户意见反馈：${userInput}"
         }
         save(this.planMarkdown, this.planFilePath)
         return "目前的计划:\n" + this.planMarkdown + "\n计划已获得用户批准，准备开始执行。"
