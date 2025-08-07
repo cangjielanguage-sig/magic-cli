@@ -9,8 +9,8 @@ struct AnsiColor {
         this.code = code
     }
 
-    public static func rgb(r: Int64, g: Int64, b: Int64): AnsiColor {
-        return AnsiColor("\u{1b}[38;2;${r};${g};${b}m")
+    public static func color256(index: Int64): AnsiColor {
+        return AnsiColor("\u{1b}[38;5;${index}m")
     }
 
     public static prop reset: String {
@@ -22,15 +22,15 @@ struct AnsiColor {
 
 public class Banner {
     public func printBanner() {
-        let c1 = AnsiColor.rgb(110, 80, 200).code
-        let c2 = AnsiColor.rgb(145, 82, 185).code
-        let c3 = AnsiColor.rgb(180, 85, 165).code
-        let c4 = AnsiColor.rgb(215, 90, 140).code
-        let c5 = AnsiColor.rgb(255, 110, 110).code
-        let c6 = AnsiColor.rgb(100, 100, 100).code // Separator color
-        let c7 = AnsiColor.rgb(255, 150, 80).code
-        let c8 = AnsiColor.rgb(255, 170, 80).code
-        let c9 = AnsiColor.rgb(255, 190, 80).code
+        let c1 = AnsiColor.color256(98).code
+        let c2 = AnsiColor.color256(133).code
+        let c3 = AnsiColor.color256(168).code
+        let c4 = AnsiColor.color256(169).code
+        let c5 = AnsiColor.color256(203).code
+        let c6 = AnsiColor.color256(241).code   // separator color
+        let c7 = AnsiColor.color256(215).code
+        let c8 = AnsiColor.color256(216).code
+        let c9 = AnsiColor.color256(222).code
         let reset = AnsiColor.reset
 
         println("${c1}████▒▒████  ${c2}  ██████    ${c3}  ██████    ${c4}▒████████▒  ${c5}  ██████    ${c6}  ${c7}  ██████    ${c8}██▒▒        ${c9}▒████████▒  ${reset}")
@@ -41,7 +41,7 @@ public class Banner {
         println("${c1}██▒▒▒▒▒▒██  ${c2}██▒▒▒▒▒▒██  ${c3} ██▒▒▒▒██   ${c4}▒▒▒▒██▒▒▒▒  ${c5} ██▒▒▒▒██   ${c6}  ${c7} ██▒▒▒▒██   ${c8}██▒▒        ${c9}▒▒▒▒██▒▒▒▒  ${reset}")
         println("${c1}██▒▒▒▒▒▒██  ${c2}██▒▒▒▒▒▒██  ${c3}  ██████    ${c4}▒████████▒  ${c5}  ██████    ${c6}  ${c7}  ██████    ${c8}██████████  ${c9}▒████████▒  ${reset}")
 
-        let taglineColor = AnsiColor.rgb(220, 180, 80)
+        let taglineColor = AnsiColor.color256(179)
         let tagline = "Powered By CangjieMagic Framework"
         let totalWidth = 100
         let taglinePadding = (totalWidth - tagline.size) / 2
