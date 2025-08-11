@@ -47,3 +47,13 @@ const THEME_ERROR = BRIGHT_RED
 const THEME_INFO = BRIGHT_WHITE
 const THEME_MUTED = BRIGHT_BLACK
 const THEME_YELLOW = BRIGHT_YELLOW
+
+protected interface WithColor {
+    func withColor(color: String): String
+}
+
+extend String <: WithColor {
+    public func withColor(color: String): String {
+        return "${color}${this}${RESET}"
+    }
+}

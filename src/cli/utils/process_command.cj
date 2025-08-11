@@ -6,13 +6,16 @@ public func processCommand(command: String): Bool { // 返回值表示是否返�
         println(message)
         return true
     } else if (command == "help") {
-        let helpMessage = THEME_MUTED + "╔══════════════════════════════════════════════════╗\n"
-            + "║               " + THEME_PRIMARY + "Available Commands" + THEME_MUTED + "                 ║\n"
-            + "╠══════════════════════════════════════════════════╣\n"
-            + "║  " + THEME_YELLOW + "help              " + THEME_INFO + "- Show this help message" + THEME_MUTED + "      ║\n"
-            + "║  " + THEME_YELLOW + "clear             " + THEME_INFO + "- Clear the screen" + THEME_MUTED + "            ║\n"
-            + "║  " + THEME_YELLOW + "exit              " + THEME_INFO + "- Exit the CLI" + THEME_MUTED + "                ║\n"
-            + "╚══════════════════════════════════════════════════╝\n" + RESET
+        let helpMessage = wrapBox(
+            "Available Commands".withColor(THEME_PRIMARY),
+            lines: [
+                "${' help'.padEnd(10).withColor(THEME_YELLOW)}${' ║ - Show this help message'.withColor(THEME_MUTED)}",
+                "${' clear'.padEnd(10).withColor(THEME_YELLOW)}${' ║ - Clear the screen'.withColor(THEME_MUTED)}",
+                "${' exit'.padEnd(10).withColor(THEME_YELLOW)}${' ║ - Exit the CLI'.withColor(THEME_MUTED)}"
+            ],
+            width: 60,
+            centerTitle: true
+        )
         println(helpMessage)
         return false
     } else if (command == "clear") {

@@ -46,22 +46,20 @@ public func printConfirm(name: String, message: String): Bool {
 
 @When[os != "Windows"]
 public func printConfirm(name: String, message: String): Bool {
-    let confirmMessage = THEME_MUTED + "╔════════════════════════════════════════════════════════════════════════════════════════════════════════════════════╗\n"
-        + THEME_WARNING + "   ?  " + THEME_PRIMARY + name + "\n" + THEME_INFO + message + "\n"
-        + THEME_MUTED + "╚════════════════════════════════════════════════════════════════════════════════════════════════════════════════════╝\n" + RESET
+    let confirmMessage = wrapBox(
+        "   ?  ".withColor(THEME_WARNING) + name.withColor(THEME_PRIMARY),
+        content: message
+    )
     println(confirmMessage)
 
-    let promptMessage = THEME_PRIMARY + "(enter to confirm, any other key to cancel): " + RESET
-    print(promptMessage)
-
+    print("(enter to confirm, any other key to cancel): ".withColor(THEME_PRIMARY))
     let c = readln()
 
     if (c.isEmpty()) {
         printTool(name, message)
         return true
     } else {
-        let cancelMessage = THEME_SECONDARY + "Operation cancelled.\n" + RESET
-        print(cancelMessage)
+        print("Operation cancelled.\n".withColor(THEME_SECONDARY))
         printPrompt("User Opinion")
         return false
     }

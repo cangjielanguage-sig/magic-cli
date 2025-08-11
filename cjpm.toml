@@ -12,7 +12,10 @@
   package-configuration = {}
 
 [dependencies]
-  magic = { path = "./CangjieMagic" }
+  magic = { path = "${MAGIC_PATH}" }
 
 [target.x86_64-w64-mingw32.bin-dependencies]
-  path-option = ["./CangjieMagic/libs/cangjie-stdx-windows-x64-1.0.0.1/windows_x86_64_llvm/dynamic/stdx"]
+  path-option = ["${MAGIC_PATH}/libs/cangjie-stdx-windows-x64-1.0.0.1/windows_x86_64_llvm/dynamic/stdx"]
+
+[target.aarch64-apple-darwin.bin-dependencies]
+  path-option = [ "${MAGIC_PATH}/libs/cangjie-stdx-mac-aarch64-1.0.0.1/darwin_aarch64_llvm/dynamic/stdx"]
