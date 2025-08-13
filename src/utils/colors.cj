@@ -1,4 +1,4 @@
-package cli.cli.utils
+package cli.utils
 
 // ANSI颜色代码定义
 const RESET = "\u{1B}[0m"

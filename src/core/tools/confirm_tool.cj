@@ -1,12 +1,12 @@
 package cli.core.tools
 
-import std.io.*
+import cli.utils.*
 
-import cli.cli.utils.*
+import std.io.*
 
 public class ConfirmTool {
     public static func confirm(name: String, message: String): (Bool, String) {
-        let confirmation = printConfirm(name, message)
+        let confirmation = InputUtils.confirm(name, message)
         if (!confirmation) {
             let input = readln()
             return (false, input)

@@ -3,13 +3,12 @@ package cli
 import magic.dsl.*
 import magic.prelude.*
 import magic.config.Config
+import magic.agent.ConversationAgent
 import magic.interaction.ConsolePrinter
 import std.env.*
 
 import cli.core.*
-import cli.core.utils.*
-import cli.cli.*
-import cli.cli.utils.*
+import cli.utils.*
 
 main(): Int64 {
     Config.env["ARK_API_KEY"] = "f3c853c7-2505-4219-b9d5-73f4a945707a"
@@ -17,28 +16,29 @@ main(): Int64 {
     Config.env["ZHIPU_API_KEY"] = "19c5cf5bbdd04b819cd41338f3b31ecc.P2zmdLtoCnoR46UW"
     Config.logFile = "./cli-agent.log"
     Config.logLevel = "INFO"
+    Config.enableFunctionCall = true
 
-    initialShow()
+    PrintUtils.printWelcome()
 
-    let agent = CliAgent()
-    let conversation = Conversation()
+    let agent = ConversationAgent(CliAgent())
 
     while (true) {
-        let input = getUserInput()
-
-        if (input == "exit") {
-            break
+        let input = InputUtils.getUserInput()
+        match (input) {
+            case "exit" =>
+                PrintUtils.printExitMessage()
+                break
+            case "help" =>
+                PrintUtils.printHelpMessage()
+            case "clear" =>
+                PrintUtils.clearScreen()
+                PrintUtils.printLogo()
+            case _ =>
+                let response = agent.chat(AgentRequest(input))
+                println(
+                    wrapBox("${InputUtils.buildPrompt("🔮 Agent")}${response.content}")
+                )
         }
-
-        let response = agent.chat(
-            AgentRequest(input, conversation: conversation)
-        )
-
-        printPrompt("Agent")
-        println(response.content)
-
-        conversation.addChatRound(response.execution.chatRound)
     }
-
-    return 0    
+    return 0
 }

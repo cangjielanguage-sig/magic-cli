@@ -19,7 +19,7 @@ import magic.config.Config
 import magic.jsonable.*
 import magic.log.LogUtils
 
-import cli.cli.utils.*
+import cli.utils.*
 
 class ApiClient {
     static public func post(url: String,
@@ -141,13 +141,13 @@ class ApiClient {
 }
 
 @agent[
-    model: "ark:ep-20250208101010-dx2ph", 
+    model: "ark:ep-20250208101010-dx2ph",
     description: "一个根据用户查询，提炼和总结仓颉编程语言技术文档的AI助手。",
     executor: "naive"
 ]
 public class DocSummaryAssistant {
     @prompt("""
-    You are an expert programming assistant. 
+    You are an expert programming assistant.
     Your task is to distill technical documentation for another AI agent that will write Cangjie code.
     Based on the user's original query, extract ONLY the most relevant information from the provided documents.
     Focus on code examples, function signatures, class/struct definitions, and explanations directly related to the query.
@@ -164,7 +164,7 @@ public class CJTool{
     ]
     public func repairCangjieCode(query: String, code: String): String {
         let message = query
-        printTool("Repair Cangjie Code", message)
+        PrintUtils.printTool("Repair Cangjie Code", message)
 
         let url = "http://119.3.125.66:5384/code_repair"
         let header = HashMap<String, String>([
@@ -174,7 +174,7 @@ public class CJTool{
         let requestMap = HashMap<String, JsonValue>()
         let codeBlock = "```cangjie \n${code}\n```"
         requestMap.add("query", JsonString(query))
-        requestMap.add("response", JsonString(codeBlock)) 
+        requestMap.add("response", JsonString(codeBlock))
         let requestBody = JsonObject(requestMap)
 
         let rawResponseOpt = ApiClient.post(url, header, requestBody)
@@ -203,7 +203,7 @@ public class CJTool{
     ]
     public static func retrieveCangjieDocuments(query: String, nums_docs_to_retrive: Int64): String {
         let message = query
-        printTool("Retrieve Cangjie Documents", message)
+        PrintUtils.printTool("Retrieve Cangjie Documents", message)
 
         let url = "http://119.3.125.66:5384/retrieve"
         let header = HashMap<String, String>([
@@ -244,10 +244,10 @@ public class CJTool{
 
      private static func filterChunks(jsonObj: JsonObject): JsonObject {
         let filteredChunks = ArrayList<JsonValue>()
-        
+
         if (let Some(docsValue) <- jsonObj.get("docs")) {
             let chunksArrays = docsValue as JsonArray
-            
+
             if (let Some(chunksArray) <- chunksArrays) {
                 for (i in 0..chunksArray.size()) {
                     let chunk = chunksArray[i]
@@ -262,7 +262,7 @@ public class CJTool{
                 }
             }
         }
-        
+
         let resultMap = HashMap<String, JsonValue>()
         resultMap.add("docs", JsonArray(filteredChunks))
         return JsonObject(resultMap)
@@ -273,7 +273,7 @@ public class CJTool{
         parameters: { path: "仓颉模块的路径，必须是绝对路径" }
     ]
     public func cjpmInitModule(path: String): String {
-        printTool("CJPM Init Module", path)
+        PrintUtils.printTool("CJPM Init Module", path)
 
         try {
             let cmd = "cjpm"
@@ -305,7 +305,7 @@ public class CJTool{
         parameters: { path: "Cangjie文件对应目录路径，必须是绝对路径", name: "要编译的Cangjie文件名，例如test.cj" }
     ]
     public func cjCompiler(path: String, name: String): String {
-        printTool("CJ Compiler", path + "/" + name)
+        PrintUtils.printTool("CJ Compiler", path + "/" + name)
 
         try {
             let cmd = "cjc"
@@ -337,8 +337,8 @@ public class CJTool{
         parameters: { incremental: "如果为 true，则进行增量编译，否则进行常规全量编译。", path: "仓颉模块的路径，必须是绝对路径" }
     ]
     public func cjpmBuildModule(incremental: Bool, path: String): String {
-        printTool("CJPM Build Module", path)
-        
+        PrintUtils.printTool("CJPM Build Module", path)
+
         try {
             let cmd = "cjpm"
             var args: Array<String> = ["build"]
@@ -372,7 +372,7 @@ public class CJTool{
         parameters: { name: "要运行的可执行产物的名称。", path: "仓颉模块的路径，必须是绝对路径" }
     ]
     public func cjpmRun(name: String, path: String): String {
-        printTool("CJPM Run", path + "  --name " + name)
+        PrintUtils.printTool("CJPM Run", path + "  --name " + name)
 
         try {
             let cmd = "cjpm"
@@ -404,7 +404,7 @@ public class CJTool{
         parameters: {  path: "仓颉模块的路径，必须是绝对路径" }
     ]
     public func cjpmCleanTarget(path: String): String {
-        printTool("CJPM Clean Target", path)
+        PrintUtils.printTool("CJPM Clean Target", path)
 
         try {
             let cmd = "cjpm"
@@ -437,7 +437,7 @@ public class CJTool{
 
         for (line in lines) {
             if (line.startsWith("data: ")) {
-                lastJsonData = line[6..] 
+                lastJsonData = line[6..]
             }
         }
         return lastJsonData
