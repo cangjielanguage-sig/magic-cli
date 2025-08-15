@@ -1,4 +1,4 @@
-package cli.cli.utils
+package cli.utils
 
 import std.regex.Regex
 import std.collection.ArrayList
@@ -15,38 +15,13 @@ private const VERTICAL_BORDER = "║"
  * Calculate the rune size except for the ANSI escape characters
  */
 private func sizeOf(str: String): Int64 {
-    let regex = Regex("\u{1B}\\[\\d+m")
+    let regex = Regex("\u{1B}\\[\\d*[a-zA-Z]")
     let strWithoutAnsiEscape = regex.replaceAll(str, "")
     return strWithoutAnsiEscape.toRuneArray().size
 }
 
-private func isChineseRune(rune: Rune): Bool {
-    // Check for common Chinese + punctuation/symbols
-    return r'\u{4e00}' <= rune && rune <= r'\u{9fff}' || // Common Chinese
-           r'\u{3000}' <= rune && rune <= r'\u{303f}' || // Chinese punctuation
-           r'\u{ff00}' <= rune && rune <= r'\u{ffef}' || // Full-width symbols
-           r'\u{3400}' <= rune && rune <= r'\u{4dbf}'    // Rare characters (Extension A)
-           // Add more ranges if needed
-}
-
-private func displaySizeOf(str: String): Int64 {
-    let regex = Regex("\u{1B}\\[\\d+m")
-    let strWithoutAnsiEscape = regex.replaceAll(str, "")
-    var width = 0
-    for (rune in strWithoutAnsiEscape.toRuneArray()) {
-        // Unicode range of Chinese characters (rough estimate)
-        if (isChineseRune(rune)) {
-            // Chinese runes occupy width 2 positions
-            width += 2
-        } else {
-            width += 1
-        }
-    }
-    return width
-}
-
 private func padString(content: String, width: Int64, center!: Bool = false): String {
-    let sizeToPad = width - displaySizeOf(content)
+    let sizeToPad = width - displayWidthOf(content)
     if (center) {
         let leftToPad = sizeToPad / 2
         let rightToPad = sizeToPad - leftToPad
@@ -57,22 +32,55 @@ private func padString(content: String, width: Int64, center!: Bool = false): St
     }
 }
 
+/**
+ * Split the line as multiple sub-lines, each sub-line does not exceed the width
+ */
 private func splitLine(line: String, width: Int64): Array<String> {
+    let subLines = ArrayList<String>()
+
+    var idx = 0
+    var currSubLine = StringBuilder()
+    var currWidthOfSubLine = 0
     let runes = line.toRuneArray()
-    let result = ArrayList<String>()
-    for (pos in 0..runes.size: width) {
-        let end = min(pos + width, runes.size)
-        result.add(String(runes[pos..end]))
+    while (idx < runes.size) {
+        let rune = runes[idx]
+        if (rune == r'\u{1B}') { // ANSI escape char \u{1B}[\d*\w, skip it
+            while (!runes[idx].isAsciiLetter()) { // skip until
+                currSubLine.append(runes[idx])
+                idx += 1
+            }
+            currSubLine.append(runes[idx])
+        } else {
+            let widthOfRune = displayWidthOf(rune)
+            if (widthOfRune + currWidthOfSubLine >= width) {
+                subLines.add(currSubLine.toString())
+                currSubLine.reset()
+                currWidthOfSubLine = 0
+            }
+            currSubLine.append(rune)
+            currWidthOfSubLine += widthOfRune
+        }
+        idx += 1
     }
-    return result.toArray()
+    let lastSubLine = currSubLine.toString()
+    if (!lastSubLine.isEmpty()) {
+        subLines.add(lastSubLine)
+    }
+    return subLines.toArray()
 }
 
-protected func wrapBox(title: String,
-                       content!: String = "",
+protected func wrapBox(content: String,
                        width!: Int64 = 100,
                        boxColor!: String = BRIGHT_BLACK,
                        centerTitle!: Bool = false): String {
+    return wrapBox("", content: content, width: width, boxColor: boxColor, centerTitle: centerTitle)
+}
 
+protected func wrapBox(title: String,
+                       content!: String,
+                       width!: Int64 = 100,
+                       boxColor!: String = BRIGHT_BLACK,
+                       centerTitle!: Bool = false): String {
     let lines = content.split("\n")
     return wrapBox(title, lines: lines, width: width, boxColor: boxColor, centerTitle: centerTitle)
 }
@@ -86,20 +94,22 @@ protected func wrapBox(title: String,
     // Add the top line
     strBuilder.append("${LEFT_TOP}${HORIZONTAL_BORDER * width}${RIGHT_TOP}\n".withColor(boxColor))
     // Add the title
-    strBuilder.append(
-        "${VERTICAL_BORDER.withColor(boxColor)}${padString(title, width, center: centerTitle)}${VERTICAL_BORDER.withColor(boxColor)}\n"
-    )
-    // Add content lines if necessary
-    if (!lines.isEmpty()) {
+    if (!title.isEmpty()) {
+        strBuilder.append(
+            "${VERTICAL_BORDER.withColor(boxColor)}${padString(title, width, center: centerTitle)}${VERTICAL_BORDER.withColor(boxColor)}\n"
+        )
         strBuilder.append(
             "${VERTICAL_BORDER}${HORIZONTAL_SEPARATOR * width}${VERTICAL_BORDER}\n".withColor(boxColor)
         )
+    }
+    // Add content lines if necessary
+    if (!lines.isEmpty()) {
         for (line in lines) {
             // Split the line as multiple lines if it's too long
-            let border = VERTICAL_BORDER.withColor(boxColor)
             for (subLine in splitLine(line, width)) {
                 strBuilder.append(
-                    "${border}${padString(subLine, width)}${border}\n")
+                    "${wrapLineWithVerticalBorder(subLine, width: width, boxColor: boxColor)}\n"
+                )
             }
         }
     }
@@ -108,4 +118,11 @@ protected func wrapBox(title: String,
         "${LEFT_BOTTOM}${HORIZONTAL_BORDER * width}${RIGHT_BOTTOM}".withColor(boxColor)
     )
     return strBuilder.toString()
+}
+
+protected func wrapLineWithVerticalBorder(line: String,
+                                          width!: Int64 = 100,
+                                          boxColor!: String = BRIGHT_BLACK): String {
+    let border = VERTICAL_BORDER.withColor(boxColor)
+    return "${border}${padString(line, width)}${border}"
 }

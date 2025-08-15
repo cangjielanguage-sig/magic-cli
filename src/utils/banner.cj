@@ -1,10 +1,10 @@
-package cli.core.utils
+package cli.utils
 
 import std.env.*
 
-struct AnsiColor {
+private struct AnsiColor {
     public let code: String
-    
+
     public AnsiColor(code: String) {
         this.code = code
     }
@@ -45,14 +45,14 @@ public class Banner {
         let tagline = "Powered By CangjieMagic Framework"
         let totalWidth = 100
         let taglinePadding = (totalWidth - tagline.size) / 2
-        
+
         var paddingString = ""
         var paddingCounter: Int64 = 0
         while (paddingCounter < taglinePadding) {
             paddingString += " "
             paddingCounter += 1
         }
-        
+
         println("\n${taglineColor.code}${paddingString}${tagline}${AnsiColor.reset}")
     }
 }

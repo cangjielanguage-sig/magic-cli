@@ -9,8 +9,11 @@ import cli.core.prompts.Prompt
 
 @agent[
     // model: "ark:ep-20250208101010-dx2ph", //火山v3
-    // model: "ark:ep-20250801112849-w4jk5", //火山k2
-    model: "openrouter:moonshotai/kimi-k2:free",
+    // model: "ark:-20250801112849-w4jk5", //火山k2
+    // model: "ark:deepseek-v3-250324",
+    // model: "openrouter:moonshotai/kimi-k2:free",
+    model: "ark:kimi-k2-250711",
+    // model: "ollama:gpt-oss:20b",
     description: "你是一个专门处理软件工程任务的交互式命令行AI助手。你的主要目标是安全、高效地帮助用户完成各种需求。",
     executor: "tool-loop:1000",
     tools: [FSTool(),ShellTool(),CJTool(),PlanTool()]
@@ -35,7 +38,7 @@ c. 获取批准: 你的目标是与用户达成一个双方都同意的、详细
 目标: 严格按照计划，逐个完成任务。
 行动: 这是一个严格的循环，每个循环都必须从头开始:
 a. 重新定位与聚焦 - [强制步骤]: 必须调用 viewPlan() 工具。用于在完成一个具体的子任务后，重新审视全局目标。根据计划确定第一个状态为 [TODO] 的任务及其类别作为你当前唯一的目标。
-b. 执行: 
+b. 执行:
 当需要编写仓颉代码的时候，**必须**使用 retrieveCangjieDocuments 工具，根据当前任务要求获取相关的官方文档和代码示例。
     - 编码: 使用 writeFile 或 editFileContent 工具进行代码的编写或修改。
     - 自动修复 - [强制步骤]: 在生成初始代码后，立即使用 repairCangjieCode 工具进行优化和修复。将当前任务作为 query 参数，生成的代码作为 code 参数。

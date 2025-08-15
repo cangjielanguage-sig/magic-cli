@@ -1,11 +1,11 @@
-package cli.cli.utils
+package cli.utils
 
 @When[os == "Windows"]
 foreign func getch(): IntNative
 
 @When[os == "Windows"]
 public func getchar(): IntNative {
-    let c = unsafe { 
+    let c = unsafe {
         getch()
     }
 

@@ -10,7 +10,7 @@ import std.collection.*
 import magic.dsl.*
 import magic.prelude.*
 
-import cli.cli.utils.*
+import cli.utils.*
 
 @toolset
 public class FSTool {
@@ -51,7 +51,7 @@ public class FSTool {
         if (!confirmation) {
             return "用户取消执行该操作，用户意见反馈：${userInput}"
         }
-        
+
         try {
             Directory.create(path, recursive: true)
             return "目录 ${path} 创建成功！"
@@ -78,7 +78,7 @@ public class FSTool {
         if (!confirmation) {
             return "用户取消执行该操作，用户意见反馈：${userInput}"
         }
-        
+
         try {
             let file = File(filePath, Write)
             file.write(content.toArray())
@@ -115,7 +115,7 @@ public class FSTool {
             return "删除文件或目录失败：${e}"
         }
     }
-    
+
     @tool[
         description: "列出目录下的所有文件和子目录，返回列表",
         parameters: { path: "目录路径，必须是绝对路径" }
@@ -126,12 +126,12 @@ public class FSTool {
         }
 
         let message = path
-        printTool("List Directory", message)
+        PrintUtils.printTool("List Directory", message)
 
         try {
             let osName = getVariable("OS") ?? "Unknown"
             let isWindows = osName.toAsciiLower().contains("windows")
-            
+
             let (exitCode, stdOutData, stdErrData) = if (isWindows) {
                 executeWithOutput("powershell", ["-Command", "dir"], workingDirectory: Path(path))
             } else {
@@ -156,11 +156,11 @@ public class FSTool {
     ]
     public func readFile(filePath: String): String {
         let message = filePath
-        printTool("Read File", message)
+        PrintUtils.printTool("Read File", message)
 
         return load(filePath)
     }
-    
+
     @tool[
         description: "写入内容到单个文件，返回写入结果",
         parameters: { filePath: "文件路径，必须是绝对路径", content: "要写入的内容" }
@@ -196,7 +196,7 @@ public class FSTool {
     ]
     public func grep(path: String, pattern: String, fileType: String): String {
         let message = path + ", pattern: " + pattern + ", fileType: " + fileType
-        printTool("Grep", message)
+        PrintUtils.printTool("Grep", message)
 
         try {
             let osName = getVariable("OS") ?? "Unknown"
@@ -236,7 +236,7 @@ public class FSTool {
         }
 
         let message = path + ", extension: " + extension
-        printTool("Glob", message)
+        PrintUtils.printTool("Glob", message)
 
         try {
             if (!exists(path)) {
@@ -244,7 +244,7 @@ public class FSTool {
             }
 
             let matchedFiles = ArrayList<String>()
-            
+
             func searchDirectory(currentPath: String): Unit {
                 try {
                     for (item in Directory.readFrom(currentPath)) {
@@ -259,18 +259,18 @@ public class FSTool {
                     return
                 }
             }
-            
+
             searchDirectory(path)
-            
+
             if (matchedFiles.size == 0) {
                 return "在目录 ${path} 中未找到匹配 ${extension} 的文件"
             }
-            
+
             var result = "在目录 ${path} 中找到 ${matchedFiles.size} 个匹配 ${extension} 的文件：\n"
             for (file in matchedFiles) {
                 result += "- ${file}\n"
             }
-            
+
             return result
         } catch (e: FSException) {
             return "目录访问失败：指定路径不是目录或权限不足"
