@@ -94,6 +94,7 @@ private func redraw(prompt: String, content: Array<Rune>, cursorPos: Int64, phas
     // print(strBuilder.toString(), flush: true)
 }
 
+@When[os != "Windows"]
 private func readlineImpl(prompt: String,
                           history: ArrayList<String>): Option<String> {
     var buf = LinkedList<Rune>()
