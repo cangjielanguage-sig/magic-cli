@@ -20,7 +20,7 @@ private func sizeOf(str: String): Int64 {
     return strWithoutAnsiEscape.toRuneArray().size
 }
 
-private func padString(content: String, width: Int64, center!: Bool = false): String {
+func padString(content: String, width!: Int64, center!: Bool = false): String {
     let sizeToPad = width - displayWidthOf(content)
     if (center) {
         let leftToPad = sizeToPad / 2
@@ -96,7 +96,7 @@ protected func wrapBox(title: String,
     // Add the title
     if (!title.isEmpty()) {
         strBuilder.append(
-            "${VERTICAL_BORDER.withColor(boxColor)}${padString(title, width, center: centerTitle)}${VERTICAL_BORDER.withColor(boxColor)}\n"
+            "${VERTICAL_BORDER.withColor(boxColor)}${padString(title, width: width, center: centerTitle)}${VERTICAL_BORDER.withColor(boxColor)}\n"
         )
         strBuilder.append(
             "${VERTICAL_BORDER}${HORIZONTAL_SEPARATOR * width}${VERTICAL_BORDER}\n".withColor(boxColor)
@@ -124,5 +124,5 @@ protected func wrapLineWithVerticalBorder(line: String,
                                           width!: Int64 = 100,
                                           boxColor!: String = BRIGHT_BLACK): String {
     let border = VERTICAL_BORDER.withColor(boxColor)
-    return "${border}${padString(line, width)}${border}"
+    return "${border}${padString(line, width: width)}${border}"
 }

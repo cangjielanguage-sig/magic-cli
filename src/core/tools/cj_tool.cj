@@ -141,27 +141,29 @@ class ApiClient {
 }
 
 @agent[
-    model: "ark:ep-20250208101010-dx2ph",
-    description: "一个根据用户查询，提炼和总结仓颉编程语言技术文档的AI助手。",
     executor: "naive"
 ]
-public class DocSummaryAssistant {
+private class DocSummaryAssistant {
     @prompt("""
-    You are an expert programming assistant.
-    Your task is to distill technical documentation for another AI agent that will write Cangjie code.
-    Based on the user's original query, extract ONLY the most relevant information from the provided documents.
-    Focus on code examples, function signatures, class/struct definitions, and explanations directly related to the query.
-    Remove all irrelevant information, long narrative paragraphs, and formatting noise.
-    The output must be concise and directly usable for code generation.
+        You are an expert programming assistant.
+        Your task is to distill technical documentation for another AI agent that will write Cangjie code.
+        Based on the user's original query, extract ONLY the most relevant information from the provided documents.
+        Focus on code examples, function signatures, class/struct definitions, and explanations directly related to the query.
+        Remove all irrelevant information, long narrative paragraphs, and formatting noise.
+        The output must be concise and directly usable for code generation.
     """)
 }
 
 @toolset
 public class CJTool{
-    @tool[
-        description: "根据原始需求对已生成的仓颉代码进行修复或优化",
-        parameters: { query: "原始的代码生成需求", code: "需要修复或优化的代码" }
-    ]
+    public CJTool(
+        private let model: ChatModel
+    ) { }
+
+    // @tool[
+    //     description: "根据原始需求对已生成的仓颉代码进行修复或优化",
+    //     parameters: { query: "原始的代码生成需求", code: "需要修复或优化的代码" }
+    // ]
     public func repairCangjieCode(query: String, code: String): String {
         let message = query
         PrintUtils.printTool("Repair Cangjie Code", message)
@@ -201,7 +203,7 @@ public class CJTool{
         description: "获取仓颉（Cangjie）语言的开发文档",
         parameters: { query: "需要查询的开发需求或文档内容", nums_docs_to_retrive: "期望返回的文档数量" }
     ]
-    public static func retrieveCangjieDocuments(query: String, nums_docs_to_retrive: Int64): String {
+    public func retrieveCangjieDocuments(query: String, nums_docs_to_retrive: Int64): String {
         let message = query
         PrintUtils.printTool("Retrieve Cangjie Documents", message)
 
@@ -231,6 +233,7 @@ public class CJTool{
                 responseData.toJsonString()
         }
         let docSummaryAssistant = DocSummaryAssistant()
+        docSummaryAssistant.model = this.model
         let promptForSummarizer = """
             Original User Query: "${query}"
 
@@ -242,7 +245,7 @@ public class CJTool{
         return summary
     }
 
-     private static func filterChunks(jsonObj: JsonObject): JsonObject {
+    private func filterChunks(jsonObj: JsonObject): JsonObject {
         let filteredChunks = ArrayList<JsonValue>()
 
         if (let Some(docsValue) <- jsonObj.get("docs")) {
