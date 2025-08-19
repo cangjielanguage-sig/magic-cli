@@ -14,29 +14,6 @@ import cli.utils.*
 
 @toolset
 public class FSTool {
-    public static func getWorkingDirectory(): String {
-        return canonicalize(".").toString()
-    }
-
-    public static func changeDirectory(path: String): String {
-        if (!Path(path).isAbsolute()) {
-            return "目录路径必须是绝对路径"
-        }
-
-        try {
-            let exitCode = chdir(path)
-            if (exitCode == 0) {
-                return "已切换到目录：${path}"
-            } else {
-                return "切换目录失败，错误代码：${exitCode}"
-            }
-        } catch (e: IllegalArgumentException) {
-            return "路径为空或包含非法字符"
-        } catch (e: Exception) {
-            return "切换目录失败：${e}"
-        }
-    }
-
     @tool[
         description: "创建目录，可递归创建，返回创建结果",
         parameters: { path: "目录路径，必须是绝对路径" }
@@ -47,8 +24,7 @@ public class FSTool {
         }
 
         let message = path
-        let (confirmation, userInput) = ConfirmTool.confirm("Create Directory", message)
-        if (!confirmation) {
+        if (let Deny(userInput) <- InputUtils.confirm("Create Directory", message)) {
             return "用户取消执行该操作，用户意见反馈：${userInput}"
         }
 
@@ -66,7 +42,10 @@ public class FSTool {
 
     @tool[
         description: "创建文件并写入内容，返回创建结果",
-        parameters: { content: "文件内容", filePath: "文件路径，必须是绝对路径" }
+        parameters: {
+            content: "文件内容",
+            filePath: "文件路径，必须是绝对路径"
+        }
     ]
     public func createFile(content: String, filePath: String): String {
         if (!Path(filePath).isAbsolute()) {
@@ -74,8 +53,7 @@ public class FSTool {
         }
 
         let message = filePath + "\n" + content
-        let (confirmation, userInput) = ConfirmTool.confirm("Create File", message)
-        if (!confirmation) {
+        if (let Deny(userInput) <- InputUtils.confirm("Create File", message)) {
             return "用户取消执行该操作，用户意见反馈：${userInput}"
         }
 
@@ -99,8 +77,7 @@ public class FSTool {
         }
 
         let message = path
-        let (confirmation, userInput) = ConfirmTool.confirm("Delete File or Directory", message)
-        if (!confirmation) {
+        if (let Deny(userInput) <- InputUtils.confirm("Delete File or Directory", message)) {
             return "用户取消执行该操作，用户意见反馈：${userInput}"
         }
 
@@ -171,8 +148,7 @@ public class FSTool {
         }
 
         let message = filePath + "\n" + content
-        let (confirmation, userInput) = ConfirmTool.confirm("Write File", message)
-        if (!confirmation) {
+        if (let Deny(userInput) <- InputUtils.confirm("Write File", message)) {
             return "用户取消执行该操作，用户意见反馈：${userInput}"
         }
 
@@ -192,7 +168,11 @@ public class FSTool {
 
     @tool[
         description: "在指定目录及子目录的特定种类文件中搜索特定内容，返回包含内容的所有文件",
-        parameters: { path: "目录路径，必须是绝对路径", pattern: "要搜索的内容", fileType: "文件类型，形如：*.cj, *.toml" }
+        parameters: {
+            path: "目录路径，必须是绝对路径",
+            pattern: "要搜索的内容",
+            fileType: "文件类型，形如：*.cj, *.toml"
+        }
     ]
     public func grep(path: String, pattern: String, fileType: String): String {
         let message = path + ", pattern: " + pattern + ", fileType: " + fileType
@@ -228,7 +208,10 @@ public class FSTool {
 
     @tool[
         description: "在指定目录下基于模式匹配查找特定后缀名的文件",
-        parameters: { path: "目录路径，必须是绝对路径", extension: "文件后缀名，形如：.cs, .txt" }
+        parameters: {
+            path: "目录路径，必须是绝对路径",
+            extension: "文件后缀名，形如：.cs, .txt"
+        }
     ]
     public func glob(path: String, extension: String): String {
         if (!Path(path).isAbsolute()) {
@@ -329,8 +312,7 @@ public class FSTool {
         }
 
         let message = "${path}  ${permissions}\n"
-        let (confirmation, userInput) = ConfirmTool.confirm("Set Permissions", message)
-        if (!confirmation) {
+        if (let Deny(userInput) <- InputUtils.confirm("Set Permissions", message)) {
             return "用户取消执行该操作，用户意见反馈：${userInput}"
         }
 
@@ -365,8 +347,12 @@ public class FSTool {
     }
 
     @tool[
-        description: "修改文件内容，必须一次至少修改一个函数的内容，返回修改结果",
-        parameters: { filePath: "文件路径，必须是绝对路径", oldContent: "原本文件的内容，必须是文件里出现的部分，必须至少包含原文件中的一个函数", newContent: "即将覆盖的内容" }
+        description: "修改文件内容，必须一次至少修改一个函数的内容，返回修改结果，你需要将尽可能多的修改放到一次工具中使用，这样可以提升修改效率",
+        parameters: {
+            filePath: "文件路径，必须是绝对路径",
+            oldContent: "原本文件的内容，必须是文件里出现的部分，必须至少包含原文件中的一个函数",
+            newContent: "即将覆盖的内容"
+        }
     ]
     public func editFileContent(filePath: String, oldContent: String, newContent: String): String {
         if (!Path(filePath).isAbsolute()) {
@@ -374,8 +360,7 @@ public class FSTool {
         }
 
         let message = filePath + "\nold content:\n" + oldContent + "\nnew content:\n" + newContent
-        let (confirmation, userInput) = ConfirmTool.confirm("Edit File Content", message)
-        if (!confirmation) {
+        if (let Deny(userInput) <- InputUtils.confirm("Edit File Content", message)) {
             return "用户取消执行该操作，用户意见反馈：${userInput}"
         }
 

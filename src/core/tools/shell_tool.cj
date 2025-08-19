@@ -1,12 +1,14 @@
 package cli.core.tools
 
+import cli.utils.*
+
+import magic.dsl.*
+import magic.prelude.*
+
 import std.fs.*
 import std.process.*
 import std.io.*
 import std.env.*
-
-import magic.dsl.*
-import magic.prelude.*
 
 @toolset
 public class ShellTool {
@@ -16,15 +18,14 @@ public class ShellTool {
     ]
     public func execute(path: String, command: String): String {
         let message = command
-        let (confirmation, userInput) = ConfirmTool.confirm("Execute Shell Command", message)
-        if (!confirmation) {
+        if (let Deny(userInput) <- InputUtils.confirm("Execute Shell Command", message)) {
             return "用户取消执行该操作，用户意见反馈：${userInput}"
         }
 
         try {
             let osName = getVariable("OS") ?? "Unknown"
             let isWindows = osName.toAsciiLower().contains("windows")
-            
+
             let (exitCode, stdOutData, stdErrData) = if (isWindows) {
                 executeWithOutput("powershell", ["-Command", command], workingDirectory: Path(path))
             } else {

@@ -173,5 +173,14 @@ public class Readline {
             RawInputUtils.rawExit()
         }
     }
+
+    public func readline(prompt: String, withBox!: Bool): Option<String> {
+        if (withBox) {
+            return readline(prompt)
+        } else {
+            print(prompt, flush: true)
+            return readln()
+        }
+    }
 }
 

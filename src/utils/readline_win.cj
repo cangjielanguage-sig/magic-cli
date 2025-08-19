@@ -6,5 +6,14 @@ public class Readline {
         print(prompt, flush: true)
         return readln()
     }
+
+    public func readline(prompt: String, withBox!: Bool): Option<String> {
+        if (withBox) {
+            return readline(prompt)
+        } else {
+            print(prompt, flush: true)
+            return readln()
+        }
+    }
 }
 

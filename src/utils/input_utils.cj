@@ -2,6 +2,11 @@ package cli.utils
 
 import std.time.DateTime
 
+protected enum Confirmation {
+    | Approve
+    | Deny(String)
+}
+
 protected class InputUtils {
     static public func buildPrompt(role: String): String {
         let time = DateTime.now().format("HH:mm:ss").withColor(THEME_INFO)
@@ -13,12 +18,25 @@ protected class InputUtils {
 
     private static let READLINE = Readline()
 
-    static public func getUserInput(): String {
-        READLINE.readline(buildPrompt("User")) ?? "exit"
+    static public func getUserInput(prompt!: String = "User", withBox!: Bool = true): String {
+        READLINE.readline(buildPrompt(prompt), withBox: withBox) ?? "exit"
+    }
+
+    static public func confirm(name: String, message: String): Confirmation {
+        // If user deny the confirmation, we let her/him input one more message
+        if (InputUtils.confirmImpl(name, message)) {
+            PrintUtils.printTool(name, message)
+            println("🔮 Agent:  ✔  ".withColor(THEME_SUCCESS) + name.withColor(THEME_PRIMARY))
+            return Confirmation.Approve
+        } else {
+            print("✖ Cancelled.\n".withColor(THEME_SECONDARY), flush: true)
+            let input = InputUtils.getUserInput(prompt: "User Adjustment")
+            return Confirmation.Deny(input)
+        }
     }
 
     @When[os == "Windows"]
-    static public func confirm(name: String, message: String): Bool {
+    static private func confirmImpl(name: String, message: String): Confirmation {
         let confirmMessage = wrapBox(
             "   ?  ".withColor(THEME_WARNING) + name.withColor(THEME_PRIMARY),
             content: message
@@ -29,24 +47,17 @@ protected class InputUtils {
 
         while (true) {
             let selectMessage = if (selected == 0) {
-                "\r" + THEME_SUCCESS + BOLD + "  ► Yes" + RESET + THEME_MUTED + "      No" + RESET
+                "\r${THEME_SUCCESS}${BOLD}  ► Yes${RESET}${THEME_MUTED}      No${RESET}"
             } else {
-                "\r" + THEME_MUTED + "    Yes" + RESET + THEME_ERROR + BOLD + "    ► No" + RESET
+                "\r${THEME_MUTED}    Yes${RESET}${THEME_ERROR}${BOLD}    ► No${RESET}"
             }
-
             print(selectMessage)
-
             var c = getchar()
-
             if (c == 13) {
                 if (selected == 0) {
                     println("")
-                    PrintUtils.printTool(name, message)
                     return true
                 } else {
-                    let cancelMessage = THEME_SECONDARY + "\nCancelled.\n" + RESET
-                    print(cancelMessage)
-                    print(buildPrompt("User Opinion"))
                     return false
                 }
             } else if (c == 0) {
@@ -58,28 +69,21 @@ protected class InputUtils {
                 }
             }
         }
-
-        return false
+        throw UnsupportedException("Unreachable")
     }
 
     @When[os != "Windows"]
-    static public func confirm(name: String, message: String): Bool {
+    static private func confirmImpl(name: String, message: String): Bool {
         let confirmMessage = wrapBox(
-            "   ?  ".withColor(THEME_WARNING) + name.withColor(THEME_PRIMARY),
+            " ?  ".withColor(THEME_WARNING) + name.withColor(THEME_PRIMARY),
             content: message
         )
         println(confirmMessage)
 
-        print("(Enter to confirm, any other key to cancel): ".withColor(THEME_PRIMARY))
-        let c = readln()
-
-        if (c.isEmpty()) {
-            PrintUtils.printTool(name, message)
-            return true
-        } else {
-            print("Cancelled.\n".withColor(THEME_SECONDARY))
-            print(buildPrompt("User Opinion"))
-            return false
-        }
+        let ch = InputUtils.getUserInput(
+            prompt: "(Enter to confirm, any other key to cancel): ".withColor(THEME_PRIMARY),
+            withBox: false
+        )
+        return ch.isEmpty()
     }
 }

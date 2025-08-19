@@ -1,5 +1,19 @@
 package cli.utils
 
+protected struct AnsiColor <: ToString {
+    public AnsiColor(
+        private let colorIndex: Int64) {
+    }
+
+    public static func color256(colorIndex: Int64): AnsiColor {
+        return AnsiColor(colorIndex)
+    }
+
+    override public func toString(): String {
+        return "\u{1b}[38;5;${this.colorIndex}m"
+    }
+}
+
 // ANSI颜色代码定义
 const RESET = "\u{1B}[0m"
 const BOLD = "\u{1B}[1m"
@@ -54,6 +68,10 @@ protected interface WithColor {
 
 extend String <: WithColor {
     public func withColor(color: String): String {
+        return "${color}${this}${RESET}"
+    }
+
+    public func withColor(color: AnsiColor): String {
         return "${color}${this}${RESET}"
     }
 }
