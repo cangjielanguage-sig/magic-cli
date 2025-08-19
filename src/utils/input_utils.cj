@@ -52,7 +52,7 @@ protected class InputUtils {
     }
 
     @When[os == "Windows"]
-    static private func getConfirmation(): Confirmation {
+    static private func getConfirmation(): Bool {
         var selected: Int64 = 0
         while (true) {
             let selectMessage = if (selected == 0) {

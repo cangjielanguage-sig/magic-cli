@@ -8,11 +8,6 @@ import cli.core.tools.*
 import cli.core.config.CliConfig
 
 @agent[
-    // model: "ark:ep-20250208101010-dx2ph", //火山v3
-    // model: "ark:-20250801112849-w4jk5", //火山k2
-    // model: "ark:deepseek-v3-250324",
-    // model: "openrouter:moonshotai/kimi-k2:free",
-    // model: "ollama:gpt-oss:20b",
     model: "${CliConfig.model}",
     executor: "tool-loop:1000",
     tools: [
@@ -31,12 +26,3 @@ public class CodeAgent {
         """
     )
 }
-
-// @agent[
-//     model: "openrouter:qwen/qwen3-coder:free",
-//     description: "你是一个专门编写Cangjie代码的专家。",
-//     executor: "tool-loop:1000",
-// ]
-// public class WriteCodeAgent {
-//     @prompt(Prompt.get("..\\prompts\\cangjie.md"))
-// }
