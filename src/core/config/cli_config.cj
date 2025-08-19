@@ -10,7 +10,7 @@ protected class CliConfig {
     /**
      * All generated files are stored under a hidden directory
      */
-    private static prop dotDir: Path {
+    public static prop dotDir: Path {
         get() {
             if (let Some(d) <- _dotDir) {
                 return d
@@ -50,4 +50,20 @@ protected class CliConfig {
             CliConfig.dotDir.join("todo.md")
         }
     }
+
+    public static prop readlineFile: Path {
+        get() {
+            CliConfig.dotDir.join("readline.history")
+        }
+    }
+
+    /**
+     * Whether agent runs autonomously, i.e., tools will be be confirmed by users
+     */
+    public static var auto: Bool = false
+
+    /**
+     * The chat model to use
+     */
+    public static var model: String = "ark:kimi-k2-250711"
 }

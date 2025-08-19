@@ -8,9 +8,7 @@ import std.io.*
 import std.process.*
 import std.fs.*
 
-@When[cjc_version >= "1.0.0"]
 public import std.fs.{exists, removeIfExists,remove, canonicalize, rename}
-@When[cjc_version >= "1.0.0"]
 public import std.io.readToEnd
 
 import magic.dsl.*

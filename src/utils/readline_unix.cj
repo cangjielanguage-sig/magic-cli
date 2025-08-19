@@ -1,8 +1,11 @@
 package cli.utils
 
+import magic.log.LogUtils
+
 import std.collection.{ArrayList, LinkedList}
 import std.regex.Regex
 import std.deriving.*
+import std.fs.{File, Path, exists}
 
 /**
  * Compute the display width of a rune
@@ -66,7 +69,7 @@ private func redraw(prompt: String, content: Array<Rune>, cursorPos: Int64, phas
     print("\u{1b}[1A", flush: true)
     // Clear the second line
     print("\r\u{1B}[K", flush: true)
-    // Construct the content and print print it
+    // Construct the content and print it
     let strBuilder = StringBuilder()
     strBuilder.append(prompt)
     for (i in 0..content.size) {
@@ -163,12 +166,53 @@ private func readlineImpl(prompt: String,
 
 @When[os != "Windows"]
 public class Readline {
-    private let history = ArrayList<String>()
+    private let history: ArrayList<String>
+    private let historyFile: Option<Path>
+
+    public init() {
+        this.history = ArrayList<String>()
+        this.historyFile = None
+    }
+
+    public init(path: Path) {
+        this.history = ArrayList<String>()
+        this.historyFile = path
+        this.loadHistoryFile(path)
+    }
+
+    private func loadHistoryFile(path: Path): Unit {
+        if (!exists(path)) {
+            return
+        }
+        try {
+            let content = String.fromUtf8(File.readFrom(path))
+            for (line in content.split("\n")) {
+                if (!line.isEmpty()) {
+                    this.history.add(line)
+                }
+            }
+        } catch (e: Exception) {
+            LogUtils.error("Failed to read readline history file")
+        }
+    }
+
+    private func appendHistoryFile(line: String): Unit {
+        if (line.isEmpty()) {
+            return
+        }
+        if (let Some(path) <- this.historyFile) {
+            File.appendTo(path, "${line}\n".toArray())
+        }
+    }
 
     public func readline(prompt: String): Option<String> {
         try {
             RawInputUtils.rawEnter()
-            return readlineImpl(prompt, this.history)
+            if (let Some(line) <- readlineImpl(prompt, this.history)) {
+                this.appendHistoryFile(line)
+                return line
+            }
+            return None
         } finally {
             RawInputUtils.rawExit()
         }
