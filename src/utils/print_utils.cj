@@ -1,5 +1,7 @@
 package cli.utils
 
+import magic.core.agent.AgentResponse
+
 import std.time.DateTime
 import std.process.executeWithOutput
 import std.env.getVariable
@@ -24,9 +26,8 @@ protected class PrintUtils {
 
         let welcomeMessage = String.join(
             [
-                "Welcome to Magic CLI!".withColor(THEME_SUCCESS),
-                "当前时间：${formattedTime}".withColor(THEME_INFO),
-                "${THEME_MUTED}输入 '${THEME_YELLOW}help${THEME_MUTED}' 查看可用命令，输入 '${THEME_YELLOW}exit${THEME_MUTED}' 退出程序。${RESET}\n"
+                "✨ Welcome to Magic CLI!\n".withColor(THEME_SUCCESS),
+                "🚦 ${THEME_MUTED}Input '${THEME_YELLOW}help${THEME_MUTED}' to check the manual and '${THEME_YELLOW}exit${THEME_MUTED}' to exit the program.${RESET}\n\n"
             ],
             delimiter: "\n"
         )
@@ -61,5 +62,11 @@ protected class PrintUtils {
             content: message.withColor(THEME_INFO)
         )
         println(toolMessage)
+    }
+
+    static public func printAgentResponse(response: AgentResponse) {
+        println(
+            wrapBox("${InputUtils.buildPrompt("🔮 Agent")}${response.content}")
+        )
     }
 }

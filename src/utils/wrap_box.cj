@@ -21,7 +21,7 @@ private func sizeOf(str: String): Int64 {
 }
 
 func padString(content: String, width!: Int64, center!: Bool = false): String {
-    let sizeToPad = width - displayWidthOf(content)
+    let sizeToPad = max(0, width - displayWidthOf(content))
     if (center) {
         let leftToPad = sizeToPad / 2
         let rightToPad = sizeToPad - leftToPad

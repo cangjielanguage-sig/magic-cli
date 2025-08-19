@@ -1,5 +1,7 @@
 package cli.utils
 
+import cli.core.config.CliConfig
+
 import std.time.DateTime
 
 protected enum Confirmation {
@@ -16,17 +18,31 @@ protected class InputUtils {
         return "${prefix} ${roleInfo} ${postfix} "
     }
 
-    private static let READLINE = Readline()
+    private static let READLINE = Readline(CliConfig.readlineFile)
 
     static public func getUserInput(prompt!: String = "User", withBox!: Bool = true): String {
         READLINE.readline(buildPrompt(prompt), withBox: withBox) ?? "exit"
     }
 
     static public func confirm(name: String, message: String): Confirmation {
+        // Print the confirm message
+        let mark = if (CliConfig.auto) {
+            "✔".withColor(THEME_SUCCESS)
+        } else {
+            "?".withColor(THEME_WARNING)
+        }
+        println(
+            wrapBox(
+                mark + name.withColor(THEME_PRIMARY),
+                content: message
+            )
+        )
+        if (CliConfig.auto) {
+            return Confirmation.Approve
+        }
         // If user deny the confirmation, we let her/him input one more message
-        if (InputUtils.confirmImpl(name, message)) {
-            PrintUtils.printTool(name, message)
-            println("🔮 Agent:  ✔  ".withColor(THEME_SUCCESS) + name.withColor(THEME_PRIMARY))
+        if (InputUtils.getConfirmation()) {
+            println("🔧 ${name} Executing ...".withColor(THEME_SUCCESS))
             return Confirmation.Approve
         } else {
             print("✖ Cancelled.\n".withColor(THEME_SECONDARY), flush: true)
@@ -36,15 +52,8 @@ protected class InputUtils {
     }
 
     @When[os == "Windows"]
-    static private func confirmImpl(name: String, message: String): Bool {
-        let confirmMessage = wrapBox(
-            "   ?  ".withColor(THEME_WARNING) + name.withColor(THEME_PRIMARY),
-            content: message
-        )
-        println(confirmMessage)
-
+    static private func getConfirmation(): Confirmation {
         var selected: Int64 = 0
-
         while (true) {
             let selectMessage = if (selected == 0) {
                 "\r${THEME_SUCCESS}${BOLD}  ► Yes${RESET}${THEME_MUTED}      No${RESET}"
@@ -73,17 +82,10 @@ protected class InputUtils {
     }
 
     @When[os != "Windows"]
-    static private func confirmImpl(name: String, message: String): Bool {
-        let confirmMessage = wrapBox(
-            " ?  ".withColor(THEME_WARNING) + name.withColor(THEME_PRIMARY),
-            content: message
-        )
-        println(confirmMessage)
-
-        let ch = InputUtils.getUserInput(
-            prompt: "(Enter to confirm, any other key to cancel): ".withColor(THEME_PRIMARY),
+    static private func getConfirmation(): Bool {
+        return READLINE.readline(
+            "(Enter to confirm, any other key to cancel): ".withColor(THEME_PRIMARY),
             withBox: false
-        )
-        return ch.isEmpty()
+        ).isNone()
     }
 }

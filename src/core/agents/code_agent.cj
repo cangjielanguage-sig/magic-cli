@@ -12,9 +12,8 @@ import cli.core.config.CliConfig
     // model: "ark:-20250801112849-w4jk5", //火山k2
     // model: "ark:deepseek-v3-250324",
     // model: "openrouter:moonshotai/kimi-k2:free",
-    model: "ark:kimi-k2-250711",
     // model: "ollama:gpt-oss:20b",
-    description: "你是一个专门处理软件工程任务的交互式命令行AI助手。你的主要目标是安全、高效地帮助用户完成各种需求。",
+    model: "${CliConfig.model}",
     executor: "tool-loop:1000",
     tools: [
         FSTool(),

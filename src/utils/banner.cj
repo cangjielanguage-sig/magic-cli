@@ -13,9 +13,10 @@ func buildBanner(): String {
     let reset = RESET
 
     let taglineColor = AnsiColor.color256(179)
-    let tagline = padString("Powered By CangjieMagic Framework", width: 100, center: true)
+    let tagline = padString("Powered By Cangjie Magic Framework", width: 100, center: true)
 
     let lines = [
+        "\n",
         "${c1}████▒▒████  ${c2}  ██████    ${c3}  ██████    ${c4}▒████████▒  ${c5}  ██████    ${c6}  ${c7}  ██████    ${c8}██▒▒        ${c9}▒████████▒  ${reset}",
         "${c1}████▒▒████  ${c2} ██▒▒▒▒██   ${c3} ██▒▒▒▒██   ${c4}▒▒▒▒██▒▒▒▒  ${c5} ██▒▒▒▒██   ${c6}  ${c7} ██▒▒▒▒██   ${c8}██▒▒        ${c9}▒▒▒▒██▒▒▒▒  ${reset}",
         "${c1}██▒████▒██  ${c2}██▒▒▒▒▒▒██  ${c3}██▒▒        ${c4}▒▒▒▒██▒▒▒▒  ${c5}██▒▒        ${c6}  ${c7}██▒▒        ${c8}██▒▒        ${c9}▒▒▒▒██▒▒▒▒  ${reset}",
