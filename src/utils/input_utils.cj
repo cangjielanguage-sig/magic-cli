@@ -36,7 +36,7 @@ protected class InputUtils {
     }
 
     @When[os == "Windows"]
-    static private func confirmImpl(name: String, message: String): Confirmation {
+    static private func confirmImpl(name: String, message: String): Bool {
         let confirmMessage = wrapBox(
             "   ?  ".withColor(THEME_WARNING) + name.withColor(THEME_PRIMARY),
             content: message
