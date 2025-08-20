@@ -27,7 +27,7 @@ protected class PrintUtils {
         let welcomeMessage = String.join(
             [
                 "✨ Welcome to Magic CLI!\n".withColor(THEME_SUCCESS),
-                "🚦 ${THEME_MUTED}Input '${THEME_YELLOW}help${THEME_MUTED}' to check the manual and '${THEME_YELLOW}exit${THEME_MUTED}' to exit the program.${RESET}\n\n"
+                "🚦 ${THEME_MUTED}Input '${THEME_YELLOW}/help${THEME_MUTED}' to check the manual and '${THEME_YELLOW}/exit${THEME_MUTED}' to exit the program.${RESET}\n\n"
             ],
             delimiter: "\n"
         )
@@ -46,9 +46,10 @@ protected class PrintUtils {
         let helpMessage = wrapBox(
             "Available Commands".withColor(THEME_PRIMARY),
             lines: [
-                "${' help'.padEnd(10).withColor(THEME_YELLOW)}${' ║ - Show this help message'.withColor(THEME_MUTED)}",
-                "${' clear'.padEnd(10).withColor(THEME_YELLOW)}${' ║ - Clear the screen'.withColor(THEME_MUTED)}",
-                "${' exit'.padEnd(10).withColor(THEME_YELLOW)}${' ║ - Exit the CLI'.withColor(THEME_MUTED)}"
+                "${' /help'.padEnd(10).withColor(THEME_YELLOW)}${' ║ - Show this help message'.withColor(THEME_MUTED)}",
+                "${' /clear'.padEnd(10).withColor(THEME_YELLOW)}${' ║ - Clear the screen'.withColor(THEME_MUTED)}",
+                "${' /compact'.padEnd(10).withColor(THEME_YELLOW)}${' ║ - Compact the context'.withColor(THEME_MUTED)}",
+                "${' /exit'.padEnd(10).withColor(THEME_YELLOW)}${' ║ - Exit the CLI'.withColor(THEME_MUTED)}"
             ],
             width: 60,
             centerTitle: true
