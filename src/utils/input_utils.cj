@@ -1,7 +1,6 @@
 package cli.utils
 
 import cli.core.config.CliConfig
-
 import std.time.DateTime
 
 protected enum Confirmation {
@@ -10,7 +9,7 @@ protected enum Confirmation {
 }
 
 protected class InputUtils {
-    static public func buildPrompt(role: String): String {
+    public static func buildPrompt(role: String): String {
         let time = DateTime.now().format("HH:mm:ss").withColor(THEME_INFO)
         let prefix = " 🕒 ".withColor(THEME_MUTED) + time + " |".withColor(THEME_MUTED)
         let roleInfo = role.padEnd(5).withColor(THEME_SUCCESS)
@@ -20,11 +19,11 @@ protected class InputUtils {
 
     private static let READLINE = Readline(CliConfig.readlineFile)
 
-    static public func getUserInput(prompt!: String = "User", withBox!: Bool = true): String {
+    public static func getUserInput(prompt!: String = "User", withBox!: Bool = true): String {
         READLINE.readline(buildPrompt(prompt), withBox: withBox) ?? "exit"
     }
 
-    static public func confirm(name: String, message: String): Confirmation {
+    public static func confirm(name: String, message: String): Confirmation {
         // Print the confirm message
         let mark = if (CliConfig.auto) {
             "✔".withColor(THEME_SUCCESS)
@@ -52,7 +51,7 @@ protected class InputUtils {
     }
 
     @When[os == "Windows"]
-    static private func getConfirmation(): Bool {
+    private static func getConfirmation(): Bool {
         var selected: Int64 = 0
         while (true) {
             let selectMessage = if (selected == 0) {
@@ -82,10 +81,12 @@ protected class InputUtils {
     }
 
     @When[os != "Windows"]
-    static private func getConfirmation(): Bool {
-        return READLINE.readline(
-            "(Enter to confirm, any other key to cancel): ".withColor(THEME_PRIMARY),
-            withBox: false
-        ).isNone()
+    private static func getConfirmation(): Bool {
+        return READLINE
+            .readline(
+                "(Enter to confirm, any other key to cancel): ".withColor(THEME_PRIMARY),
+                withBox: false
+            )
+            .isNone()
     }
 }

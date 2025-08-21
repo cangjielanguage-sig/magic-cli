@@ -97,74 +97,72 @@ private func redraw(prompt: String, content: Array<Rune>, cursorPos: Int64, phas
     // print(strBuilder.toString(), flush: true)
 }
 
-@When[os != "Windows"]
 private func readlineImpl(prompt: String,
-                          history: ArrayList<String>): Option<String> {
-    var buf = LinkedList<Rune>()
+history: ArrayList<String>): Option<String> {
+var buf = LinkedList<Rune>()
     var cursor = 0
     var idx = history.size
-
+    
     redraw(prompt, buf.toArray(), cursor, phase: DrawPhase.First)
 
     while (true) {
         let rune = if (let Some(r) <- RawInputUtils.rawGetRune()) {
             r
-        } else {
-            return None // EOF
-        }
-        match (rune) {
-            case r'\r' | r'\n' => // Enter
-                let line = String(buf)
-                if (line.size > 0) {
-                    history.add(line)
+            } else {
+                    return None // EOF
+}
+    match (rune) {
+        case r'\r' | r'\n' => // Enter
+            let line = String(buf)
+            if (line.size > 0) {
+                history.add(line)
+            }
+            redraw(prompt, buf.toArray(), cursor, phase: DrawPhase.Last)
+            return Some(line)
+        case r'\u{7F}' | r'\b' => // Delete or Backspace
+            if (buf.size > 0) {
+                if (let Some(rune) <- buf.removeLast()) {
+                    let width = displayWidthOf(rune)
+                    print("\b \b" * width, flush: true)
                 }
-                redraw(prompt, buf.toArray(), cursor, phase: DrawPhase.Last)
-                return Some(line)
-            case r'\u{7F}' | r'\b' => // Delete or Backspace
-                if (buf.size > 0) {
-                    if (let Some(rune) <- buf.removeLast()) {
-                        let width = displayWidthOf(rune)
-                        print("\b \b" * width, flush: true)
-                    }
-                    cursor -= 1
-                }
-                continue
-            case r'\u{2191}' =>  // Up ↑
-                if (idx > 0) {
-                    idx -= 1
-                    buf = LinkedList(history[idx].toRuneArray())
+                cursor -= 1
+            }
+            continue
+        case r'\u{2191}' =>  // Up ↑
+            if (idx > 0) {
+                idx -= 1
+                buf = LinkedList(history[idx].toRuneArray())
                     cursor = buf.size
                 }
-            case r'\u{2193}' =>  // Down ↓
-                if (idx + 1 < history.size) {
-                    idx += 1
-                    buf = LinkedList(history[idx].toRuneArray())
-                    cursor = buf.size
-                } else if (idx + 1 == history.size) {
-                    idx = history.size
-                    buf = LinkedList<Rune>()
-                    cursor = buf.size
-                }
-            case r'\u{2190}' => // Left ←
-                cursor = max(0, cursor - 1)
-            case r'\u{2192}' => // Right →
-                cursor = min(buf.size, cursor + 1)
-            case _ =>
-                // Add the current rune to the input buffer
-                if (cursor == buf.size) {
-                    buf.addLast(rune)
-                } else {
-                    let node = buf.nodeAt(cursor).getOrThrow()
-                    buf.addBefore(node, rune)
-                }
-                cursor += 1
-        }
-        redraw(prompt, buf.toArray(), cursor, phase: DrawPhase.Mid)
+                        case r'\u{2193}' =>  // Down ↓
+            if (idx + 1 < history.size) {
+                idx += 1
+                buf = LinkedList(history[idx].toRuneArray())
+                cursor = buf.size
+            } else if (idx + 1 == history.size) {
+                idx = history.size
+                buf = LinkedList<Rune>()
+                cursor = buf.size
+            }
+        case r'\u{2190}' => // Left ←
+            cursor = max(0, cursor - 1)
+        case r'\u{2192}' => // Right →
+            cursor = min(buf.size, cursor + 1)
+        case _ =>
+            // Add the current rune to the input buffer
+            if (cursor == buf.size) {
+                buf.addLast(rune)
+            } else {
+                let node = buf.nodeAt(cursor).getOrThrow()
+                buf.addBefore(node, rune)
+            }
+            cursor += 1
     }
+        redraw(prompt, buf.toArray(), cursor, phase: DrawPhase.Mid)
+        }
     return None
 }
 
-@When[os != "Windows"]
 public class Readline {
     private let history: ArrayList<String>
     private let historyFile: Option<Path>
@@ -218,6 +216,11 @@ public class Readline {
         }
     }
 
+    public func readLineBlock(prompt: String): Option<String> {
+        print(prompt, flush: true)
+        return readln()
+    }
+
     public func readline(prompt: String, withBox!: Bool): Option<String> {
         if (withBox) {
             return readline(prompt)
@@ -227,4 +230,3 @@ public class Readline {
         }
     }
 }
-
