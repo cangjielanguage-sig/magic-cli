@@ -83,9 +83,10 @@ protected class InputUtils {
 
     @When[os != "Windows"]
     static private func getConfirmation(): Bool {
-        return READLINE.readline(
+        let input = READLINE.readline(
             "(Enter to confirm, any other key to cancel): ".withColor(THEME_PRIMARY),
             withBox: false
-        ).isNone()
+        ) ?? ""
+        return input.isEmpty()
     }
 }
