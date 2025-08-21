@@ -6,8 +6,9 @@ import magic.config.Config
 import magic.agent.ConversationAgent
 import magic.interaction.ConsolePrinter
 import magic.log.LogUtils
+import magic.core.message.Conversation
 
-import cli.core.agents.CodeAgent
+import cli.core.agents.{CodeAgent, Compactor}
 import cli.core.config.CliConfig
 import cli.utils.{InputUtils, PrintUtils}
 
@@ -70,6 +71,16 @@ private func loadEnvFile(): Unit {
     }
 }
 
+private func updateConversation(agent: ConversationAgent, newConversation: Conversation, isCompacted: Bool): Unit {
+    if (isCompacted) {
+        agent.conversation.clear()
+        for (chatRound in newConversation) {
+            agent.conversation.addChatRound(chatRound)
+        }
+        PrintUtils.printTool("Compacting conversation...", "🥳 Compacted successfully!")
+    }
+}
+
 main(args: Array<String>): Int64 {
     if (!parseArgs(args)) {
         printHelp()
@@ -85,21 +96,26 @@ main(args: Array<String>): Int64 {
     PrintUtils.printWelcome()
 
     let agent = ConversationAgent(CodeAgent())
-
+    let compactor = Compactor()
     while (true) {
         let input = InputUtils.getUserInput()
         match (input) {
-            case "exit" =>
+            case "/exit" =>
                 PrintUtils.printExitMessage()
                 break
-            case "help" =>
-                PrintUtils.printHelpMessage()
-            case "clear" =>
+            case "/help" => PrintUtils.printHelpMessage()
+            case "/clear" =>
                 PrintUtils.clearScreen()
                 PrintUtils.printLogo()
+            case "/compact" =>
+                PrintUtils.printTool("Compacting conversation...", "🚀 Working on it...")
+                let (compactedConversation, isCompacted) = compactor.compact(agent.conversation)
+                updateConversation(agent, compactedConversation, isCompacted)
             case _ =>
                 let response = agent.chat(AgentRequest(input))
                 PrintUtils.printAgentResponse(response)
+                let (compactedConversation, isCompacted) = compactor.autoCompact(agent.conversation)
+                updateConversation(agent, compactedConversation, isCompacted)
         }
     }
     return 0
