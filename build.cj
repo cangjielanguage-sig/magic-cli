@@ -61,7 +61,6 @@ func buildFFI(os: String, arch: String): Int64 {
         case _ => throw UnsupportedException("Unreachable")
     }
 
-    // download stdx zip file
     if (!exists(libFile)) {
         let status = compile(os, sourceFile, libFile)
         if (!status) {
@@ -76,12 +75,12 @@ func buildFFI(os: String, arch: String): Int64 {
 func stagePreBuild(): Int64 {
     let (os, arch) = getOsInfo()
 
-    if (os == "Unknown" || arch == "Unknown") {
-        println("Unsupported os or arch")
+    if (os == "unknown" || arch == "unknown") {
+        println("Unsupported os or Arch")
         return 1
     }
 
-    println("os: ${os}, arch: ${arch}")
+    println("OS: ${os}, ARCH: ${arch}")
     return buildFFI(os, arch)
 }
 
