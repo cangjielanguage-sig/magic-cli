@@ -75,12 +75,12 @@ main(args: Array<String>): Int64 {
         printHelp()
         return 0
     }
-    // Set your API key in the .env file
-    loadEnvFile()
     Config.logFile = CliConfig.logFile.toString()
     Config.logLevel = "INFO"
     Config.modelRequestDir = CliConfig.dotDir.join("model-requests").toString()
     Config.enableFunctionCall = true
+    // Set your API key in the .env file
+    loadEnvFile()
 
     PrintUtils.printWelcome()
 
