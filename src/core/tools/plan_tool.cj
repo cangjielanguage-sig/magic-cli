@@ -71,7 +71,7 @@ private class Plan <: ToString {
             file.write(content.toArray())
             file.close()
         } catch(e: Exception) {
-            LogUtils.error("错误：无法保存计划文件到 ${path}。 详情: ${e}")
+            LogUtils.error("Error: Unable to save plan file to ${path}. Details: ${e}")
         }
     }
 
@@ -80,7 +80,7 @@ private class Plan <: ToString {
         let content = try {
             String.fromUtf8(File.readFrom(CliConfig.todoFile))
         } catch (e: FSException) {
-            LogUtils.debug("文件或目录不存在或无法访问")
+            LogUtils.debug("File or directory does not exist or is not accessible")
             return plan
         }
         for (line in content.split("\n")) {
@@ -97,42 +97,42 @@ public class PlanTool {
     private var plan = Plan.fromFile()
 
     @tool[
-        description: "创建一个新的任务计划，或用新计划覆盖现有计划。这是开始复杂任务的第一步。",
-        parameters: { tasks: "一个字符串数组，每项都是一个清晰的子任务描述" }
+        description: "Creates a new task plan or overwrites an existing plan with a new one. This is the first step to start complex tasks.",
+        parameters: { tasks: "An array of strings, each item is a clear subtask description" }
     ]
     public func createOrUpdatePlan(tasks: Array<String>): String {
         this.plan = Plan(tasks)
-        let message = "\n${this.plan}\n计划已创建，请确认是否需要修改计划，确认执行则保存该计划，并开始执行。"
+        let message = "\n${this.plan}\nPlan has been created. Please confirm if you need to modify the plan. Confirm execution to save this plan and start execution."
         if (let Deny(userInput) <- InputUtils.confirm("Plan", message)) {
-            return "用户取消执行该操作，用户意见反馈：${userInput}"
+            return "User cancelled the operation, feedback: ${userInput}"
         }
         this.plan.save()
-        return "\n计划已获得用户批准，准备开始执行。"
+        return "\nPlan has been approved by user, ready to start execution."
     }
 
     @tool[
-        description: "查看当前的计划和每个任务的完成状态 (TODO/DONE)。"
+        description: "View the current plan and the completion status of each task (TODO/DONE)."
     ]
     public func viewPlan(): String {
         if (this.plan.isEmpty()) {
-            return "当前没有计划。"
+            return "No current plan."
         }
-        return "当前计划:\n${this.plan}"
+        return "Current plan:\n${this.plan}"
     }
 
     @tool[
-        description: "将指定索引的任务标记为已完成 (DONE)，并返回当前的 TODO List",
-        parameters: { taskIndex: "要标记为完成的任务的索引 (从1开始)" }
+        description: "Marks the task at the specified index as completed (DONE) and returns the current TODO List",
+        parameters: { taskIndex: "Index of the task to mark as complete (starting from 1)" }
     ]
     public func markTaskAsComplete(taskIndex: Int64): String {
         if (taskIndex < 1 || taskIndex > this.plan.tasks.size) {
-            return "错误: 无效的任务索引 ${taskIndex}。"
+            return "Error: Invalid task index ${taskIndex}."
         } else if (this.plan.tasks[taskIndex].completed) {
-            return "任务 ${taskIndex} 已经是完成状态。"
+            return "Task ${taskIndex} is already completed."
         }
         this.plan.tasks[taskIndex-1].markAsComplete()
         this.plan.save()
         PrintUtils.printTool("📝 Current Plan", this.plan.toString())
-        return "任务 ${taskIndex} 已被完成，当前任务列表：\n${this.plan}"
+        return "Task ${taskIndex} has been completed. Current task list:\n${this.plan}"
     }
 }

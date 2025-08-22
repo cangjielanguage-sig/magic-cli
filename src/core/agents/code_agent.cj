@@ -22,8 +22,11 @@ public class CodeAgent {
     @prompt(
         """
         ${CANGJIE_CODE_AGENT_PROMPT}
-        你的当前工作目录是 ${CliConfig.cwd}。
-        你的任务是持续迭代，直到完全满足用户的需求。现在开始吧。
+        Your current working directory: ${CliConfig.cwd}。
+        Reply in the same language as the user's input. If unsure, reply in Chinese.
+
+        Finally, you are an agent - please keep going until the user's query is completely resolved.
+
         """
     )
 }
