@@ -14,7 +14,8 @@ import cli.core.config.CliConfig
         FSTool(),
         ShellTool(),
         CJTool(this.model),
-        PlanTool()
+        PlanTool(),
+        analyzeCode
     ]
 ]
 public class CodeAgent {

@@ -61,7 +61,13 @@ private func loadEnvFile(): Unit {
         for (line in content.split("\n")) {
             if (let Some(md) <- regex.find(line, group: true)) {
                 let key = md.matchString(1)
-                let value = md.matchString(2)
+                var value = md.matchString(2)
+                // strip quote marks if necessary
+                if (value.startsWith('"')) {
+                    value = value.replace('"', "")
+                } else if (value.startsWith("'")) {
+                    value = value.replace("'", "")
+                }
                 LogUtils.info("[ENV Set] ${key}=${value}")
                 Config.env[key] = value
             }
