@@ -8,6 +8,8 @@ import magic.core.message.{Message, MessageRole, MessageList}
 
 import cli.core.config.CliConfig
 
+import std.fs.canonicalize
+
 @agent[
     model: "${CliConfig.model}",
     executor: "naive"
@@ -27,12 +29,12 @@ const COMPACT_TOKEN_THRESHOLD = 0.7
 const COMPACT_PRESERVE_THRESHOLD = 0.3
 
 public class Compactor {
-    private let tokenizer: Cl100kTokenizer = Cl100kTokenizer("src\\libs\\cl100k_base.tiktoken")
+    private let tokenizer: Cl100kTokenizer = Cl100kTokenizer(canonicalize("./src/libs/cl100k_base.tiktoken").toString())
 
     public func compact(conversation: Conversation): (Conversation, Bool) {
         if (conversation.isEmpty()) {
             println("Conversation is empty, nothing to compact.")
-            return (Conversation(), false) 
+            return (Conversation(), false)
         }
         let (totalTokens, roundTokens) = this.calculateToken(conversation)
         // If the total token of conversation is less than 70% of the model context token limit, then no need to compact
