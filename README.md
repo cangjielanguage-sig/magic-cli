@@ -1,9 +1,136 @@
-# Cangjie-CLI
+# 🤖 Magic-CLI
 
-基于CangjieMagic的命令行Agent工具
+基于 **CangjieMagic** 框架的 AI 命令行助手，专为 **Cangjie 语言** 开发设计！
 
-## Quick Start
-本项目依赖[CangjieMagic](https://gitcode.com/Cangjie-TPC/CangjieMagic/blob/dev/docs/install.md#%E6%8E%A8%E8%8D%90recommended)框架环境，参考该文档完成`CangjieMagic`环境配置后，修改`cjpm.toml`中依赖路径指向`CangjieMgaic`和`Cangjie stdx`库的位置，执行下述命令即可启动。
+## ✨ 核心特性
+
+- 🎯 **智能对话** - 交互式 CLI 界面，支持自然语言处理 Cangjie 编程任务
+- 🔧 **代码工具链** - 集成 Cangjie 开发全套工具（初始化、编译、运行、调试）
+- 📚 **文档检索** - 内置 RAG 系统，可查询 Cangjie 官方文档和代码示例
+- 🧠 **上下文管理** - 智能对话压缩，保持长期会话效率
+- 🚀 **一键构建** - 自动化项目构建和依赖管理
+
+## 🛠️ 技术栈
+
+| 组件 | 技术 |
+|------|------|
+| 语言 | **Cangjie** (仓颉语言) |
+| 框架 | **CangjieMagic** (AI Agent 框架) |
+| 依赖 | Cangjie stdx 标准库 + Magic 框架 |
+| 模型 | 支持配置 LLM (默认远程 API) |
+
+## 🏗️ 项目结构
+
 ```
-cjpm run --name cli
+magic-cli/
+├── 📁 src/                 # 核心源码
+│   ├── agent/             # AI 代理实现
+│   ├── tools/             # 工具集
+│   └── main.cj           # 程序入口
+├── 📁 docs/               # 文档
+├── 📁 benchmark/         # 性能测试
+├── 📁 ffi/               # 外部接口
+├── 📁 scripts/           # 构建脚本
+├── 📄 cjpm.toml         # 项目配置
+└── 📄 README.md         # 项目说明
 ```
+
+## 🚀 快速开始
+
+### 前置要求
+
+1. **CangjieMagic 环境** - 参考 [CangjieMagic 安装指南](https://gitcode.com/Cangjie-TPC/CangjieMagic/blob/dev/docs/install.md#%E6%8E%A8%E8%8D%90recommended)
+2. **Cangjie 编译器** - 确保已安装 Cangjie 1.0.0+
+
+### 安装配置
+
+1. **克隆项目**
+   ```bash
+   git clone <repository-url>
+   cd magic-cli
+   ```
+
+2. **配置依赖路径**  
+   编辑 `cjpm.toml`，确保依赖路径指向你的 CangjieMagic 和 Cangjie stdx 库位置：
+   ```toml
+   [dependencies]
+   magic = { path = "/path/to/CangjieMagic" }
+   ```
+
+3. **启动应用**
+   ```bash
+   cjpm run --name cli
+   ```
+
+## 🎯 使用示例
+
+### 基本对话
+```
+🤖 Magic-CLI > 帮我创建一个 Cangjie 项目
+✨ 正在为您创建项目...
+📁 已创建新项目：my-cangjie-app
+```
+
+### 代码生成
+```
+🤖 Magic-CLI > 生成一个快速排序算法
+✨ 生成代码：
+```cangjie
+func quickSort(arr: Array<Int64>): Array<Int64> {
+    // 快速排序实现...
+}
+```
+
+### 文档查询
+```
+🤖 Magic-CLI > 如何定义泛型函数？
+📚 查询文档：
+泛型函数使用 `func<T>` 语法，例如：
+```cangjie
+func identity<T>(x: T): T {
+    return x
+}
+```
+
+## 🔧 开发命令
+
+| 命令 | 说明 |
+|------|------|
+| `cjpm build` | 构建项目 |
+| `cjpm run --name cli` | 运行应用 |
+| `cjpm test` | 运行测试 |
+| `cjpm clean` | 清理构建产物 |
+
+## 📦 依赖管理
+
+项目使用 `cjpm.toml` 管理依赖，支持多平台构建：
+- 🐧 Linux (x86_64, aarch64)
+- 🪟 Windows (x86_64)
+- 🍎 macOS (aarch64)
+
+## 🤝 贡献指南
+
+欢迎贡献！请遵循以下步骤：
+
+1. 🍴 Fork 项目
+2. 🌿 创建功能分支 (`git checkout -b feature/AmazingFeature`)
+3. 💾 提交更改 (`git commit -m 'Add some AmazingFeature'`)
+4. 📤 推送分支 (`git push origin feature/AmazingFeature`)
+5. 🔍 创建 Pull Request
+
+## 📄 许可证
+
+本项目采用 [MIT 许可证](LICENSE) 开源。
+
+## 🙋‍♂️ 支持
+
+- 📖 [文档](docs/)
+- 🐛 [问题反馈](https://github.com/your-repo/issues)
+- 💬 [讨论区](https://github.com/your-repo/discussions)
+
+---
+
+<div align="center">
+  <p>Made with ❤️ by Cangjie 开发者社区</p>
+  <p><i>让 Cangjie 开发更简单！</i></p>
+</div>
