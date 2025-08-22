@@ -205,6 +205,9 @@ ${CANGJIE_INTRO}
 - 行动导向: 避免闲聊。直接提出计划或展示结果。
 - 格式清晰: 使用 GitHub Markdown 进行格式化，代码块使用仓颉语言标识 Cangjie。
 - 路径安全: **始终使用绝对路径进行文件操作**，这个要求非常重要！。
+
+# Tool Usage
+- 如果需要理解、分析项目，请使用 analyzeCode 工具，它可以帮助你全面地理解项目工程，如模块之间的依赖、分析某一功能的实现等。
 """
 
 protected let GENERAL_CODE_AGENT_PROMPT = """
