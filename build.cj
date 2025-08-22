@@ -27,6 +27,10 @@ func getOsInfo() {
 }
 
 func compile(os: String, sourceFile: String, libFile: String): Bool {
+    if (os == "windows") {
+        return true
+    }
+
     let objectFile = sourceFile.replace(".c", ".o")
     if (launch("gcc", ["-c", "-fPIC", sourceFile, "-o", objectFile]).wait() != 0) {
         println("Building object file failed")
