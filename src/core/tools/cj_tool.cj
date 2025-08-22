@@ -19,7 +19,7 @@ import magic.log.LogUtils
 
 import cli.utils.*
 
-class ApiClient {
+protected class ApiClient {
     static public func post(url: String,
                                header: HashMap<String, String>,
                                body: JsonObject,
