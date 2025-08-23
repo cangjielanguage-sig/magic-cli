@@ -159,8 +159,8 @@ public class CJTool{
     ) { }
 
     // @tool[
-    //     description: "根据原始需求对已生成的仓颉代码进行修复或优化",
-    //     parameters: { query: "原始的代码生成需求", code: "需要修复或优化的代码" }
+    //     description: "Repair or optimize generated Cangjie code based on original requirements",
+    //     parameters: { query: "Original code generation requirements", code: "Code that needs to be repaired or optimized" }
     // ]
     public func repairCangjieCode(query: String, code: String): String {
         let message = query
@@ -180,26 +180,26 @@ public class CJTool{
         let rawResponseOpt = ApiClient.post(url, header, requestBody)
         if (let Some(rawResponse) <- rawResponseOpt) {
             if (rawResponse.isEmpty()) {
-                return "服务器返回为空,代码修复失败,请重试"
+                return "Server returned empty response, code repair failed, please retry"
             }
             let extractedData = extractLastSseData(rawResponse)
             if (extractedData.isEmpty()) {
-                return "待修复代码中没有检测到代码块"
+                return "No code blocks detected in the code to be repaired"
             }
             try {
                 let responseData = JsonValue.fromStr(extractedData)
                 return responseData.toJsonString()
             } catch (e: Exception) {
-                return "JSON解析失败: ${e.message}. 服务器原始响应: ${extractedData}"
+                return "JSON parsing failed: ${e.message}. Server raw response: ${extractedData}"
             }
         } else {
-                return "请求失败，未收到服务器响应"
+                return "Request failed, no server response received"
         }
     }
 
     @tool[
-        description: "获取仓颉（Cangjie）语言的开发文档",
-        parameters: { query: "需要查询的开发需求或文档内容", nums_docs_to_retrive: "期望返回的文档数量" }
+        description: "Retrieve Cangjie programming language development documentation with AI-powered semantic search and summarization",
+        parameters: { query: "Development requirements or documentation content to query", nums_docs_to_retrive: "Expected number of documents to retrieve" }
     ]
     public func retrieveCangjieDocuments(query: String, nums_docs_to_retrive: Int64): String {
         let message = query
@@ -216,13 +216,13 @@ public class CJTool{
         let rawResponseOpt = ApiClient.post(url, header, requestBody)
         let rawResponse = match (rawResponseOpt) {
             case Some(resp) => resp
-            case None => return "请求失败，未收到服务器响应"
+            case None => return "Request failed, no server response received"
         }
         let responseData: JsonValue
         try {
             responseData = JsonValue.fromStr(rawResponse)
         } catch (e: Exception) {
-            return "JSON解析失败: ${e.message}. 服务器原始响应: ${rawResponse}"
+            return "JSON parsing failed: ${e.message}. Server raw response: ${rawResponse}"
         }
         let resultJson = match (responseData) {
             case jsonObj: JsonObject =>
@@ -270,8 +270,8 @@ public class CJTool{
     }
 
     @tool[
-        description: "在指定目录下初始化一个新的仓颉模块。",
-        parameters: { path: "仓颉模块的路径，必须是绝对路径" }
+        description: "Initialize a new Cangjie module in the specified directory.",
+        parameters: { path: "Path to the Cangjie module, must be an absolute path" }
     ]
     public func cjpmInitModule(path: String): String {
         PrintUtils.printTool("CJPM Init Module", path)
@@ -280,30 +280,30 @@ public class CJTool{
             let cmd = "cjpm"
             let args: Array<String> = ["init"]
 
-            eprintln("正在执行命令: ${cmd} ${args}")
+            eprintln("Executing command: ${cmd} ${args}")
             let (exitCode, stdOutData, stdErrData) = executeWithOutput(cmd, args, workingDirectory: Path(path))
 
             if (exitCode == 0) {
                 let outputString = String.fromUtf8(stdOutData)
                 if (outputString.trimAscii().size == 0) {
-                    return "项目初始化成功。"
+                    return "Project initialization successful."
                 } else {
                     return outputString
                 }
             } else {
                 let errorString = String.fromUtf8(stdErrData)
-                return "错误: " + errorString
+                return "Error: " + errorString
             }
         } catch (e: ProcessException) {
-            return "进程执行错误: ${e}"
+            return "Process execution error: ${e}"
         } catch (e: Exception) {
-            return "发生未知错误: ${e}"
+            return "Unknown error occurred: ${e}"
         }
     }
 
     @tool[
-        description: "在指定目录下编译单个Cangjie文件，生成可执行文件main",
-        parameters: { path: "Cangjie文件对应目录路径，必须是绝对路径", name: "要编译的Cangjie文件名，例如test.cj" }
+        description: "Compile a single Cangjie file in the specified directory, generating an executable file main",
+        parameters: { path: "Directory path corresponding to the Cangjie file, must be an absolute path", name: "Name of the Cangjie file to compile, e.g., test.cj" }
     ]
     public func cjCompiler(path: String, name: String): String {
         PrintUtils.printTool("CJ Compiler", path + "/" + name)
@@ -312,30 +312,30 @@ public class CJTool{
             let cmd = "cjc"
             var args: Array<String> = [name]
 
-            eprintln("正在执行命令: ${cmd} ${args}")
+            eprintln("Executing command: ${cmd} ${args}")
             let (exitCode, stdOutData, stdErrData) = executeWithOutput(cmd, args, workingDirectory: Path(path))
 
             if (exitCode == 0) {
                 let outputString = String.fromUtf8(stdOutData)
                 if (outputString.trimAscii().size == 0) {
-                    return "编译成功。"
+                    return "Compilation successful."
                 } else {
                     return outputString
                 }
             } else {
                 let errorString = String.fromUtf8(stdErrData)
-                return "错误: " + errorString
+                return "Error: " + errorString
             }
         } catch (e: ProcessException) {
-            return "进程执行错误: ${e}"
+            return "Process execution error: ${e}"
         } catch (e: Exception) {
-            return "发生未知错误: ${e}"
+            return "Unknown error occurred: ${e}"
         }
     }
 
     @tool[
-        description: "编译指定路径的Cangjie模块。可选择是否进行增量编译以加快速度。",
-        parameters: { incremental: "如果为 true，则进行增量编译，否则进行常规全量编译。", path: "仓颉模块的路径，必须是绝对路径" }
+        description: "Compile the Cangjie module at the specified path. Option to choose incremental compilation for faster speed.",
+        parameters: { incremental: "If true, perform incremental compilation; otherwise, perform regular full compilation.", path: "Path to the Cangjie module, must be an absolute path" }
     ]
     public func cjpmBuildModule(incremental: Bool, path: String): String {
         PrintUtils.printTool("CJPM Build Module", path)
@@ -347,30 +347,30 @@ public class CJTool{
                 args = ["build", "-i"]
             }
 
-            eprintln("正在执行命令: ${cmd} ${args}")
+            eprintln("Executing command: ${cmd} ${args}")
             let (exitCode, stdOutData, stdErrData) = executeWithOutput(cmd, args, workingDirectory: Path(path))
 
             if (exitCode == 0) {
                 let outputString = String.fromUtf8(stdOutData)
                 if (outputString.trimAscii().size == 0) {
-                    return "编译成功。"
+                    return "Compilation successful."
                 } else {
                     return outputString
                 }
             } else {
                 let errorString = String.fromUtf8(stdErrData)
-                return "错误: " + errorString
+                return "Error: " + errorString
             }
         } catch (e: ProcessException) {
-            return "进程执行错误: ${e}"
+            return "Process execution error: ${e}"
         } catch (e: Exception) {
-            return "发生未知错误: ${e}"
+            return "Unknown error occurred: ${e}"
         }
     }
 
     @tool[
-        description: "编译并运行一个指定名称的可执行产物。",
-        parameters: { name: "要运行的可执行产物的名称。", path: "仓颉模块的路径，必须是绝对路径" }
+        description: "Compile and run an executable artifact with the specified name.",
+        parameters: { name: "Name of the executable artifact to run.", path: "Path to the Cangjie module, must be an absolute path" }
     ]
     public func cjpmRun(name: String, path: String): String {
         PrintUtils.printTool("CJPM Run", path + "  --name " + name)
@@ -379,30 +379,30 @@ public class CJTool{
             let cmd = "cjpm"
             let args: Array<String> = ["run", "--name", name]
 
-            eprintln("正在执行命令: ${cmd} ${args}")
+            eprintln("Executing command: ${cmd} ${args}")
             let (exitCode, stdOutData, stdErrData) = executeWithOutput(cmd, args, workingDirectory: Path(path))
 
             if (exitCode == 0) {
                 let outputString = String.fromUtf8(stdOutData)
                 if (outputString.trimAscii().size == 0) {
-                    return "程序执行完毕。"
+                    return "Program execution completed."
                 } else {
                     return outputString
                 }
             } else {
                 let errorString = String.fromUtf8(stdErrData)
-                return "错误: " + errorString
+                return "Error: " + errorString
             }
         } catch (e: ProcessException) {
-            return "进程执行错误: ${e}"
+            return "Process execution error: ${e}"
         } catch (e: Exception) {
-            return "发生未知错误: ${e}"
+            return "Unknown error occurred: ${e}"
         }
     }
 
     @tool[
-        description: "清理目标目录，删除所有之前构建生成的产物。",
-        parameters: {  path: "仓颉模块的路径，必须是绝对路径" }
+        description: "Clean the target directory, removing all previously built artifacts.",
+        parameters: {  path: "Path to the Cangjie module, must be an absolute path" }
     ]
     public func cjpmCleanTarget(path: String): String {
         PrintUtils.printTool("CJPM Clean Target", path)
@@ -411,24 +411,24 @@ public class CJTool{
             let cmd = "cjpm"
             let args: Array<String> = ["clean"]
 
-            eprintln("正在执行命令: ${cmd} ${args}")
+            eprintln("Executing command: ${cmd} ${args}")
             let (exitCode, stdOutData, stdErrData) = executeWithOutput(cmd, args, workingDirectory: Path(path))
 
             if (exitCode == 0) {
                 let outputString = String.fromUtf8(stdOutData)
                 if (outputString.trimAscii().size == 0) {
-                    return "清理完成。"
+                    return "Cleanup completed."
                 } else {
                     return outputString
                 }
             } else {
                 let errorString = String.fromUtf8(stdErrData)
-                return "错误: " + errorString
+                return "Error: " + errorString
             }
         } catch (e: ProcessException) {
-            return "进程执行错误: ${e}"
+            return "Process execution error: ${e}"
         } catch (e: Exception) {
-            return "发生未知错误: ${e}"
+            return "Unknown error occurred: ${e}"
         }
     }
 
