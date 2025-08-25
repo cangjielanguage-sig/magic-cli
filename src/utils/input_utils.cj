@@ -26,9 +26,9 @@ protected class InputUtils {
     public static func confirm(name: String, message: String): Confirmation {
         // Print the confirm message
         let mark = if (CliConfig.auto) {
-            "✔".withColor(THEME_SUCCESS)
+            "✔ ".withColor(THEME_SUCCESS)
         } else {
-            "?".withColor(THEME_WARNING)
+            "? ".withColor(THEME_WARNING)
         }
         println(
             wrapBox(

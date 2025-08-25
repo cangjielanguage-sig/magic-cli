@@ -13,13 +13,13 @@ import std.env.*
 @toolset
 public class ShellTool {
     @tool[
-        description: "在指定目录下执行Shell命令，返回运行结果",
-        parameters: { path: "执行命令的目录路径，必须是绝对路径", command: "要执行的shell命令" }
+        description: "Executes a shell command in the specified directory and returns the execution result",
+        parameters: { path: "Directory path for command execution, must be an absolute path", command: "Shell command to execute" }
     ]
     public func execute(path: String, command: String): String {
         let message = command
         if (let Deny(userInput) <- InputUtils.confirm("Execute Shell Command", message)) {
-            return "用户取消执行该操作，用户意见反馈：${userInput}"
+            return "User cancelled the operation, feedback: ${userInput}"
         }
 
         try {
@@ -34,13 +34,13 @@ public class ShellTool {
 
             if (exitCode == 0) {
                 let outString = String.fromUtf8(stdOutData).trimAscii()
-                return "命令执行成功，输出:\n${outString}"
+                return "Command executed successfully, output:\n${outString}"
             } else {
                 let errString = String.fromUtf8(stdErrData).trimAscii()
-                return "命令执行失败，错误输出:\n${errString}"
+                return "Command execution failed, error output:\n${errString}"
             }
         } catch (e: Exception) {
-            return "执行命令时发生异常: ${e}\n命令: ${command}"
+            return "Exception occurred while executing command: ${e}\nCommand: ${command}"
         }
     }
 }

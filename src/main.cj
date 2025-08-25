@@ -6,7 +6,9 @@ import magic.config.Config
 import magic.agent.ConversationAgent
 import magic.interaction.ConsolePrinter
 import magic.log.LogUtils
-import cli.core.agents.CodeAgent
+import magic.core.message.Conversation
+
+import cli.core.agents.{CodeAgent, Compactor}
 import cli.core.config.CliConfig
 import cli.utils.{InputUtils, PrintUtils}
 import std.argopt.{parseArguments, ArgumentSpec, ArgumentMode, ArgumentParseException}
@@ -58,7 +60,13 @@ private func loadEnvFile(): Unit {
         for (line in content.split("\n")) {
             if (let Some(md) <- regex.find(line, group: true)) {
                 let key = md.matchString(1)
-                let value = md.matchString(2)
+                var value = md.matchString(2)
+                // strip quote marks if necessary
+                if (value.startsWith('"')) {
+                    value = value.replace('"', "")
+                } else if (value.startsWith("'")) {
+                    value = value.replace("'", "")
+                }
                 LogUtils.info("[ENV Set] ${key}=${value}")
                 Config.env[key] = value
             }
@@ -68,39 +76,52 @@ private func loadEnvFile(): Unit {
     }
 }
 
+private func updateConversation(agent: ConversationAgent, newConversation: Conversation, isCompacted: Bool): Unit {
+    if (isCompacted) {
+        agent.conversation.clear()
+        for (chatRound in newConversation) {
+            agent.conversation.addChatRound(chatRound)
+        }
+        PrintUtils.printTool("Compacting conversation...", "🥳 Compacted successfully!")
+    }
+}
+
 main(args: Array<String>): Int64 {
     if (!parseArgs(args)) {
         printHelp()
         return 0
     }
-    // Set your API key in the .env file
-    loadEnvFile()
     Config.logFile = CliConfig.logFile.toString()
     Config.logLevel = "INFO"
     Config.modelRequestDir = CliConfig.dotDir.join("model-requests").toString()
     Config.enableFunctionCall = true
+    // Set your API key in the .env file
+    loadEnvFile()
 
     PrintUtils.printWelcome()
 
     let agent = ConversationAgent(CodeAgent())
-
+    let compactor = Compactor()
     while (true) {
         let input = InputUtils.getUserInput()
         match (input) {
-            case "exit" =>
+            case "/exit" =>
                 PrintUtils.printExitMessage()
                 break
-            case "help" => 
+            case "/help" => 
                 PrintUtils.printHelpMessage()
-                break
-            case "clear" =>
+            case "/clear" =>
                 PrintUtils.clearScreen()
                 PrintUtils.printLogo()
-                break
+            case "/compact" =>
+                PrintUtils.printTool("Compacting conversation...", "🚀 Working on it...")
+                let (compactedConversation, isCompacted) = compactor.compact(agent.conversation)
+                updateConversation(agent, compactedConversation, isCompacted)
             case _ =>
-                //let response = agent.chat(AgentRequest(input))
-                //PrintUtils.printAgentResponse(response)
-                println(input)
+                let response = agent.chat(AgentRequest(input))
+                PrintUtils.printAgentResponse(response)
+                let (compactedConversation, isCompacted) = compactor.autoCompact(agent.conversation)
+                updateConversation(agent, compactedConversation, isCompacted)
         }
     }
     return 0
