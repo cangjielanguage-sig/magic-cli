@@ -10,7 +10,7 @@ import magic.core.message.Conversation
 
 import cli.core.agents.{CodeAgent, Compactor}
 import cli.core.config.CliConfig
-import cli.utils.{InputUtils, PrintUtils}
+import cli.utils.{InputUtils, PrintUtils, MCPConfigManager}
 import std.argopt.{parseArguments, ArgumentSpec, ArgumentMode, ArgumentParseException}
 import std.fs.{exists, File, FSException, Path}
 import std.regex.Regex
@@ -96,6 +96,10 @@ main(args: Array<String>): Int64 {
     PrintUtils.printWelcome()
 
     let agent = ConversationAgent(CodeAgent())
+
+    let mcpManager = MCPConfigManager()
+    mcpManager.loadMCPServersForAgent(agent)
+    
     let compactor = Compactor()
     while (true) {
         let input = InputUtils.getUserInput()
@@ -116,6 +120,8 @@ main(args: Array<String>): Int64 {
                 } else {
                     PrintUtils.printTool("Compacting conversation...", "🌱 Conversation context is still short, no need to compact!")
                 }
+            case "/mcp" | "mcp" =>
+                mcpManager.showLoadedMCPTools(agent)
             case _ =>
                 let response = agent.chat(AgentRequest(input))
                 PrintUtils.printAgentResponse(response)

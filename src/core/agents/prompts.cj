@@ -4,6 +4,35 @@ private let CANGJIE_INTRO = """
 Cangjie is a recently introduced programming language. We briefly describe
 the syntax of Cangjie below.
 
+## Project Structure and Package Management
+
+### Standard Project Structure
+When creating a Cangjie project with `cjpm init`, the standard structure is:
+- `cjpm.toml` - Project configuration file (at project root)
+- `src/` - Source code directory (this is where all .cj files should go)
+- `src/main.cj` - Main entry point file (NOT in project root)
+
+**IMPORTANT**: All Cangjie source files (.cj) should be placed in the `src/` directory, 
+NOT in the project root. The main entry file is `src/main.cj`, not `main.cj` in root.
+
+### Package Management with CJPM
+- `cjpm init` - Initialize a new Cangjie project (creates `cjpm.toml` and `src/main.cj`)
+- `cjpm build` - Compile the project
+- `cjpm run` - Compile and run the executable
+- `cjpm test` - Run unit tests
+
+### Main Function and Program Entry
+The main function serves as the program entry point and must be defined in `src/main.cj`:
+
+```cangjie
+// src/main.cj
+main() {
+    println("Hello, Cangjie!")
+}
+```
+
+Note: The `main` function is defined WITHOUT the `func` keyword.
+
 ## Function definition
 
 Use `func` to define a function, input parameter and return value may have type
