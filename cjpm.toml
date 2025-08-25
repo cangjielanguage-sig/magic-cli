@@ -14,13 +14,7 @@
 [dependencies]
   magic = { path = "${MAGIC_PATH}" }
 
-[target.x86_64-unknown-linux-gnu.ffi.c]
-  rawinput = { path="./ffi/" }
-
-[target.aarch64-unknown-linux-gnu.ffi.c]
-  rawinput = { path="./ffi/" }
-
-[target.aarch64-apple-darwin.ffi.c]
+[ffi.c]
   rawinput = { path="./ffi/" }
 
 [target.x86_64-unknown-linux-gnu.bin-dependencies]
