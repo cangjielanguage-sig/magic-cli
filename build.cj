@@ -27,10 +27,6 @@ func getOsInfo() {
 }
 
 func compile(os: String, sourceFile: String, libFile: String): Bool {
-    if (os == "windows") {
-        return true
-    }
-
     let objectFile = sourceFile.replace(".c", ".o")
     if (launch("gcc", ["-c", "-fPIC", sourceFile, "-o", objectFile]).wait() != 0) {
         println("Building object file failed")
@@ -38,10 +34,8 @@ func compile(os: String, sourceFile: String, libFile: String): Bool {
     }
 
     let buildProc = match (os) {
-        case "linux" =>
+        case "linux" | "windows"=>
             launch("gcc", ["-shared", "-o", libFile, objectFile])
-        case "windows" =>
-            throw UnsupportedException("Unreachable")
         case "macos" =>
             launch("gcc", ["-dynamiclib", "-o", libFile, objectFile])
         case _ =>
@@ -57,7 +51,11 @@ func compile(os: String, sourceFile: String, libFile: String): Bool {
 
 func buildFFI(os: String, arch: String): Int64 {
     let ffiDir = "./ffi"
-    let sourceFile = "${ffiDir}/raw_input.c"
+    let sourceFile = match(os) {
+        case "linux"|"macos" => "${ffiDir}/raw_input_linux.c"
+        case "windows" => "${ffiDir}/raw_input_win.c"
+        case _ => throw UnsupportedException("Unreachable")
+    }
     let libFile = match(os) {
         case "linux" => "${ffiDir}/librawinput.so"
         case "windows" => "${ffiDir}/librawinput.dll"
