@@ -102,12 +102,12 @@ void exitRaw() {
  *Parameter Description:
  *charValuePtr: Stores the character value (uses the lower 8 bits for ASCII characters; stores the 16-bit value directly for wide characters).
  *isVirtualPtr: Indicates whether the input is a virtual key (TRUE = virtual key, FALSE = regular character).
- * return TRUE if success else FALSE
+ * return TRUE if continue FALSE if error
  */
 BOOL getConsoleChar(unsigned short* charValuePtr, BOOL* isVirtualPtr) {
+    *charValuePtr = 0;
+    *isVirtualPtr = FALSE;
     if (charValuePtr == NULL || isVirtualPtr == NULL) {
-        *charValuePtr = 0;
-        *isVirtualPtr = FALSE;
         return FALSE;
     }
     INPUT_RECORD inputRecord;
@@ -119,17 +119,31 @@ BOOL getConsoleChar(unsigned short* charValuePtr, BOOL* isVirtualPtr) {
 
     if (inputRecord.EventType == KEY_EVENT && inputRecord.Event.KeyEvent.bKeyDown) {
         KEY_EVENT_RECORD keyEvent = inputRecord.Event.KeyEvent;
-        
-        if (keyEvent.wVirtualKeyCode != 0 && keyEvent.uChar.UnicodeChar == 0) {
+        if (keyEvent.wVirtualKeyCode != 0 
+            && keyEvent.uChar.UnicodeChar == 0 
+            && keyEvent.uChar.AsciiChar == 0) {
             *isVirtualPtr = TRUE;
             *charValuePtr = keyEvent.wVirtualKeyCode;
         } else {
             *isVirtualPtr = FALSE;
+            unsigned short charCode = 0;
             if (keyEvent.uChar.UnicodeChar != 0) {
-                *charValuePtr = keyEvent.uChar.UnicodeChar;
+                charCode = keyEvent.uChar.UnicodeChar;
+            } else if (keyEvent.uChar.AsciiChar != 0) {
+                charCode = keyEvent.uChar.AsciiChar;
             } else {
-                *charValuePtr = keyEvent.uChar.AsciiChar; 
+                return TRUE;
             }
+            
+            // Filter other control character
+            if (charCode < 0x20) {
+                // ENTER、TAB..
+                if (charCode != 0x09 && charCode != 0x0D && charCode != 0x0A && charCode !=0x08) {
+                    return TRUE;
+                }
+            }
+            *isVirtualPtr = FALSE;
+            *charValuePtr = charCode;
         }
         return TRUE;
     }
