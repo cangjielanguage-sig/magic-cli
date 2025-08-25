@@ -3,9 +3,9 @@ package cli.utils
 import std.regex.Regex
 import std.collection.ArrayList
 
-private const LEFT_TOP  = "╔"
+private const LEFT_TOP = "╔"
 private const LEFT_BOTTOM = "╚"
-private const RIGHT_TOP  = "╗"
+private const RIGHT_TOP = "╗"
 private const RIGHT_BOTTOM = "╝"
 private const HORIZONTAL_BORDER = "═"
 private const HORIZONTAL_SEPARATOR = "─"
@@ -69,60 +69,75 @@ private func splitLine(line: String, width: Int64): Array<String> {
     return subLines.toArray()
 }
 
-protected func wrapBox(content: String,
-                       width!: Int64 = 100,
-                       boxColor!: String = BRIGHT_BLACK,
-                       centerTitle!: Bool = false): String {
+protected func wrapBox(content: String, width!: Int64 = 100, boxColor!: String = BRIGHT_BLACK,
+    centerTitle!: Bool = false): String {
     return wrapBox("", content: content, width: width, boxColor: boxColor, centerTitle: centerTitle)
 }
 
-protected func wrapBox(title: String,
-                       content!: String,
-                       width!: Int64 = 100,
-                       boxColor!: String = BRIGHT_BLACK,
-                       centerTitle!: Bool = false): String {
+protected func wrapBox(title: String, content!: String, width!: Int64 = 100, boxColor!: String = BRIGHT_BLACK,
+    centerTitle!: Bool = false): String {
     let lines = content.split("\n")
     return wrapBox(title, lines: lines, width: width, boxColor: boxColor, centerTitle: centerTitle)
 }
 
-protected func wrapBox(title: String,
-                       lines!: Array<String>,
-                       width!: Int64 = 100,
-                       boxColor!: String = BRIGHT_BLACK,
-                       centerTitle!: Bool = false): String {
+protected func wrapBox(title: String, lines!: Array<String>, width!: Int64 = 100, boxColor!: String = BRIGHT_BLACK,
+    centerTitle!: Bool = false): String {
     let strBuilder = StringBuilder()
     // Add the top line
     strBuilder.append("${LEFT_TOP}${HORIZONTAL_BORDER * width}${RIGHT_TOP}\n".withColor(boxColor))
     // Add the title
     if (!title.isEmpty()) {
         strBuilder.append(
-            "${VERTICAL_BORDER.withColor(boxColor)}${padString(title, width: width, center: centerTitle)}${VERTICAL_BORDER.withColor(boxColor)}\n"
-        )
-        strBuilder.append(
-            "${VERTICAL_BORDER}${HORIZONTAL_SEPARATOR * width}${VERTICAL_BORDER}\n".withColor(boxColor)
-        )
+            "${VERTICAL_BORDER.withColor(boxColor)}${padString(title, width: width, center: centerTitle)}${VERTICAL_BORDER.withColor(boxColor)}\n")
+        strBuilder.append("${VERTICAL_BORDER}${HORIZONTAL_SEPARATOR * width}${VERTICAL_BORDER}\n".withColor(boxColor))
     }
     // Add content lines if necessary
     if (!lines.isEmpty()) {
         for (line in lines) {
             // Split the line as multiple lines if it's too long
             for (subLine in splitLine(line, width)) {
-                strBuilder.append(
-                    "${wrapLineWithVerticalBorder(subLine, width: width, boxColor: boxColor)}\n"
-                )
+                strBuilder.append("${wrapLineWithVerticalBorder(subLine, width: width, boxColor: boxColor)}\n")
             }
         }
     }
     // Add the bottom line
-    strBuilder.append(
-        "${LEFT_BOTTOM}${HORIZONTAL_BORDER * width}${RIGHT_BOTTOM}".withColor(boxColor)
-    )
+    strBuilder.append("${LEFT_BOTTOM}${HORIZONTAL_BORDER * width}${RIGHT_BOTTOM}".withColor(boxColor))
     return strBuilder.toString()
 }
 
-protected func wrapLineWithVerticalBorder(line: String,
-                                          width!: Int64 = 100,
-                                          boxColor!: String = BRIGHT_BLACK): String {
+protected func wrapLineWithVerticalBorder(line: String, width!: Int64 = 100, boxColor!: String = BRIGHT_BLACK): String {
     let border = VERTICAL_BORDER.withColor(boxColor)
     return "${border}${padString(line, width: width)}${border}"
+}
+
+protected func wrapFileList(files: Array<String>, selectIdx: Int64, prefix!: String = String.empty): String {
+    let fileListSb = StringBuilder('\n')
+    if (files.size == 0) {
+        return ""
+    }
+    let maxExtend = 8
+    let rangeEnd = min(max(selectIdx + 1, maxExtend), files.size)
+    let rangeStart = max(0, rangeEnd - maxExtend)
+    if (rangeStart > 0) {
+        fileListSb.append("\n▲")
+    }
+    for (i in rangeStart..rangeEnd) {
+        let file = files[i]
+        fileListSb.append("\n")
+        if (i == selectIdx) {
+            let indexOp = file.indexOf(prefix)
+            if (let Some(index) <- indexOp) {
+                fileListSb.append(
+                    "${BRIGHT_BLUE}${BOLD}${prefix}${BRIGHT_BLACK}${file[(index + prefix.toRuneArray().size)..file.size]}${RESET}")
+            } else {
+                fileListSb.append("${BRIGHT_BLUE}${BOLD}${file}${RESET}")
+            }
+        } else {
+            fileListSb.append("${BRIGHT_BLACK}${file}${RESET}")
+        }
+    }
+    if (files.size > maxExtend) {
+        fileListSb.append("\n▼(${selectIdx + 1}/${files.size})")
+    }
+    return fileListSb.toString()
 }

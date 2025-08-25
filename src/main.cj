@@ -6,11 +6,9 @@ import magic.config.Config
 import magic.agent.ConversationAgent
 import magic.interaction.ConsolePrinter
 import magic.log.LogUtils
-
 import cli.core.agents.CodeAgent
 import cli.core.config.CliConfig
 import cli.utils.{InputUtils, PrintUtils}
-
 import std.argopt.{parseArguments, ArgumentSpec, ArgumentMode, ArgumentParseException}
 import std.fs.{exists, File, FSException, Path}
 import std.regex.Regex
@@ -92,14 +90,17 @@ main(args: Array<String>): Int64 {
             case "exit" =>
                 PrintUtils.printExitMessage()
                 break
-            case "help" =>
+            case "help" => 
                 PrintUtils.printHelpMessage()
+                break
             case "clear" =>
                 PrintUtils.clearScreen()
                 PrintUtils.printLogo()
+                break
             case _ =>
-                let response = agent.chat(AgentRequest(input))
-                PrintUtils.printAgentResponse(response)
+                //let response = agent.chat(AgentRequest(input))
+                //PrintUtils.printAgentResponse(response)
+                println(input)
         }
     }
     return 0

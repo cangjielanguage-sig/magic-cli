@@ -1,7 +1,6 @@
 package cli.utils
 
 import magic.log.LogUtils
-
 import std.collection.{ArrayList, LinkedList}
 import std.regex.Regex
 import std.deriving.*
@@ -16,7 +15,7 @@ func displayWidthOf(rune: Rune): Int64 {
     if (r'\u{4e00}' <= rune && rune <= r'\u{9fff}' || // Common Chinese
         r'\u{3000}' <= rune && rune <= r'\u{303f}' || // Chinese punctuation
         r'\u{ff00}' <= rune && rune <= r'\u{ffef}' || // Full-width symbols
-        r'\u{3400}' <= rune && rune <= r'\u{4dbf}' ||  // Rare characters (Extension A)
+            r'\u{3400}' <= rune && rune <= r'\u{4dbf}' || // Rare characters (Extension A)
         r'\u{1f300}' <= rune && rune <= r'\u{1faff}') { // Emoji
         return 2
     } else {
@@ -37,6 +36,13 @@ func displayWidthOf(str: String): Int64 {
     return width
 }
 
+/**
+ * Compute the display width of a string
+ */
+func displayWidthOf(runeArray: Array<Rune>): Int64 {
+    return displayWidthOf(String(runeArray))
+}
+
 @Derive[Equatable]
 private enum DrawPhase {
     | First
@@ -55,8 +61,8 @@ private func redraw(prompt: String, content: Array<Rune>, cursorPos: Int64, phas
     // If it has draw the boxed content,
     // move the cursor to the first line because the current line in at the second line
     if (phase != DrawPhase.First) {
-        print("\u{1b}[1A", flush: true)
-        print("\r\u{1B}[K", flush: true)
+        moveCursor(1, UP)
+        clearRunes(LINE)
     }
     if (phase == DrawPhase.Last) {
         print(wrapBox("${prompt}${String(content)}"), flush: true)
@@ -66,9 +72,9 @@ private func redraw(prompt: String, content: Array<Rune>, cursorPos: Int64, phas
     // Draw the box
     print(wrapBox(prompt), flush: true)
     // Move cursor from the third line to the second line
-    print("\u{1b}[1A", flush: true)
+    moveCursor(1, UP)
     // Clear the second line
-    print("\r\u{1B}[K", flush: true)
+    clearRunes(LINE)
     // Construct the content and print it
     let strBuilder = StringBuilder()
     strBuilder.append(prompt)
@@ -82,8 +88,12 @@ private func redraw(prompt: String, content: Array<Rune>, cursorPos: Int64, phas
         strBuilder.append("\u{1B}[s")
     }
     print(wrapLineWithVerticalBorder(strBuilder.toString()), flush: true)
-    print("\u{1B}[u", flush: true)
-
+    // clear all bytes below
+    moveCursor(1, DOWN)
+    clearRunes(BEHIND)
+    moveCursor(1, UP)
+    // restore curosr
+    restoreCursorPosition()
     // strBuilder.append(wrapLineWithVerticalBorder("${prompt}${String(content)}"))
     // // Compute the offset of the cursor to move
     // var offset = 0
@@ -97,20 +107,53 @@ private func redraw(prompt: String, content: Array<Rune>, cursorPos: Int64, phas
     // print(strBuilder.toString(), flush: true)
 }
 
-private func readlineImpl(prompt: String,
-history: ArrayList<String>): Option<String> {
-var buf = LinkedList<Rune>()
-    var cursor = 0
-    var idx = history.size
-    
-    redraw(prompt, buf.toArray(), cursor, phase: DrawPhase.First)
+private func redrawAt(prompt: String, content: Array<Rune>, cursorPos: Int64, selectIdx: Int64, files: Array<String>,
+    phase!: DrawPhase) {
+    // If it has draw the boxed content,
+    // move the cursor to the first line because the current line in at the second line
+    if (phase != DrawPhase.First) {
+        moveCursor(1, UP)
+        clearRunes(LINE)
+    }
+    if (phase == DrawPhase.Last) {
+        print(wrapBox("${prompt}${String(content)}"), flush: true)
+        print("\n", flush: true)
+        return
+    }
+    // Draw the box
+    print(wrapBox(prompt), flush: true)
+    // Move cursor from the third line to the second line
+    moveCursor(1, UP)
+    // Clear the second line
+    clearRunes(LINE)
+    // Construct the content and print it
+    let strBuilder = StringBuilder()
+    strBuilder.append(prompt)
+    for (i in 0..content.size) {
+        strBuilder.append(content[i])
+    }
+    var cursorSavePos = displayWidthOf(prompt) + displayWidthOf(content[0..cursorPos]) + 2
 
-    while (true) {
-        let rune = if (let Some(r) <- RawInputUtils.rawGetRune()) {
-            r
-            } else {
-                    return None // EOF
+    let wrappedLine = wrapLineWithVerticalBorder(strBuilder.toString())
+    print(wrappedLine, flush: true)
+    // clear all bytes below
+    moveCursor(1, DOWN)
+    clearRunes(BEHIND)
+    moveCursor(1, UP)
+
+    let extendLine = wrapFileList(files, selectIdx, prefix:String(content).replace("@", ""))
+    if (extendLine != String.empty) {
+        let colomShift = extendLine.lines().count() - 1
+        print(extendLine, flush: true)
+        moveCursor(colomShift, UP)
+    }
+    moveCursor(col:cursorSavePos)
 }
+
+private func readlineImplNormal(rune: Rune, prompt: String, history: ArrayList<String>, cursorBox: Box<Int64>,
+    buf: LinkedList<Rune>): Option<String> {
+    var cursor = cursorBox.value
+    var idx = history.size
     match (rune) {
         case r'\r' | r'\n' => // Enter
             let line = String(buf)
@@ -120,28 +163,43 @@ var buf = LinkedList<Rune>()
             redraw(prompt, buf.toArray(), cursor, phase: DrawPhase.Last)
             return Some(line)
         case r'\u{7F}' | r'\b' => // Delete or Backspace
-            if (buf.size > 0) {
+             if (buf.size > 0) {
                 if (let Some(rune) <- buf.removeLast()) {
                     let width = displayWidthOf(rune)
                     print("\b \b" * width, flush: true)
+                    cursor -= 1
                 }
-                cursor -= 1
+                if (buf.size == 0) {
+                    moveCursor(1, UP)
+                    moveCursor(col:0)
+                    clearRunes(BEHIND)
+                    redraw(prompt, buf.toArray(), cursor, phase: DrawPhase.First)
+                    cursorBox.value = cursor
+                    return None
+                }
             }
-            continue
-        case r'\u{2191}' =>  // Up ↑
+        case r'\t' => // TAB
+            return None
+        case r'\u{2191}' => // Up ↑
             if (idx > 0) {
                 idx -= 1
-                buf = LinkedList(history[idx].toRuneArray())
-                    cursor = buf.size
+                buf.clear()
+                for (rr in history[idx].toRuneArray()) {
+                    buf.addLast(rr)
                 }
-                        case r'\u{2193}' =>  // Down ↓
+                cursor = buf.size
+            }
+        case r'\u{2193}' => // Down ↓
             if (idx + 1 < history.size) {
                 idx += 1
-                buf = LinkedList(history[idx].toRuneArray())
+                buf.clear()
+                for (rr in history[idx].toRuneArray()) {
+                    buf.addLast(rr)
+                }
                 cursor = buf.size
             } else if (idx + 1 == history.size) {
                 idx = history.size
-                buf = LinkedList<Rune>()
+                buf.clear()
                 cursor = buf.size
             }
         case r'\u{2190}' => // Left ←
@@ -158,8 +216,111 @@ var buf = LinkedList<Rune>()
             }
             cursor += 1
     }
-        redraw(prompt, buf.toArray(), cursor, phase: DrawPhase.Mid)
+    cursorBox.value = cursor
+    redraw(prompt, buf.toArray(), cursor, phase: DrawPhase.Mid)
+    return None
+}
+
+private func readlineImplAt(rune: Rune, prompt: String, history: ArrayList<String>, cursorBox: Box<Int64>,
+    selectIdxBox: Box<Int64>, buf: LinkedList<Rune>): Option<String> {
+    var cursor = cursorBox.value
+    var idx = history.size
+    var selectIdx = selectIdxBox.value
+    var fileArr = listFiles("", prefix: String(buf).replace("@", ""))
+    match (rune) {
+        case r'\r' | r'\n' => // Enter
+            let line = String(buf)
+            if (line.size > 0) {
+                history.add(line)
+            }
+            moveCursor(1, UP)
+            moveCursor(col:0)
+            clearRunes(BEHIND)
+            redraw(prompt, buf.toArray(), cursor, phase: DrawPhase.Last)
+            return Some(line)
+        case r'\u{7F}' | r'\b' => // Delete or Backspace
+            if (buf.size > 0) {
+                if (let Some(rune) <- buf.removeLast()) {
+                    let width = displayWidthOf(rune)
+                    print("\b \b" * width, flush: true)
+                    cursor -= 1
+                    selectIdx = 0
+                }
+                if (buf.size == 0) {
+                    moveCursor(1, UP)
+                    moveCursor(col:0)
+                    clearRunes(BEHIND)
+                    redraw(prompt, buf.toArray(), cursor, phase: DrawPhase.First)
+                    cursorBox.value = cursor
+                    selectIdxBox.value = 0
+                    return None
+                }
+            }
+        case r'\t' => //TAB
+            let fstr = '@${fileArr[selectIdx]}'
+            buf.clear()
+            for (rr in fstr.toRuneArray()) {
+                buf.addLast(rr)
+            }
+            selectIdx = 0
+            cursor = buf.size
+        case r'\u{2191}' => // Up ↑
+            var tempIdx = selectIdx - 1
+            selectIdx = if (tempIdx < 0) {
+                fileArr.size - 1
+            } else {
+                tempIdx
+            }
+        case r'\u{2193}' => // Down ↓
+            if (fileArr.size == 0) {
+                selectIdx = 0
+            } else {
+                selectIdx = (selectIdx + 1) % fileArr.size
+            }
+        case r'\u{2190}' => // Left ←
+            cursor = max(0, cursor - 1)
+        case r'\u{2192}' => // Right →
+            cursor = min(buf.size, cursor + 1)
+        case _ =>
+            // Add the current rune to the input buffer
+            if (cursor == buf.size) {
+                buf.addLast(rune)
+            } else {
+                let node = buf.nodeAt(cursor).getOrThrow()
+                buf.addBefore(node, rune)
+            }
+            cursor += 1
+    }
+    cursorBox.value = cursor
+    selectIdxBox.value = selectIdx
+    fileArr = listFiles("", prefix: String(buf).replace("@", ""))
+    redrawAt(prompt, buf.toArray(), cursor, selectIdx, fileArr, phase: DrawPhase.Mid)
+    return None
+}
+
+private func readlineImpl(prompt: String, history: ArrayList<String>): Option<String> {
+    var buf = LinkedList<Rune>()
+    let cursor = Box<Int64>(0)
+    let selectIdx = Box<Int64>(0)
+    redraw(prompt, buf.toArray(), cursor.value, phase: DrawPhase.First)
+
+    while (true) {
+        let rune = if (let Some(r) <- RawInputUtils.rawGetRune()) {
+            r
+        } else {
+            return None // EOF
         }
+        let firstRune = buf.first.getOrDefault({=> rune})
+
+        let lnOp = if (firstRune == r'@') {
+            readlineImplAt(rune, prompt, history, cursor, selectIdx, buf)
+        } else {
+            readlineImplNormal(rune, prompt, history, cursor, buf)
+        }
+        if (let Some(ln) <- lnOp) {
+            return ln
+        }
+    }
     return None
 }
 

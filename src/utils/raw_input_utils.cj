@@ -1,6 +1,6 @@
 package cli.utils
 
-import std.collection.ArrayList
+import std.collection.{ArrayList, HashMap}
 /**
  * According to the first byte, compute the total bytes of the current UTF8 code point
  */
@@ -270,6 +270,30 @@ class RawInputUtils {
     static const ENABLE_WINDOW_INPUT: UInt32 = 0x0008
     static const ENABLE_VIRTUAL_TERMINAL_INPUT: UInt32 = 0x0200
 
+    // 虚拟键码 - 用于识别特殊键
+    static let VK_UP: UInt16 = 0x26
+    static let VK_DOWN: UInt16 = 0x28 
+    static let VK_LEFT: UInt16 = 0x25
+    static let VK_RIGHT: UInt16 = 0x27
+    static let VK_ESCAPE: UInt16 = 0x1B
+    static let VK_BACK: UInt16 = 0x08
+    static let VK_DELETE: UInt16 = 0x2E
+    static let VK_TAB: UInt16 = 0x09
+    static let VK_ENTER: UInt16 = 0x0D
+    //static let ALL_VKS: Array<UInt16> = [VK_UP, VK_DOWN, VK_LEFT, VK_RIGHT, VK_ESCAPE, VK_BACK, VK_DELETE, VK_TAB, VK_ENTER]
+    static let ALL_VKS: Array<UInt16> = [VK_UP, VK_DOWN, VK_LEFT, VK_RIGHT, VK_BACK, VK_TAB]
+    static let VKS_VALUE_DICT:HashMap<UInt16, Array<Byte>> = HashMap()
+    static init() {
+        VKS_VALUE_DICT.add(VK_UP, [0x1B, 0x5B, 0x41])
+        VKS_VALUE_DICT.add(VK_DOWN, [0x1B, 0x5B, 0x42])
+        VKS_VALUE_DICT.add(VK_LEFT, [0x1B, 0x5B, 0x44])
+        VKS_VALUE_DICT.add(VK_RIGHT, [0x1B, 0x5B, 0x43])
+        VKS_VALUE_DICT.add(VK_ESCAPE, [0x1B])
+        VKS_VALUE_DICT.add(VK_BACK, [0x08])
+        VKS_VALUE_DICT.add(VK_DELETE, [0x1B, 0x5B, 0x33, 0x7E])
+        VKS_VALUE_DICT.add(VK_TAB, [0x09])
+        VKS_VALUE_DICT.add(VK_ENTER, [0x0A])
+    }
     // EVENT
     static const KEY_EVENT: UInt16 = 0x0001
     static var HIGH_SURROGATE: Option<UInt16> = None
@@ -308,11 +332,16 @@ class RawInputUtils {
      */
     static func rawGetBytes(): Option<Array<Byte>> {
         while (true) {
-            let checkpoint: ?UInt32 = getCheckPoint()
-            if (let Some(cp) <- checkpoint) {
-                return codepointToUtf8(cp)
-            } else {
-                continue
+            let (wcOp, virtual) = rawGetWChar()
+            if (let Some(wChar) <- wcOp) {
+                if (virtual) {
+                    return VKS_VALUE_DICT.get(wChar).getOrThrow()
+                } else {
+                    let checkpoint: ?UInt32 = getCheckPoint(wChar)
+                    if (let Some(cp) <- checkpoint) {
+                        return codepointToUtf8(cp)
+                    }
+                }
             }
         }
         None
@@ -327,28 +356,37 @@ class RawInputUtils {
         let byte = bytes[0]
         if (byte == 0x04) { // Ctrl-D
             return None
-        } else if (byte == b'\r') {
+        } else if (byte == 0x0D) { // '\r'
             return r'\n'
-        } else if (byte == b'\n') { // enter
+        } else if (byte == 0x0A) { // enter
             return r'\n'
         } else if (byte == 0x7F) {
             return r'\u{7F}'
-        } else if (byte == b'\b') { // backspace
+        } else if (byte == 0x08) { // backspace
             return r'\b'
+        } else if (byte == 0x09) { // tab
+            return r'\t'
         }
+        
         // Escape arrows
-        if (byte == 0x1B) { // ESC byte
+        if (byte == 0x1B) { 
+            if (bytes.size == 1) { // ESC byte
+                return None
+            } 
+            if (bytes == VKS_VALUE_DICT.get(VK_DELETE).getOrThrow()) {
+                return r'\u{7F}'
+            }
             let byte2 = bytes[1]
             let byte3 = bytes[2]
-            if (byte2 != b'[') {
+            if (byte2 != 0x5B) {
                 eprintln("Unknown escaped ascii")
                 return None
             }
             return match (byte3) {
-                case b'A' => r'\u{2191}' // Up
-                case b'B' => r'\u{2193}' // Down
-                case b'C' => r'\u{2192}' // Right
-                case b'D' => r'\u{2190}' // Left
+                case 0x41 => r'\u{2191}' // Up
+                case 0x42 => r'\u{2193}' // Down
+                case 0x43 => r'\u{2192}' // Right
+                case 0x44 => r'\u{2190}' // Left
                 case _ =>
                     eprintln("Unknown escaped ascii")
                     None
@@ -359,7 +397,7 @@ class RawInputUtils {
         return r
     }
 
-    private static func rawGetWChar(): Option<UInt16> {
+    private static func rawGetWChar(): (Option<UInt16>, Bool) {
         var lpBuffer = INPUT_RECORD()
         var eventsRead: UInt32 = 0
         let res = unsafe { ReadConsoleInputW(H_CONSOLE, inout lpBuffer, 1u32, inout eventsRead) }
@@ -369,14 +407,24 @@ class RawInputUtils {
 
         let ir = lpBuffer
         if (ir.EventType != KEY_EVENT) {
-            return None
+            return (None, false)
         }
         let keyEvent = ir.Event
         // Only Press Event useful
         if (keyEvent.bKeyDown == 0) {
-            return None
+            return (None, false)
         }
-        ir.Event.wChar
+
+        let virtualKeyCode = keyEvent.wVirtualKeyCode
+        // Check if it's a function key or other non-printable character
+        if (ALL_VKS.contains(virtualKeyCode)) {
+            return (virtualKeyCode, true)
+        }
+        // For special characters, ensure that only valid character values are returned.
+        if (keyEvent.wChar != 0) {
+            return (keyEvent.wChar, false)
+        }
+        (None, false)
     }
 
     private static func codepointToUtf8(codepoint: UInt32): Array<Byte> {
@@ -407,25 +455,20 @@ class RawInputUtils {
         return lst.toArray();
     }
 
-    private static func isHighSurrogate(wChar:UInt16): Bool {
+    private static func isHighSurrogate(wChar: UInt16): Bool {
         return wChar >= 0xD800 && wChar <= 0xDBFF
     }
 
-    private static func isLowSurrogate(wChar:UInt16): Bool {
+    private static func isLowSurrogate(wChar: UInt16): Bool {
         return wChar >= 0xDC00 && wChar <= 0xDFFF
     }
 
-    private static func isSingleSurrogate(wChar:UInt16): Bool {
+    private static func isSingleSurrogate(wChar: UInt16): Bool {
         return wChar < 0xD800 || wChar > 0xDFFF
     }
 
-    private static func getCheckPoint(): Option<UInt32> {
-        var wChar:UInt16 = 0u16
-        if (let Some(wc) <- rawGetWChar()) {
-            wChar = wc
-        } else {
-            return None
-        }
+    private static func getCheckPoint(fWChar: UInt16): Option<UInt32> {
+        var wChar = fWChar
         if (isSingleSurrogate(wChar)) {
             return UInt32(wChar)
         }
@@ -435,7 +478,8 @@ class RawInputUtils {
         }
         if (isHighSurrogate(wChar)) {
             let highSurrogate: UInt16 = wChar
-            if (let Some(wc) <- rawGetWChar()) {
+            let (wcOp, _) = rawGetWChar()
+            if (let Some(wc) <- wcOp) {
                 wChar = wc
             } else {
                 // ILLEGAL SKIP
@@ -448,26 +492,8 @@ class RawInputUtils {
             // ILLEGAL SKIP
             return None
         }
-        var highSurrogate: Option<UInt16> = None
-        if (isHighSurrogate(wChar)) {
-            highSurrogate = wChar
-            if (let Some(wc) <- rawGetWChar()) {
-                wChar = wc
-            } else {
-                return None
-            }
-            if (wChar >= 0xDC00 && wChar <= 0xDFFF) {
-                if (let Some(hwChar) <- HIGH_SURROGATE) {
-                    HIGH_SURROGATE = None
-                    return mergeWCharPair(hwChar, wChar)
-                } else {
-                    // ILLEAGAL LOW SURROGATE
-                    return None
-                }
-            }
-        }
         // Never Happened
-        return None 
+        return None
     }
 
     private static func mergeWCharPair(high: UInt16, low: UInt16): UInt32 {
