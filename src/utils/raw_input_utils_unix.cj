@@ -1,4 +1,5 @@
 package cli.utils
+
 import std.collection.{ArrayList, HashMap}
 
 /**
@@ -39,14 +40,14 @@ class RawInputUtils {
 
     static func rawGetRune(): Option<Rune> {
         var buffer: VArray<Byte, $4> = [0, 0, 0, 0]
-        let len = unsafe { getRawUtf8(inout buffer) }
+        let len: IntNative = unsafe { getRawUtf8(inout buffer) }
 
         let bytes = [buffer[0], buffer[1], buffer[2], buffer[3]]
         // Convert to a rune
         let (r, size) = Rune.fromUtf8(bytes, 0)
         // Assert
         if (size != Int64(len)) {
-            throw Exception("Read bytes != Expected bytes")
+            throw Exception("Read bytes ${len} != Expected bytes ${size}")
         }
         return r
     }

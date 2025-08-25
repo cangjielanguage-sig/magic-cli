@@ -76,14 +76,15 @@ private func loadEnvFile(): Unit {
     }
 }
 
-private func updateConversation(agent: ConversationAgent, newConversation: Conversation, isCompacted: Bool): Unit {
-    if (isCompacted) {
-        agent.conversation.clear()
-        for (chatRound in newConversation) {
-            agent.conversation.addChatRound(chatRound)
-        }
-        PrintUtils.printTool("Compacting conversation...", "🥳 Compacted successfully!")
-    }
+private func setConfig(): Unit {
+    Config.logFile = CliConfig.logFile.toString()
+    Config.logLevel = "INFO"
+    Config.modelRequestDir = CliConfig.dotDir.join("model-requests").toString()
+    Config.enableFunctionCall = true
+    let magicPath = Path(Config.env['MAGIC_PATH'].getOrThrow({=> Exception("MAGIC_PATH not set")}))
+    Config.resourceDir = magicPath.join("resource").toString()
+    // Set your API key in the .env file
+    loadEnvFile()
 }
 
 main(args: Array<String>): Int64 {
@@ -91,13 +92,7 @@ main(args: Array<String>): Int64 {
         printHelp()
         return 0
     }
-    Config.logFile = CliConfig.logFile.toString()
-    Config.logLevel = "INFO"
-    Config.modelRequestDir = CliConfig.dotDir.join("model-requests").toString()
-    Config.enableFunctionCall = true
-    // Set your API key in the .env file
-    loadEnvFile()
-
+    setConfig()
     PrintUtils.printWelcome()
 
     let agent = ConversationAgent(CodeAgent())
@@ -105,23 +100,30 @@ main(args: Array<String>): Int64 {
     while (true) {
         let input = InputUtils.getUserInput()
         match (input) {
-            case "/exit" =>
+            case "/exit" | "exit" =>
                 PrintUtils.printExitMessage()
                 break
-            case "/help" => 
+            case "/help" | "help" =>
                 PrintUtils.printHelpMessage()
-            case "/clear" =>
+            case "/clear" | "clear" =>
                 PrintUtils.clearScreen()
                 PrintUtils.printLogo()
-            case "/compact" =>
-                PrintUtils.printTool("Compacting conversation...", "🚀 Working on it...")
-                let (compactedConversation, isCompacted) = compactor.compact(agent.conversation)
-                updateConversation(agent, compactedConversation, isCompacted)
+            case "/compact" | "compact" =>
+                if (let Some(index) <- compactor.calculateCompactIndex(agent.conversation)) {
+                    PrintUtils.printTool("Compacting conversation...", "🚀 Working on it...")
+                    agent.conversation.compactBy(compactor, firstN: index, keepOrigin: false)
+                    PrintUtils.printTool("Compacting conversation...", "🥳 Compacted successfully!")
+                } else {
+                    PrintUtils.printTool("Compacting conversation...", "🌱 Conversation context is still short, no need to compact!")
+                }
             case _ =>
                 let response = agent.chat(AgentRequest(input))
                 PrintUtils.printAgentResponse(response)
-                let (compactedConversation, isCompacted) = compactor.autoCompact(agent.conversation)
-                updateConversation(agent, compactedConversation, isCompacted)
+                if (let Some(index) <- compactor.calculateCompactIndex(agent.conversation)) {
+                    PrintUtils.printTool("Compacting conversation...", "🚀 Working on it...")
+                    agent.conversation.compactBy(compactor, firstN: index, keepOrigin: false)
+                    PrintUtils.printTool("Compacting conversation...", "🥳 Compacted successfully!")
+                }
         }
     }
     return 0

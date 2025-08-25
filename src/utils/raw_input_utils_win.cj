@@ -1,4 +1,5 @@
 package cli.utils
+
 import std.collection.{ArrayList, HashMap}
 
 @When[os == "Windows"]
