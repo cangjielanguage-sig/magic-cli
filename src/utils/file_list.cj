@@ -1,14 +1,27 @@
 package cli.utils
 
 import std.collection.*
+import std.fs.*
+import cli.core.config.CliConfig
+import std.sort.sort
 
-public func listFiles(workDir: String, prefix!: String = ""): Array<String> {
-    let arr = ['workdir', 'workdir/a', 'workdir/a/main.cj', 'workdir/a/test.cj', 'workdir/a/dest.cj', 'workdir/b',
-        'workdir/b/main.cj', 'workdir/b/test.cj', 'workdir/b/dest.cj', 'workdir/c', 'workdir/c/main.cj',
-        'workdir/c/test.cj', 'workdir/c/dest.cj', 'workdir/d', 'workdir/d/main.cj', 'workdir/d/test.cj',
-        'workdir/d/dest.cj']
-    if (prefix == String.empty) {
-        return arr
+public func listFiles(workDir!: Path = CliConfig.cwd, prefix!: String = ""): Array<String> {
+    let fileLst = ArrayList<String>()
+    doListFiles(workDir, fileLst)
+    let arr = fileLst.toArray()
+    sort(arr, stable: true)
+    return arr |> filter {str => str.startsWith(prefix) && str != prefix} |> collectArray
+}
+
+private func doListFiles(workDir: Path, lst: ArrayList<String>): Bool {
+    Directory.walk(workDir) {
+        fileInfo: FileInfo => if (fileInfo.isDirectory()) {
+            lst.add(fileInfo.path.normalize().toString())
+            return doListFiles(fileInfo.path, lst)
+        } else {
+            lst.add(fileInfo.path.normalize().toString())
+            return true
+        }
     }
-    return arr |> filter {str => str.startsWith(prefix) && str != prefix} |>  collectArray
+    return true
 }
