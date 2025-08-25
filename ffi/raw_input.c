@@ -117,6 +117,12 @@ int getRawUtf8(unsigned char *bytes) {
                     bytes[2] = 0x90;
                     return 3;
 
+                case '3': // DELETE
+                    n = read(STDIN_FILENO, &c, 1);
+                    if (n <= 0) return -1;
+                    if (c != '~') return -1;
+                    bytes[0] = 0x7F;
+                    return 1;
                 default:
                     return -1; // Unknown CSI
             }
@@ -157,8 +163,6 @@ int getRawUtf8(unsigned char *bytes) {
         }
         return 4;
     }
-
-
 
     return -1; // Invalid start byte
 }
