@@ -5,7 +5,14 @@ import std.fs.*
 import cli.core.config.CliConfig
 import std.sort.sort
 
-public func listFiles(workDir!: Path = CliConfig.cwd, prefix!: String = ""): Array<String> {
+
+protected func listCmds(prefix!: String = ""): Array<String> {
+    let cmdArray = CMDS
+    sort(cmdArray, stable: true)
+    return cmdArray |> filter {str => str.startsWith(prefix) && str != prefix} |> collectArray
+}
+
+protected func listFiles(workDir!: Path = CliConfig.cwd, prefix!: String = ""): Array<String> {
     let fileLst = ArrayList<String>()
     doListFiles(workDir, fileLst)
     let arr = fileLst.toArray()

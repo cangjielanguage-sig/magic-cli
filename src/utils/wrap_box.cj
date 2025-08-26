@@ -110,34 +110,34 @@ protected func wrapLineWithVerticalBorder(line: String, width!: Int64 = 100, box
     return "${border}${padString(line, width: width)}${border}"
 }
 
-protected func wrapFileList(files: Array<String>, selectIdx: Int64, prefix!: String = String.empty): String {
-    let fileListSb = StringBuilder('\n')
-    if (files.size == 0) {
+protected func wrapShowList(showArray: Array<String>, selectIdx: Int64, prefix!: String = String.empty): String {
+    let lstSb = StringBuilder('\n')
+    if (showArray.size == 0) {
         return ""
     }
     let maxExtend = 8
-    let rangeEnd = min(max(selectIdx + 1, maxExtend), files.size)
+    let rangeEnd = min(max(selectIdx + 1, maxExtend), showArray.size)
     let rangeStart = max(0, rangeEnd - maxExtend)
     if (rangeStart > 0) {
-        fileListSb.append("\n▲")
+        lstSb.append("\n▲")
     }
     for (i in rangeStart..rangeEnd) {
-        let file = files[i]
-        fileListSb.append("\n")
+        let showItem = showArray[i]
+        lstSb.append("\n")
         if (i == selectIdx) {
-            let indexOp = file.indexOf(prefix)
+            let indexOp = showItem.indexOf(prefix)
             if (let Some(index) <- indexOp) {
-                fileListSb.append(
-                    "${BRIGHT_BLUE}${BOLD}${prefix}${BRIGHT_BLACK}${file[(index + prefix.toRuneArray().size)..file.size]}${RESET}")
+                lstSb.append(
+                    "${BRIGHT_BLUE}${BOLD}${prefix}${BRIGHT_BLACK}${showItem[(index + prefix.toRuneArray().size)..showItem.size]}${RESET}")
             } else {
-                fileListSb.append("${BRIGHT_BLUE}${BOLD}${file}${RESET}")
+                lstSb.append("${BRIGHT_BLUE}${BOLD}${showItem}${RESET}")
             }
         } else {
-            fileListSb.append("${BRIGHT_BLACK}${file}${RESET}")
+            lstSb.append("${BRIGHT_BLACK}${showItem}${RESET}")
         }
     }
-    if (files.size > maxExtend) {
-        fileListSb.append("\n▼(${selectIdx + 1}/${files.size})")
+    if (showArray.size > maxExtend) {
+        lstSb.append("\n▼(${selectIdx + 1}/${showArray.size})")
     }
-    return fileListSb.toString()
+    return lstSb.toString()
 }
