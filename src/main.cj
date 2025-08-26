@@ -113,9 +113,7 @@ main(args: Array<String>): Int64 {
 
     // Load MCP servers and add their tools to the agent
     let mcpManager = MCPConfigManager()
-    for (client in mcpManager.loadMCPServers()) {
-        agent.toolManager.addTools(client.tools)
-    }
+    agent.toolManager.addTools(mcpManager.loadMCPServers())
 
     // Initialize the conversation compactor to use
     let compactor = Compactor()
