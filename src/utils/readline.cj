@@ -6,6 +6,41 @@ import std.regex.Regex
 import std.deriving.*
 import std.fs.{File, Path, exists}
 
+class Command {
+    public Command(let trigger: Rune, let cmd: String, let visual: Bool) {
+    }
+    prop pure: String {
+        get() {
+            if (visual) {
+                this.cmd.replace(trigger.toString(), "")
+            } else {
+                this.cmd
+            }
+        }
+    }
+    prop full: String {
+        get() {
+            this.cmd
+        }
+    }
+}
+/**
+ * combine buf and rune and get lat command starts with Trigger
+ */
+func detectTrigger(buf: Collection<Rune>, rune: Rune, trigger: Rune, prefixOnly!: Bool = false): Bool {
+    if (rune == r' ') {
+        return false
+    }
+    if (prefixOnly) {
+        return (buf.toArray().get(0) ?? rune) == trigger
+    }
+    // not prefix only
+    if (rune == trigger) {
+        return true
+    }
+    !buf.toArray().lastIndexOf(trigger).isNone()
+}
+
 /**
  * Compute the display width of a rune
  */
@@ -107,8 +142,8 @@ private func redraw(prompt: String, content: Array<Rune>, cursorPos: Int64, phas
     // print(strBuilder.toString(), flush: true)
 }
 
-private func redrawAt(prompt: String, content: Array<Rune>, cursorPos: Int64, selectIdx: Int64, files: Array<String>,
-    phase!: DrawPhase) {
+private func redrawCmd(prompt: String, content: Array<Rune>, cmd: Command, cursorPos: Int64, selectIdx: Int64,
+    showLst: Array<String>, phase!: DrawPhase) {
     // If it has draw the boxed content,
     // move the cursor to the first line because the current line in at the second line
     if (phase != DrawPhase.First) {
@@ -141,13 +176,13 @@ private func redrawAt(prompt: String, content: Array<Rune>, cursorPos: Int64, se
     clearRunes(BEHIND)
     moveCursor(1, UP)
 
-    let extendLine = wrapFileList(files, selectIdx, prefix:String(content).replace("@", ""))
+    let extendLine = wrapShowList(showLst, selectIdx, prefix: cmd.pure)
     if (extendLine != String.empty) {
         let colomShift = extendLine.lines().count() - 1
         print(extendLine, flush: true)
         moveCursor(colomShift, UP)
     }
-    moveCursor(col:cursorSavePos)
+    moveCursor(col: cursorSavePos)
 }
 
 private func readlineImplNormal(rune: Rune, prompt: String, history: ArrayList<String>, cursorBox: Box<Int64>,
@@ -163,7 +198,7 @@ private func readlineImplNormal(rune: Rune, prompt: String, history: ArrayList<S
             redraw(prompt, buf.toArray(), cursor, phase: DrawPhase.Last)
             return Some(line)
         case r'\u{7F}' | r'\b' => // Delete or Backspace
-             if (buf.size > 0) {
+            if (buf.size > 0) {
                 if (let Some(rune) <- buf.removeLast()) {
                     let width = displayWidthOf(rune)
                     print("\b \b" * width, flush: true)
@@ -171,7 +206,7 @@ private func readlineImplNormal(rune: Rune, prompt: String, history: ArrayList<S
                 }
                 if (buf.size == 0) {
                     moveCursor(1, UP)
-                    moveCursor(col:0)
+                    moveCursor(col: 0)
                     clearRunes(BEHIND)
                     redraw(prompt, buf.toArray(), cursor, phase: DrawPhase.First)
                     cursorBox.value = cursor
@@ -221,12 +256,37 @@ private func readlineImplNormal(rune: Rune, prompt: String, history: ArrayList<S
     return None
 }
 
-private func readlineImplAt(rune: Rune, prompt: String, history: ArrayList<String>, cursorBox: Box<Int64>,
+private func getCommand(buf: Collection<Rune>, rune: Rune, trigger: Rune, prefixOnly!: Bool = false, visual!: Bool = false): Option<Command> {
+    if (rune == trigger && !prefixOnly) {
+        return Command(trigger, trigger.toString(), visual)
+    }
+
+    let arr: Array<Rune>
+    if (CONTROL_RUNES.contains(rune)) {
+        arr = buf.toArray()
+    } else {
+        let runeLst = ArrayList<Rune>(buf)
+        runeLst.add(rune)
+        arr = runeLst.toArray()
+    }
+
+    if (prefixOnly) {
+        return Command(trigger, String(arr), visual)
+    }
+
+    if (let Some(index) <- arr.lastIndexOf(trigger)) {
+        return Command(trigger, String(arr[index..arr.size]), visual)
+    }
+    return None
+}
+
+private func readlineImplCmdLst(rune: Rune, prompt: String, history: ArrayList<String>, cursorBox: Box<Int64>,
     selectIdxBox: Box<Int64>, buf: LinkedList<Rune>): Option<String> {
     var cursor = cursorBox.value
     var idx = history.size
     var selectIdx = selectIdxBox.value
-    var fileArr = listFiles("", prefix: String(buf).replace("@", ""))
+    var cmd = getCommand(buf, rune, r'/', prefixOnly: true).getOrThrow()
+    var cmdArr = listCmds(prefix: cmd.pure)
     match (rune) {
         case r'\r' | r'\n' => // Enter
             let line = String(buf)
@@ -234,8 +294,9 @@ private func readlineImplAt(rune: Rune, prompt: String, history: ArrayList<Strin
                 history.add(line)
             }
             moveCursor(1, UP)
-            moveCursor(col:0)
+            moveCursor(col: 0)
             clearRunes(BEHIND)
+            moveCursor(1, DOWN)
             redraw(prompt, buf.toArray(), cursor, phase: DrawPhase.Last)
             return Some(line)
         case r'\u{7F}' | r'\b' => // Delete or Backspace
@@ -248,22 +309,124 @@ private func readlineImplAt(rune: Rune, prompt: String, history: ArrayList<Strin
                 }
                 if (buf.size == 0) {
                     moveCursor(1, UP)
-                    moveCursor(col:0)
+                    moveCursor(col: 0)
                     clearRunes(BEHIND)
                     redraw(prompt, buf.toArray(), cursor, phase: DrawPhase.First)
                     cursorBox.value = cursor
                     selectIdxBox.value = 0
                     return None
                 }
+                if (let Some(command) <- getCommand(buf, rune, r'/', prefixOnly: true)) {
+                    cmd = command
+                    cmdArr = listCmds(prefix: cmd.full)
+                } else {
+                    redraw(prompt, buf.toArray(), cursor, phase: DrawPhase.First)
+                    return None
+                }
             }
         case r'\t' => //TAB
-            let fstr = '@${fileArr[selectIdx]}'
-            buf.clear()
-            for (rr in fstr.toRuneArray()) {
-                buf.addLast(rr)
+            if (cmdArr.size > 0) {
+                let cmdStr = '${cmdArr[selectIdx]}'
+                let line = String(buf).removeSuffix(cmd.full) + cmdStr
+                buf.clear()
+                for (rr in line.toRuneArray()) {
+                    buf.addLast(rr)
+                }
+                selectIdx = 0
+                cursor = buf.size
+                cmdArr = listCmds(prefix: cmdStr)
+                cmd = Command(r'/', cmdStr, false)
             }
-            selectIdx = 0
-            cursor = buf.size
+        case r'\u{2191}' => // Up ↑
+            var tempIdx = selectIdx - 1
+            selectIdx = if (tempIdx < 0) {
+                cmdArr.size - 1
+            } else {
+                tempIdx
+            }
+        case r'\u{2193}' => // Down ↓
+            if (cmdArr.size == 0) {
+                selectIdx = 0
+            } else {
+                selectIdx = (selectIdx + 1) % cmdArr.size
+            }
+        case r'\u{2190}' => // Left ←
+            cursor = max(0, cursor - 1)
+        case r'\u{2192}' => // Right →
+            cursor = min(buf.size, cursor + 1)
+        case _ =>
+            // Add the current rune to the input buffer
+            if (cursor == buf.size) {
+                buf.addLast(rune)
+            } else {
+                let node = buf.nodeAt(cursor).getOrThrow()
+                buf.addBefore(node, rune)
+            }
+            cursor += 1
+    }
+    cursorBox.value = cursor
+    selectIdxBox.value = selectIdx
+    redrawCmd(prompt, buf.toArray(), cmd, cursor, selectIdx, cmdArr, phase: DrawPhase.Mid)
+    return None
+}
+
+private func readlineImplAt(rune: Rune, prompt: String, history: ArrayList<String>, cursorBox: Box<Int64>,
+    selectIdxBox: Box<Int64>, buf: LinkedList<Rune>): Option<String> {
+    var cursor = cursorBox.value
+    var idx = history.size
+    var selectIdx = selectIdxBox.value
+    var cmd = getCommand(buf, rune, r'@', visual: true).getOrThrow()
+    var fileArr = listFiles(prefix: cmd.pure)
+    match (rune) {
+        case r'\r' | r'\n' => // Enter
+            let line = String(buf)
+            if (line.size > 0) {
+                history.add(line)
+            }
+            moveCursor(1, UP)
+            moveCursor(col: 0)
+            clearRunes(BEHIND)
+            moveCursor(1, DOWN)
+            redraw(prompt, buf.toArray(), cursor, phase: DrawPhase.Last)
+            return Some(line)
+        case r'\u{7F}' | r'\b' => // Delete or Backspace
+            if (buf.size > 0) {
+                if (let Some(rune) <- buf.removeLast()) {
+                    let width = displayWidthOf(rune)
+                    print("\b \b" * width, flush: true)
+                    cursor -= 1
+                    selectIdx = 0
+                }
+                if (buf.size == 0) {
+                    moveCursor(1, UP)
+                    moveCursor(col: 0)
+                    clearRunes(BEHIND)
+                    redraw(prompt, buf.toArray(), cursor, phase: DrawPhase.First)
+                    cursorBox.value = cursor
+                    selectIdxBox.value = 0
+                    return None
+                }
+                if (let Some(command) <- getCommand(buf, rune, r'@', visual: true)) {
+                    cmd = command
+                    fileArr = listFiles(prefix: cmd.pure)
+                } else {
+                    redraw(prompt, buf.toArray(), cursor, phase: DrawPhase.First)
+                    return None
+                }
+            }
+        case r'\t' => //TAB
+            if (fileArr.size > 0) {
+                let fstr = '@${fileArr[selectIdx]}'
+                let line = String(buf).removeSuffix(cmd.full) + fstr
+                buf.clear()
+                for (rr in line.toRuneArray()) {
+                    buf.addLast(rr)
+                }
+                selectIdx = 0
+                cursor = buf.size
+                fileArr = listFiles(prefix: fstr.replace("@", ""))
+                cmd = Command(r'@', fstr, true)
+            }
         case r'\u{2191}' => // Up ↑
             var tempIdx = selectIdx - 1
             selectIdx = if (tempIdx < 0) {
@@ -293,8 +456,7 @@ private func readlineImplAt(rune: Rune, prompt: String, history: ArrayList<Strin
     }
     cursorBox.value = cursor
     selectIdxBox.value = selectIdx
-    fileArr = listFiles("", prefix: String(buf).replace("@", ""))
-    redrawAt(prompt, buf.toArray(), cursor, selectIdx, fileArr, phase: DrawPhase.Mid)
+    redrawCmd(prompt, buf.toArray(), cmd, cursor, selectIdx, fileArr, phase: DrawPhase.Mid)
     return None
 }
 
@@ -310,10 +472,11 @@ private func readlineImpl(prompt: String, history: ArrayList<String>): Option<St
         } else {
             return None // EOF
         }
-        let firstRune = buf.first.getOrDefault({=> rune})
 
-        let lnOp = if (firstRune == r'@') {
+        let lnOp = if (detectTrigger(buf, rune, r'@')) {
             readlineImplAt(rune, prompt, history, cursor, selectIdx, buf)
+        } else if (detectTrigger(buf, rune, r'/', prefixOnly: true)) {
+            readlineImplCmdLst(rune, prompt, history, cursor, selectIdx, buf)
         } else {
             readlineImplNormal(rune, prompt, history, cursor, buf)
         }
