@@ -10,7 +10,8 @@ import magic.core.message.Conversation
 
 import cli.core.agents.{CodeAgent, Compactor}
 import cli.core.config.CliConfig
-import cli.utils.{InputUtils, PrintUtils, MCPConfigManager}
+import cli.core.mcp.MCPConfigManager
+import cli.utils.{InputUtils, PrintUtils}
 
 import std.argopt.{parseArguments, ArgumentSpec, ArgumentMode, ArgumentParseException}
 import std.fs.{exists, File, FSException, Path}
@@ -104,16 +105,22 @@ main(args: Array<String>): Int64 {
         None
     }
     let agent = ConversationAgent(CodeAgent(), conversation: savedConversation)
+
     // Register the callback to save conversation
     atExit({ =>
         agent.conversation.save(CliConfig.conversationFile)
     })
 
-
+    // Load MCP servers and add their tools to the agent
     let mcpManager = MCPConfigManager()
-    mcpManager.loadMCPServersForAgent(agent)
-    
+    for (client in mcpManager.loadMCPServers()) {
+        agent.toolManager.addTools(client.tools)
+    }
+
+    // Initialize the conversation compactor to use
     let compactor = Compactor()
+
+    // Start the event loop
     while (true) {
         let input = InputUtils.getUserInput()
         match (input) {

@@ -18,7 +18,8 @@ protected func toUnixStyle(pathStr: String, appendSuffix!: Bool = false) {
 }
 
 protected func listCmds(prefix!: String = ""): Array<String> {
-    let cmdArray = CMDS
+    // HELP_INFO: (command, description)
+    let cmdArray = PrintUtils.HELP_INFO.map { info => "/${info[0]}" } |> collectArray
     sort(cmdArray, stable: true)
     return cmdArray |> filter {str => str.startsWith(prefix) && str != prefix} |> collectArray
 }

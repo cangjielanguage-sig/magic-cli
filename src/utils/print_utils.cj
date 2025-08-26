@@ -2,6 +2,7 @@ package cli.utils
 
 import magic.core.agent.AgentResponse
 
+import std.collection.{map, collectArray}
 import std.time.DateTime
 import std.process.executeWithOutput
 import std.env.getVariable
@@ -42,15 +43,25 @@ protected class PrintUtils {
         println("\nExiting the CLI. Goodbye!\n".withColor(THEME_SECONDARY))
     }
 
+    static let HELP_INFO = [
+        ("help",    "Show this help message"),
+        ("clear",   "Clear the screen"),
+        ("compact", "Compact the conversation"),
+        ("mcp",     "Show loaded MCP tools"),
+        ("exit",    "Exit the program")
+    ]
+
     static public func printHelpMessage() {
         let helpMessage = wrapBox(
             "Available Commands".withColor(THEME_PRIMARY),
-            lines: [
-                "${' /help'.padEnd(10).withColor(THEME_YELLOW)}${' ║ - Show this help message'.withColor(THEME_MUTED)}",
-                "${' /clear'.padEnd(10).withColor(THEME_YELLOW)}${' ║ - Clear the screen'.withColor(THEME_MUTED)}",
-                "${' /compact'.padEnd(10).withColor(THEME_YELLOW)}${' ║ - Compact the context'.withColor(THEME_MUTED)}",
-                "${' /exit'.padEnd(10).withColor(THEME_YELLOW)}${' ║ - Exit the CLI'.withColor(THEME_MUTED)}"
-            ],
+            lines: HELP_INFO |>
+                map { info =>
+                    let cmd = "/${info[0]}".padEnd(10).withColor(THEME_YELLOW)
+                    let separator = " ║ ".withColor(THEME_MUTED)
+                    let message = "- ${info[1]}".withColor(THEME_MUTED)
+                    " ${cmd}${separator}${message}"
+                } |>
+                collectArray,
             width: 60,
             centerTitle: true
         )
