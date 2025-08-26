@@ -3,6 +3,7 @@ package cli.core.mcp
 import magic.dsl.jsonable
 import magic.mcp.{MCPClient, StdioMCPClient, SseMCPClient, StdioMCPInitParams, SseMCPInitParams}
 import magic.log.LogUtils
+import magic.core.tool.Tool
 import magic.agent.ConversationAgent
 import magic.jsonable.*
 
@@ -19,7 +20,7 @@ private class Setting {
     let mcpServers: Option<JsonObject>
 }
 
-public enum MCPServerType {
+private enum MCPServerType {
     | Stdio(StdioMCPInitParams)
     | Sse(SseMCPInitParams)
 
@@ -35,7 +36,7 @@ public enum MCPServerType {
     }
 }
 
-public struct MCPServerConfig {
+private struct MCPServerConfig {
     public let name: String
     public let serverType: MCPServerType
 
@@ -105,9 +106,10 @@ public class MCPConfigManager {
         }
     }
 
-    public func loadMCPServers(): Array<MCPClient> {
+    public func loadMCPServers(): Array<Tool> {
         this.mcpServers = loadMCPConfigs()
         let clients = ArrayList<MCPClient>()
+        let tools = ArrayList<Tool>()
 
         for ((serverName, config) in this.mcpServers) {
             let client: MCPClient = match (config.serverType) {
@@ -130,11 +132,14 @@ public class MCPConfigManager {
             }
 
             clients.add(client)
+            for (tool in client.tools) {
+                tools.add(MCPToolWrapper(serverName, tool))
+            }
             this.mcpClients[serverName] = client
             LogUtils.info("Successfully loaded SSE MCP server: ${serverName}")
         }
 
-        return clients.toArray()
+        return tools.toArray()
     }
 
     public func showLoadedMCPTools(agent: ConversationAgent): Unit {
