@@ -32,6 +32,7 @@ class Command {
  */
 func detectTrigger(buf: Collection<Rune>, rune: Rune, trigger: Rune, prefixOnly!: Bool = false): Bool {
     if (rune == r' ') {
+        LogUtils.info("EMPTY RUNE!!!!")
         return false
     }
     if (prefixOnly) {
@@ -41,16 +42,21 @@ func detectTrigger(buf: Collection<Rune>, rune: Rune, trigger: Rune, prefixOnly!
     if (rune == trigger) {
         return true
     }
-    !buf.toArray().lastIndexOf(trigger).isNone()
+    let arr = buf.toArray()
+    if (let Some(index) <- arr.lastIndexOf(trigger)) {
+        return !String(arr[index..arr.size]).contains(' ')
+    } else {
+        return false
+    }
 }
 
-private func getCommand(buf: Collection<Rune>, rune: Rune, trigger: Rune, prefixOnly!: Bool = false, visual!: Bool = false): Option<Command> {
+private func getCommand(buf: Collection<Rune>, rune: Rune, trigger: Rune, prefixOnly!: Bool = false, visual!: Bool = false): Option<Command> {    
     if (rune == trigger && !prefixOnly) {
         return Command(trigger, trigger.toString(), visual)
     }
 
     let arr: Array<Rune>
-    if (CONTROL_RUNES.contains(rune)) {
+    if (CONTROL_RUNES.contains(rune) || rune == r'\0') {
         arr = buf.toArray()
     } else {
         let runeLst = ArrayList<Rune>(buf)
@@ -213,8 +219,9 @@ private func redrawCmd(prompt: String, content: Array<Rune>, cmd: Command, curso
     moveCursor(col: cursorSavePos)
 }
 
-private func readlineImplNormal(rune: Rune, prompt: String, history: ArrayList<String>, cursorBox: Box<Int64>,
+private func readlineImplNormal(runeBox: Box<?Rune>, prompt: String, history: ArrayList<String>, cursorBox: Box<Int64>,
     buf: LinkedList<Rune>): Option<String> {
+    let rune = runeBox.value.getOrThrow()
     var cursor = cursorBox.value
     var idx = history.size
     match (rune) {
@@ -231,6 +238,10 @@ private func readlineImplNormal(rune: Rune, prompt: String, history: ArrayList<S
                     let width = displayWidthOf(rune)
                     print("\b \b" * width, flush: true)
                     cursor -= 1
+                    cursorBox.value = cursor
+                    runeBox.value = r'\0'
+                    redraw(prompt, buf.toArray(), cursor, phase: DrawPhase.Mid)
+                    return None
                 }
             }
         case r'\t' => // TAB
@@ -261,6 +272,8 @@ private func readlineImplNormal(rune: Rune, prompt: String, history: ArrayList<S
             cursor = max(0, cursor - 1)
         case r'\u{2192}' => // Right →
             cursor = min(buf.size, cursor + 1)
+        case r'\0' => //SPECIAL MEANS DO NOTHING EXCEPT SHOW
+            runeBox.value = None
         case _ =>
             // Add the current rune to the input buffer
             if (cursor == buf.size) {
@@ -272,12 +285,14 @@ private func readlineImplNormal(rune: Rune, prompt: String, history: ArrayList<S
             cursor += 1
     }
     cursorBox.value = cursor
+    runeBox.value = None
     redraw(prompt, buf.toArray(), cursor, phase: DrawPhase.Mid)
     return None
 }
 
-private func readlineImplCmdLst(rune: Rune, prompt: String, history: ArrayList<String>, cursorBox: Box<Int64>,
+private func readlineImplCmdLst(runeBox: Box<?Rune>, prompt: String, history: ArrayList<String>, cursorBox: Box<Int64>,
     selectIdxBox: Box<Int64>, buf: LinkedList<Rune>): Option<String> {
+    let rune = runeBox.value.getOrThrow()
     var cursor = cursorBox.value
     var idx = history.size
     var selectIdx = selectIdxBox.value
@@ -313,6 +328,7 @@ private func readlineImplCmdLst(rune: Rune, prompt: String, history: ArrayList<S
                     redraw(prompt, buf.toArray(), cursor, phase: DrawPhase.First)
                     cursorBox.value = cursor
                     selectIdxBox.value = 0
+                    runeBox.value = r'\0'
                     return None
                 }
             }
@@ -346,6 +362,8 @@ private func readlineImplCmdLst(rune: Rune, prompt: String, history: ArrayList<S
             cursor = max(0, cursor - 1)
         case r'\u{2192}' => // Right →
             cursor = min(buf.size, cursor + 1)
+        case r'\0' => //SPECIAL MEANS DO NOTHING EXCEPT SHOW
+            runeBox.value = None
         case _ =>
             // Add the current rune to the input buffer
             if (cursor == buf.size) {
@@ -358,12 +376,14 @@ private func readlineImplCmdLst(rune: Rune, prompt: String, history: ArrayList<S
     }
     cursorBox.value = cursor
     selectIdxBox.value = selectIdx
+    runeBox.value = None
     redrawCmd(prompt, buf.toArray(), cmd, cursor, selectIdx, cmdArr, phase: DrawPhase.Mid)
     return None
 }
 
-private func readlineImplAt(rune: Rune, prompt: String, history: ArrayList<String>, cursorBox: Box<Int64>,
+private func readlineImplAt(runeBox:Box<?Rune>, prompt: String, history: ArrayList<String>, cursorBox: Box<Int64>,
     selectIdxBox: Box<Int64>, buf: LinkedList<Rune>): Option<String> {
+    let rune = runeBox.value.getOrThrow()
     var cursor = cursorBox.value
     var idx = history.size
     var selectIdx = selectIdxBox.value
@@ -399,6 +419,7 @@ private func readlineImplAt(rune: Rune, prompt: String, history: ArrayList<Strin
                     redraw(prompt, buf.toArray(), cursor, phase: DrawPhase.First)
                     cursorBox.value = cursor
                     selectIdxBox.value = 0
+                    runeBox.value = r'\0'
                     return None
                 }
             }
@@ -432,6 +453,8 @@ private func readlineImplAt(rune: Rune, prompt: String, history: ArrayList<Strin
             cursor = max(0, cursor - 1)
         case r'\u{2192}' => // Right →
             cursor = min(buf.size, cursor + 1)
+        case r'\0' => //SPECIAL MEANS DO NOTHING EXCEPT SHOW
+            runeBox.value = None
         case _ =>
             // Add the current rune to the input buffer
             if (cursor == buf.size) {
@@ -444,6 +467,7 @@ private func readlineImplAt(rune: Rune, prompt: String, history: ArrayList<Strin
     }
     cursorBox.value = cursor
     selectIdxBox.value = selectIdx
+    runeBox.value = None
     redrawCmd(prompt, buf.toArray(), cmd, cursor, selectIdx, fileArr, phase: DrawPhase.Mid)
     return None
 }
@@ -452,21 +476,24 @@ private func readlineImpl(prompt: String, history: ArrayList<String>): Option<St
     var buf = LinkedList<Rune>()
     let cursor = Box<Int64>(0)
     let selectIdx = Box<Int64>(0)
+    let runeBox = Box<Option<Rune>>(None)
     redraw(prompt, buf.toArray(), cursor.value, phase: DrawPhase.First)
 
     while (true) {
-        let rune = if (let Some(r) <- RawInputUtils.rawGetRune()) {
+        let rune = if(let Some(r) <- runeBox.value) {
+            r
+        } else if (let Some(r) <- RawInputUtils.rawGetRune()) {
             r
         } else {
             return None // EOF
         }
-        LogUtils.info("CURSOR222: ${cursor.value}")
+        runeBox.value = rune
         let lnOp = if (detectTrigger(buf, rune, r'@')) {
-            readlineImplAt(rune, prompt, history, cursor, selectIdx, buf)
+            readlineImplAt(runeBox, prompt, history, cursor, selectIdx, buf)
         } else if (detectTrigger(buf, rune, r'/', prefixOnly: true)) {
-            readlineImplCmdLst(rune, prompt, history, cursor, selectIdx, buf)
+            readlineImplCmdLst(runeBox, prompt, history, cursor, selectIdx, buf)
         } else {
-            readlineImplNormal(rune, prompt, history, cursor, buf)
+            readlineImplNormal(runeBox, prompt, history, cursor, buf)
         }
         if (let Some(ln) <- lnOp) {
             return ln

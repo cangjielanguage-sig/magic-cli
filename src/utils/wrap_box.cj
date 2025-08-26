@@ -125,13 +125,14 @@ protected func wrapShowList(showArray: Array<String>, selectIdx: Int64, prefix!:
         let showItem = showArray[i]
         lstSb.append("\n")
         if (i == selectIdx) {
-            let indexOp = showItem.indexOf(prefix)
-            if (let Some(index) <- indexOp) {
-                lstSb.append(
-                    "${BRIGHT_BLUE}${BOLD}${prefix}${BRIGHT_BLACK}${BOLD}${showItem[(index + prefix.toRuneArray().size)..showItem.size]}${RESET}")
-            } else {
-                lstSb.append("${BRIGHT_BLUE}${BOLD}${showItem}${RESET}")
-            }
+            // let indexOp = showItem.indexOf(prefix)
+            // if (let Some(index) <- indexOp) {
+            //     lstSb.append(
+            //         "${BRIGHT_BLUE}${BOLD}${prefix}${BRIGHT_BLACK}${BOLD}${showItem[(index + prefix.toRuneArray().size)..showItem.size]}${RESET}")
+            // } else {
+            //     lstSb.append("${BRIGHT_BLUE}${BOLD}${showItem}${RESET}")
+            // }
+            lstSb.append("${BRIGHT_BLUE}${BOLD}${showItem}${RESET}")
         } else {
             lstSb.append("${BRIGHT_BLACK}${showItem}${RESET}")
         }
