@@ -50,8 +50,7 @@ protected class InputUtils {
         }
     }
 
-    @When[os == "Windows"]
-    private static func getConfirmation(): Bool {
+    private static func getConfirmationBackup(): Bool {
         var selected: Int64 = 0
         while (true) {
             let selectMessage = if (selected == 0) {
@@ -80,7 +79,6 @@ protected class InputUtils {
         throw UnsupportedException("Unreachable")
     }
 
-    @When[os != "Windows"]
     private static func getConfirmation(): Bool {
         let input = READLINE.readline(
             "(Enter to confirm, any other key to cancel): ".withColor(THEME_PRIMARY),
