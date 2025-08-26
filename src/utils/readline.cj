@@ -296,6 +296,7 @@ private func readlineImplCmdLst(rune: Rune, prompt: String, history: ArrayList<S
             moveCursor(1, UP)
             moveCursor(col: 0)
             clearRunes(BEHIND)
+            moveCursor(1, DOWN)
             redraw(prompt, buf.toArray(), cursor, phase: DrawPhase.Last)
             return Some(line)
         case r'\u{7F}' | r'\b' => // Delete or Backspace
@@ -385,6 +386,7 @@ private func readlineImplAt(rune: Rune, prompt: String, history: ArrayList<Strin
             moveCursor(1, UP)
             moveCursor(col: 0)
             clearRunes(BEHIND)
+            moveCursor(1, DOWN)
             redraw(prompt, buf.toArray(), cursor, phase: DrawPhase.Last)
             return Some(line)
         case r'\u{7F}' | r'\b' => // Delete or Backspace

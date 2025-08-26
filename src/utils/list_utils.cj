@@ -14,6 +14,7 @@ protected func listCmds(prefix!: String = ""): Array<String> {
 
 protected func listFiles(workDir!: Path = CliConfig.cwd, prefix!: String = ""): Array<String> {
     let fileLst = ArrayList<String>()
+    fileLst.add(workDir.normalize().toString())
     doListFiles(workDir, fileLst)
     let arr = fileLst.toArray()
     sort(arr, stable: true)
