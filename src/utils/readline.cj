@@ -5,6 +5,9 @@ import std.collection.{ArrayList, LinkedList}
 import std.regex.Regex
 import std.deriving.*
 import std.fs.{File, Path, exists}
+import cli.core.config.CliConfig
+
+let WORKSPACE:String = toUnixStyle(CliConfig.cwd.normalize().toString())
 
 class Command {
     public Command(let trigger: Rune, let cmd: String, let visual: Bool) {
@@ -39,6 +42,30 @@ func detectTrigger(buf: Collection<Rune>, rune: Rune, trigger: Rune, prefixOnly!
         return true
     }
     !buf.toArray().lastIndexOf(trigger).isNone()
+}
+
+private func getCommand(buf: Collection<Rune>, rune: Rune, trigger: Rune, prefixOnly!: Bool = false, visual!: Bool = false): Option<Command> {
+    if (rune == trigger && !prefixOnly) {
+        return Command(trigger, trigger.toString(), visual)
+    }
+
+    let arr: Array<Rune>
+    if (CONTROL_RUNES.contains(rune)) {
+        arr = buf.toArray()
+    } else {
+        let runeLst = ArrayList<Rune>(buf)
+        runeLst.add(rune)
+        arr = runeLst.toArray()
+    }
+
+    if (prefixOnly) {
+        return Command(trigger, String(arr), visual)
+    }
+
+    if (let Some(index) <- arr.lastIndexOf(trigger)) {
+        return Command(trigger, String(arr[index..arr.size]), visual)
+    }
+    return None
 }
 
 /**
@@ -114,21 +141,17 @@ private func redraw(prompt: String, content: Array<Rune>, cursorPos: Int64, phas
     let strBuilder = StringBuilder()
     strBuilder.append(prompt)
     for (i in 0..content.size) {
-        if (i == cursorPos) {
-            strBuilder.append("\u{1B}[s")
-        }
         strBuilder.append(content[i])
     }
-    if (cursorPos == content.size) {
-        strBuilder.append("\u{1B}[s")
-    }
+    var cursorSavePos = displayWidthOf(prompt) + displayWidthOf(content[0..cursorPos]) + 2
     print(wrapLineWithVerticalBorder(strBuilder.toString()), flush: true)
     // clear all bytes below
     moveCursor(1, DOWN)
     clearRunes(BEHIND)
-    moveCursor(1, UP)
+    print("\r\n${BRIGHT_RED}${BOLD}WORKSPACE: ${WORKSPACE}${RESET}")
     // restore curosr
-    restoreCursorPosition()
+    moveCursor(2, UP)
+    moveCursor(col: cursorSavePos)
     // strBuilder.append(wrapLineWithVerticalBorder("${prompt}${String(content)}"))
     // // Compute the offset of the cursor to move
     // var offset = 0
@@ -180,7 +203,12 @@ private func redrawCmd(prompt: String, content: Array<Rune>, cmd: Command, curso
     if (extendLine != String.empty) {
         let colomShift = extendLine.lines().count() - 1
         print(extendLine, flush: true)
-        moveCursor(colomShift, UP)
+        print("\r\n${BRIGHT_RED}${BOLD}WORKSPACE: ${WORKSPACE}${RESET}")
+        moveCursor(colomShift + 1, UP)
+    } else {
+        moveCursor(1, DOWN)
+        print("\r\n${BRIGHT_RED}${BOLD}WORKSPACE: ${WORKSPACE}${RESET}")
+        moveCursor(2, UP)
     }
     moveCursor(col: cursorSavePos)
 }
@@ -203,14 +231,6 @@ private func readlineImplNormal(rune: Rune, prompt: String, history: ArrayList<S
                     let width = displayWidthOf(rune)
                     print("\b \b" * width, flush: true)
                     cursor -= 1
-                }
-                if (buf.size == 0) {
-                    moveCursor(1, UP)
-                    moveCursor(col: 0)
-                    clearRunes(BEHIND)
-                    redraw(prompt, buf.toArray(), cursor, phase: DrawPhase.First)
-                    cursorBox.value = cursor
-                    return None
                 }
             }
         case r'\t' => // TAB
@@ -256,30 +276,6 @@ private func readlineImplNormal(rune: Rune, prompt: String, history: ArrayList<S
     return None
 }
 
-private func getCommand(buf: Collection<Rune>, rune: Rune, trigger: Rune, prefixOnly!: Bool = false, visual!: Bool = false): Option<Command> {
-    if (rune == trigger && !prefixOnly) {
-        return Command(trigger, trigger.toString(), visual)
-    }
-
-    let arr: Array<Rune>
-    if (CONTROL_RUNES.contains(rune)) {
-        arr = buf.toArray()
-    } else {
-        let runeLst = ArrayList<Rune>(buf)
-        runeLst.add(rune)
-        arr = runeLst.toArray()
-    }
-
-    if (prefixOnly) {
-        return Command(trigger, String(arr), visual)
-    }
-
-    if (let Some(index) <- arr.lastIndexOf(trigger)) {
-        return Command(trigger, String(arr[index..arr.size]), visual)
-    }
-    return None
-}
-
 private func readlineImplCmdLst(rune: Rune, prompt: String, history: ArrayList<String>, cursorBox: Box<Int64>,
     selectIdxBox: Box<Int64>, buf: LinkedList<Rune>): Option<String> {
     var cursor = cursorBox.value
@@ -307,20 +303,16 @@ private func readlineImplCmdLst(rune: Rune, prompt: String, history: ArrayList<S
                     cursor -= 1
                     selectIdx = 0
                 }
-                if (buf.size == 0) {
+                if (let Some(command) <- getCommand(buf, rune, r'/', prefixOnly: true)) {
+                    cmd = command
+                    cmdArr = listCmds(prefix: cmd.full)
+                } else {
                     moveCursor(1, UP)
                     moveCursor(col: 0)
                     clearRunes(BEHIND)
                     redraw(prompt, buf.toArray(), cursor, phase: DrawPhase.First)
                     cursorBox.value = cursor
                     selectIdxBox.value = 0
-                    return None
-                }
-                if (let Some(command) <- getCommand(buf, rune, r'/', prefixOnly: true)) {
-                    cmd = command
-                    cmdArr = listCmds(prefix: cmd.full)
-                } else {
-                    redraw(prompt, buf.toArray(), cursor, phase: DrawPhase.First)
                     return None
                 }
             }
@@ -397,20 +389,16 @@ private func readlineImplAt(rune: Rune, prompt: String, history: ArrayList<Strin
                     cursor -= 1
                     selectIdx = 0
                 }
-                if (buf.size == 0) {
+                if (let Some(command) <- getCommand(buf, rune, r'@', visual: true)) {
+                    cmd = command
+                    fileArr = listFiles(prefix: cmd.pure)
+                } else {
                     moveCursor(1, UP)
                     moveCursor(col: 0)
                     clearRunes(BEHIND)
                     redraw(prompt, buf.toArray(), cursor, phase: DrawPhase.First)
                     cursorBox.value = cursor
                     selectIdxBox.value = 0
-                    return None
-                }
-                if (let Some(command) <- getCommand(buf, rune, r'@', visual: true)) {
-                    cmd = command
-                    fileArr = listFiles(prefix: cmd.pure)
-                } else {
-                    redraw(prompt, buf.toArray(), cursor, phase: DrawPhase.First)
                     return None
                 }
             }
@@ -472,7 +460,7 @@ private func readlineImpl(prompt: String, history: ArrayList<String>): Option<St
         } else {
             return None // EOF
         }
-
+        LogUtils.info("CURSOR222: ${cursor.value}")
         let lnOp = if (detectTrigger(buf, rune, r'@')) {
             readlineImplAt(rune, prompt, history, cursor, selectIdx, buf)
         } else if (detectTrigger(buf, rune, r'/', prefixOnly: true)) {
