@@ -344,7 +344,7 @@ int getRawUtf8(BYTE *bytes) {
                 return 3;
 
             default:
-                return -1; // Unknown CSI
+                return 0; // Unknown CSI
         }
     }
 

@@ -25,6 +25,10 @@ class RawInputUtils {
         var buffer: VArray<Byte, $4> = [0, 0, 0, 0]
         let len = unsafe { getRawUtf8(inout buffer) }
 
+        if (len == 0) { // WHEN UNKNOWN ASCII
+            return rawGetRune()
+        }
+        
         let bytes = [buffer[0], buffer[1], buffer[2], buffer[3]]
         // Convert to a rune
         let (r, size) = Rune.fromUtf8(bytes, 0)
