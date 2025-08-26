@@ -98,13 +98,7 @@ main(args: Array<String>): Int64 {
     setConfig()
     PrintUtils.printWelcome()
 
-    // Load previous conversation if necessary
-    let savedConversation: Option<Conversation> = if (exists(CliConfig.conversationFile)) {
-        Conversation.load(CliConfig.conversationFile)
-    } else {
-        None
-    }
-    let agent = ConversationAgent(CodeAgent(), conversation: savedConversation)
+    let agent = ConversationAgent(CodeAgent())
 
     // Register the callback to save conversation
     atExit({ =>
@@ -130,8 +124,21 @@ main(args: Array<String>): Int64 {
             case "/help" | "help" =>
                 PrintUtils.printHelpMessage()
             case "/clear" | "clear" =>
+                agent.conversation.clear()
                 PrintUtils.clearScreen()
                 PrintUtils.printLogo()
+            case "/resume" | "resume" =>
+                // Load previous conversation if necessary
+                if (exists(CliConfig.conversationFile)) {
+                    let savedConversation = Conversation.load(CliConfig.conversationFile)
+                    agent.conversation.clear()
+                    for (chatRound in savedConversation) {
+                        agent.conversation.addChatRound(chatRound)
+                    }
+                    println("Conversation resumed successfully!")
+                } else {
+                    println("No saved conversation found. Starting a new one.")
+                }
             case "/compact" | "compact" =>
                 if (let Some(index) <- compactor.calculateCompactIndex(agent.conversation)) {
                     PrintUtils.printTool("Compacting conversation...", "🚀 Working on it...")

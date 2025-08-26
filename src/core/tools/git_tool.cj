@@ -23,7 +23,6 @@ public class GitTool {
             let cmd = "git"
             let args: Array<String> = ["init"]
             
-            eprintln("Executing command: ${cmd} ${args}")
             let (exitCode, stdOutData, stdErrData) = executeWithOutput(cmd, args, workingDirectory: Path(path))
             
             if (exitCode == 0) {
@@ -55,7 +54,6 @@ public class GitTool {
             let cmd = "git"
             let args: Array<String> = ["clone", url]
             
-            eprintln("Executing command: ${cmd} ${args}")
             let (exitCode, stdOutData, stdErrData) = executeWithOutput(cmd, args, workingDirectory: Path(path))
             
             if (exitCode == 0) {
@@ -86,8 +84,7 @@ public class GitTool {
         try {
             let cmd = "git"
             let args: Array<String> = ["add", files]
-            
-            eprintln("Executing command: ${cmd} ${args}")
+                      
             let (exitCode, stdOutData, stdErrData) = executeWithOutput(cmd, args, workingDirectory: Path(path))
             
             if (exitCode == 0) {
@@ -119,7 +116,6 @@ public class GitTool {
             let cmd = "git"
             let args: Array<String> = ["commit", "-m", message]
             
-            eprintln("Executing command: ${cmd} ${args}")
             let (exitCode, stdOutData, stdErrData) = executeWithOutput(cmd, args, workingDirectory: Path(path))
             
             if (exitCode == 0) {
@@ -158,7 +154,6 @@ public class GitTool {
                 }
             }
             
-            eprintln("Executing command: ${cmd} ${args}")
             let (exitCode, stdOutData, stdErrData) = executeWithOutput(cmd, args, workingDirectory: Path(path))
             
             if (exitCode == 0) {
@@ -197,7 +192,6 @@ public class GitTool {
                 }
             }
             
-            eprintln("Executing command: ${cmd} ${args}")
             let (exitCode, stdOutData, stdErrData) = executeWithOutput(cmd, args, workingDirectory: Path(path))
             
             if (exitCode == 0) {
@@ -229,7 +223,6 @@ public class GitTool {
             let cmd = "git"
             let args: Array<String> = ["status"]
             
-            eprintln("Executing command: ${cmd} ${args}")
             let (exitCode, stdOutData, stdErrData) = executeWithOutput(cmd, args, workingDirectory: Path(path))
             
             if (exitCode == 0) {
@@ -265,7 +258,6 @@ public class GitTool {
                 args = ["branch", "-a"]
             }
             
-            eprintln("Executing command: ${cmd} ${args}")
             let (exitCode, stdOutData, stdErrData) = executeWithOutput(cmd, args, workingDirectory: Path(path))
             
             if (exitCode == 0) {
@@ -301,7 +293,6 @@ public class GitTool {
                 args = ["checkout", "-b", target]
             }
             
-            eprintln("Executing command: ${cmd} ${args}")
             let (exitCode, stdOutData, stdErrData) = executeWithOutput(cmd, args, workingDirectory: Path(path))
             
             if (exitCode == 0) {
@@ -333,7 +324,6 @@ public class GitTool {
             let cmd = "git"
             let args: Array<String> = ["merge", branch]
             
-            eprintln("Executing command: ${cmd} ${args}")
             let (exitCode, stdOutData, stdErrData) = executeWithOutput(cmd, args, workingDirectory: Path(path))
             
             if (exitCode == 0) {
@@ -369,7 +359,6 @@ public class GitTool {
                 args = ["log", "--oneline", "-n", limit.toString()]
             }
             
-            eprintln("Executing command: ${cmd} ${args}")
             let (exitCode, stdOutData, stdErrData) = executeWithOutput(cmd, args, workingDirectory: Path(path))
             
             if (exitCode == 0) {
@@ -403,7 +392,6 @@ public class GitTool {
                 args = ["diff", target]
             }
             
-            eprintln("Executing command: ${cmd} ${args}")
             let (exitCode, stdOutData, stdErrData) = executeWithOutput(cmd, args, workingDirectory: Path(path))
             
             if (exitCode == 0) {
@@ -449,7 +437,6 @@ public class GitTool {
                 args = ["stash", "clear"]
             }
             
-            eprintln("Executing command: ${cmd} ${args}")
             let (exitCode, stdOutData, stdErrData) = executeWithOutput(cmd, args, workingDirectory: Path(path))
             
             if (exitCode == 0) {
@@ -490,7 +477,6 @@ public class GitTool {
                 args = ["reset", "--mixed", resetTarget]
             }
             
-            eprintln("Executing command: ${cmd} ${args}")
             let (exitCode, stdOutData, stdErrData) = executeWithOutput(cmd, args, workingDirectory: Path(path))
             
             if (exitCode == 0) {
