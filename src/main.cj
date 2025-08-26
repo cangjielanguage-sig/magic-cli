@@ -11,9 +11,11 @@ import magic.core.message.Conversation
 import cli.core.agents.{CodeAgent, Compactor}
 import cli.core.config.CliConfig
 import cli.utils.{InputUtils, PrintUtils}
+
 import std.argopt.{parseArguments, ArgumentSpec, ArgumentMode, ArgumentParseException}
 import std.fs.{exists, File, FSException, Path}
 import std.regex.Regex
+import std.env.atExit
 
 private func printHelp(): Unit {
     println("Magic Cli")
@@ -95,7 +97,18 @@ main(args: Array<String>): Int64 {
     setConfig()
     PrintUtils.printWelcome()
 
-    let agent = ConversationAgent(CodeAgent())
+    // Load previous conversation if necessary
+    let savedConversation: Option<Conversation> = if (exists(CliConfig.conversationFile)) {
+        Conversation.load(CliConfig.conversationFile)
+    } else {
+        None
+    }
+    let agent = ConversationAgent(CodeAgent(), conversation: savedConversation)
+    // Register the callback to save conversation
+    atExit({ =>
+        agent.conversation.save(CliConfig.conversationFile)
+    })
+
     let compactor = Compactor()
     while (true) {
         let input = InputUtils.getUserInput()

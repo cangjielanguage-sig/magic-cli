@@ -51,9 +51,21 @@ protected class CliConfig {
         }
     }
 
+    /**
+     * The history file of user inputs
+     */
     public static prop readlineFile: Path {
         get() {
             CliConfig.dotDir.join("readline.history")
+        }
+    }
+
+    /**
+     * The history file of user-agent conversation
+     */
+    public static prop conversationFile: Path {
+        get() {
+            CliConfig.dotDir.join("conversation.history")
         }
     }
 

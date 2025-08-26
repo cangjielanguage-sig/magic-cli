@@ -1,3 +1,5 @@
+.magic-cli/
+**/*.bak
 # Build artifacts
 target/
 *.macrocall
