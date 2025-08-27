@@ -27,14 +27,16 @@ protected func listCmds(prefix!: String = ""): Array<String> {
 protected func listFiles(workDir!: Path = CliConfig.cwd, prefix!: String = ""): Array<String> {
     var workSpace = try {
         workDir.join(prefix)
-    } catch (e: FSException) {
-        workDir
+    } catch (e: FSException) { // Illegal path
+        return []
     }
     let basePath = toUnixStyle(workDir.normalize().toString(), appendSuffix: true)
     let fi = if(exists(workSpace)) {
         FileInfo(workSpace)
+    } else if (exists(workSpace.parent)) { // Incomplete path input 
+        FileInfo(workSpace.parent)
     } else {
-        FileInfo(workSpace.normalize().toString().removeSuffix(workSpace.fileName))
+        return []
     }
     if (!fi.isDirectory()) {
         return []
@@ -80,11 +82,11 @@ protected func listFiles(workDir!: Path = CliConfig.cwd, prefix!: String = ""): 
     arr
 }
 
-private func doListFiles(workDir: Path, lst: ArrayList<String>): Bool {
+private func istFilesRecursive(workDir: Path, lst: ArrayList<String>): Bool {
     Directory.walk(workDir) {
         fileInfo: FileInfo => if (fileInfo.isDirectory()) {
             lst.add(fileInfo.path.normalize().toString())
-            return doListFiles(fileInfo.path, lst)
+            return istFilesRecursive(fileInfo.path, lst)
         } else {
             return true
         }

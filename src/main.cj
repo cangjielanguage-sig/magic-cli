@@ -8,7 +8,7 @@ import magic.interaction.ConsolePrinter
 import magic.log.LogUtils
 import magic.core.message.Conversation
 
-import cli.core.agents.{CodeAgent, Compactor}
+import cli.core.agents.{GeneralCodeAgent, CangjieCodeAgent, Compactor}
 import cli.core.config.CliConfig
 import cli.core.mcp.MCPConfigManager
 import cli.utils.{InputUtils, PrintUtils}
@@ -20,7 +20,8 @@ import std.env.atExit
 
 private func printHelp(): Unit {
     println("Magic Cli")
-    println("  --auto             The agent runs autonomously")
+    println("  --auto            The agent runs autonomously")
+    println("  --language, -l    Specify languages in [Cangjie, General(Default)]")
     println("  --model <model>   Set the chat model")
     println("  --help, -h        Print this help message")
 }
@@ -32,6 +33,7 @@ private func parseArgs(args: Array<String>): Bool {
     let argSpecs = [
         Long("auto", NoValue),
         Long("model", RequiredValue),
+        Full("language", r"l", RequiredValue),
         Full("help", r"h", NoValue)
     ]
     let result = try {
@@ -48,6 +50,13 @@ private func parseArgs(args: Array<String>): Bool {
     }
     if (let Some(model) <- result.options.get("model")) {
         CliConfig.model = model
+    }
+    if (let Some(language) <- result.options.get("language") && language.toAsciiUpper() == 'CANGJIE') {
+        CliConfig.language = 'Cangjie'
+    } else if (let Some(language) <- result.options.get("l") && language.toAsciiUpper() == 'CANGJIE') {
+        CliConfig.language = 'Cangjie'
+    } else {
+        CliConfig.language = 'General'
     }
     return true
 }
@@ -98,7 +107,18 @@ main(args: Array<String>): Int64 {
     setConfig()
     PrintUtils.printWelcome()
 
-    let agent = ConversationAgent(CodeAgent())
+    // Load previous conversation if necessary
+    let savedConversation: Option<Conversation> = if (exists(CliConfig.conversationFile)) {
+        Conversation.load(CliConfig.conversationFile)
+    } else {
+        None
+    }
+    let agent = if(CliConfig.language == 'Cangjie') {
+        ConversationAgent(CangjieCodeAgent(), conversation: savedConversation)
+    } else {
+        ConversationAgent(GeneralCodeAgent(), conversation: savedConversation)
+    }
+        
 
     // Register the callback to save conversation
     atExit({ =>
