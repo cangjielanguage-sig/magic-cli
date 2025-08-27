@@ -11,9 +11,9 @@ import cli.core.config.CliConfig
     model: "${CliConfig.model}",
     executor: "tool-loop:1000",
     tools: [
-        FSTool(),
+        FSToolset(),
         ShellTool(),
-        PlanTool(),
+        PlanToolset(),
         analyzeCode
     ]
 ]
@@ -34,10 +34,10 @@ public class GeneralCodeAgent {
     model: "${CliConfig.model}",
     executor: "tool-loop:1000",
     tools: [
-        FSTool(),
+        FSToolset(),
         ShellTool(),
-        CJTool(this.model),
-        PlanTool(),
+        CangjieToolset(this.model),
+        PlanToolset(),
         analyzeCode
     ]
 ]

@@ -1,4 +1,4 @@
-package cli.core.tools
+package cli.core.tools.fs_utils
 
 import std.fs.*
 import std.regex.Regex
@@ -155,7 +155,7 @@ private func findMiddleAndCollectAll(currentPath: Path, middleRegex: Regex, resu
         let itemName = item.name
 
         // Skip ignored files and directories
-        if (FSTool.ignored(item.path)) {
+        if (ignored(item.path)) {
             continue
         }
 
@@ -182,7 +182,7 @@ private func globRecursiveAll(currentPath: Path, results: ArrayList<String>): Un
         let itemName = item.name
 
         // Skip hidden files and directories like .git, node_modules, etc.
-        if (FSTool.ignored(item.path)) {
+        if (ignored(item.path)) {
             continue
         }
 
@@ -210,7 +210,7 @@ private func globRecursiveWithAfterMatch(currentPath: Path, afterRegex: Regex, r
         let itemName = item.name
 
         // Skip hidden files and common ignore patterns
-        if (FSTool.ignored(item.path)) {
+        if (ignored(item.path)) {
             continue
         }
 
@@ -240,7 +240,7 @@ private func globRecursiveWithBeforeMatch(currentPath: Path, beforeRegex: Regex,
         let itemName = item.name
 
         // Skip hidden files and common ignore patterns
-        if (FSTool.ignored(item.path)) {
+        if (ignored(item.path)) {
             continue
         }
 
@@ -277,7 +277,7 @@ private func globRecursiveWithBeforeAfterMatch(currentPath: Path, beforeRegex: R
         let itemName = item.name
 
         // Skip hidden files and common ignore patterns
-        if (FSTool.ignored(item.path)) {
+        if (ignored(item.path)) {
             continue
         }
 
@@ -307,7 +307,7 @@ private func globRecursive(currentPath: Path, regex: Regex, results: ArrayList<S
         let itemPath = item.path
 
         // Skip hidden files and directories like .git, node_modules, etc.
-        if (FSTool.ignored(item.path)) {
+        if (ignored(item.path)) {
             continue
         }
 
@@ -407,7 +407,7 @@ private func matchPathSegments(currentPath: Path, segments: Array<String>, segme
         let itemPath = item.path
 
         // Skip ignored files and directories
-        if (FSTool.ignored(item.path)) {
+        if (ignored(item.path)) {
             continue
         }
 

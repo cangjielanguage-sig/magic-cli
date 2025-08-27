@@ -14,19 +14,19 @@ import std.env.*
 public class ShellTool {
     @tool[
         description: "Executes a shell command in the specified directory and returns the execution result",
-        parameters: { path: "Directory path for command execution, must be an absolute path", command: "Shell command to execute" }
+        parameters: {
+            path: "Directory path for command execution, must be an absolute path",
+            command: "Shell command to execute"
+        }
     ]
-    public func execute(path: String, command: String): String {
+    public func shellExecute(path: String, command: String): String {
         let message = command
         if (let Deny(userInput) <- InputUtils.confirm("Execute Shell Command", message)) {
             return "User cancelled the operation, feedback: ${userInput}"
         }
 
         try {
-            let osName = getVariable("OS") ?? "Unknown"
-            let isWindows = osName.toAsciiLower().contains("windows")
-
-            let (exitCode, stdOutData, stdErrData) = if (isWindows) {
+            let (exitCode, stdOutData, stdErrData) = if (InfoUtils.os == "windows") {
                 executeWithOutput("powershell", ["-Command", command], workingDirectory: Path(path))
             } else {
                 executeWithOutput("/bin/bash", ["-c", command], workingDirectory: Path(path))

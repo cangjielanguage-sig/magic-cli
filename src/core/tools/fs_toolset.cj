@@ -14,6 +14,7 @@ import magic.prelude.*
 import magic.log.LogUtils
 
 import cli.utils.*
+import cli.core.tools.fs_utils.*
 import cli.core.config.CliConfig
 
 //==============================================================================
@@ -23,14 +24,7 @@ import cli.core.config.CliConfig
 //==============================================================================
 
 @toolset
-public class FSTool {
-
-    // Predefined black-list of directories
-    static let IGNORED_DIR = [".git", ".cache", "node_modules", "bower_components", "build", "target"]
-    static func ignored(path: Path): Bool {
-        return path.fileName.startsWith(".") || IGNORED_DIR.contains(path.fileName)
-    }
-
+public class FSToolset {
     @tool[
         description: "Creates a directory recursively and returns the creation result",
         parameters: { path: "Directory path, must be an absolute path" }
@@ -123,10 +117,7 @@ public class FSTool {
         PrintUtils.printTool("List Directory", message)
 
         try {
-            let osName = getVariable("OS") ?? "Unknown"
-            let isWindows = osName.toAsciiLower().contains("windows")
-
-            let (exitCode, stdOutData, stdErrData) = if (isWindows) {
+            let (exitCode, stdOutData, stdErrData) = if (InfoUtils.os == "windows") {
                 executeWithOutput("powershell", ["-Command", "dir"], workingDirectory: Path(path))
             } else {
                 executeWithOutput("/bin/bash", ["-c", "ls -la"], workingDirectory: Path(path))
@@ -145,27 +136,31 @@ public class FSTool {
     }
 
     @tool[
-        description: "Reads the content of a single file and returns the file content",
-        parameters: { filePath: "File path, must be an absolute path" }
+        description: "Reads and returns the full content of a single file with line numbers. Similar to Unix cat -n command, shows content with line numbers for easy reference.",
+        parameters: {
+            filePath: "The absolute path to the file to read"
+        }
     ]
     public func readFile(filePath: String): String {
-        let message = filePath
+        let message = "filePath: ${filePath}"
         PrintUtils.printTool("Read File", message)
 
-        if (!Path(filePath).isAbsolute()) {
-            return "File path must be absolute"
-        }
+        return cat(filePath)
+    }
 
-        try {
-            let fileContent = File.readFrom(filePath)
-            return "File content:\n${String.fromUtf8(fileContent)}"
-        } catch (e: FSException) {
-            return "File path is empty, file is not readable, or file reading failed"
-        } catch (e: IllegalArgumentException) {
-            return "File path contains null characters"
-        } catch (e: Exception) {
-            return "Failed to read file: ${e}"
+    @tool[
+        description: "Reads and returns a specific range of lines from a file with line numbers. Useful for viewing specific sections of large files.",
+        parameters: {
+            filePath: "The absolute path to the file to read",
+            startLine: "Starting line number (1-based, inclusive)",
+            endLine: "Optional: Ending line number (1-based, inclusive). If not provided, reads to end of file"
         }
+    ]
+    public func readFileRange(filePath: String, startLine: Int64, endLine: Option<Int64>): String {
+        let message = "filePath: ${filePath}\nstartLine: ${startLine}\nendLine: ${endLine.map { n => n.toString() } ?? "end of file"}"
+        PrintUtils.printTool("Read File Range", message)
+
+        return catRange(filePath, startLine, endLine: endLine ?? 0)
     }
 
     @tool[
@@ -215,7 +210,12 @@ public class FSTool {
         }
         PrintUtils.printTool("Grep", strBuilder.toString())
 
-        return grep(pattern, path, include)
+        let result = grep(pattern, path, include)
+        if (result.isEmpty()) {
+            return "Nothing found"
+        } else {
+            return result
+        }
     }
 
     @tool[
@@ -262,61 +262,8 @@ public class FSTool {
         }
     ]
     public func tree(path: String): String {
-        let treePath = Path(path)
-        if (!treePath.isAbsolute()) {
-            return "Path must be absolute"
-        } else if (!exists(treePath)) {
-            return "${path} does not exist"
-        }
-
-        PrintUtils.printTool("Tree", "path: ${treePath}")
-
-        if (!exists(treePath)) {
-            return "Directory does not exist: ${treePath}"
-        }
-
-        let builder = StringBuilder()
-        treeRecursive(treePath, "", true, builder)
-        return builder.toString()
-    }
-
-    private func treeRecursive(currentPath: Path, prefix: String, isLast: Bool, builder: StringBuilder): Unit {
-        if (!exists(currentPath)) {
-            return
-        }
-        let itemName = currentPath.fileName
-
-        if (prefix.size > 0) {
-            builder.append(prefix)
-            if (isLast) {
-                builder.append("└── ")
-            } else {
-                builder.append("├── ")
-            }
-        }
-
-        builder.append(itemName)
-        builder.append("\n")
-
-        if (FileInfo(currentPath).isRegular()) {
-            return
-        }
-
-        let items = ArrayList<FileInfo>()
-        for (item in Directory.readFrom(currentPath)) {
-            if (!ignored(item.path)) {
-                items.add(item)
-            }
-        }
-
-        sort(items, by: { a, b => a.path.fileName.compare(b.path.fileName) })
-
-        for (i in 0..items.size) {
-            let item = items[i]
-            let isLastItem = i == items.size - 1
-            let newPrefix = prefix + if (isLast) { "    " } else { "│   " }
-            treeRecursive(item.path, newPrefix, isLastItem, builder)
-        }
+        PrintUtils.printTool("Tree", "path: ${path}")
+        return listTree(path)
     }
 
     @tool[
@@ -367,33 +314,5 @@ public class FSTool {
         PrintUtils.printTool("Head", message)
 
         return head(filePath, lines: lines ?? 10)
-    }
-
-    @tool[
-        description: "Reads and returns the full content of a single file with line numbers. Similar to Unix cat -n command, shows content with line numbers for easy reference.",
-        parameters: {
-            filePath: "The absolute path to the file to read"
-        }
-    ]
-    public func catFile(filePath: String): String {
-        let message = "filePath: ${filePath}"
-        PrintUtils.printTool("Cat", message)
-
-        return cat(filePath)
-    }
-
-    @tool[
-        description: "Reads and returns a specific range of lines from a file with line numbers. Useful for viewing specific sections of large files.",
-        parameters: {
-            filePath: "The absolute path to the file to read",
-            startLine: "Starting line number (1-based, inclusive)",
-            endLine: "Optional: Ending line number (1-based, inclusive). If not provided, reads to end of file"
-        }
-    ]
-    public func catRangeFile(filePath: String, startLine: Int64, endLine: Option<Int64>): String {
-        let message = "filePath: ${filePath}\nstartLine: ${startLine}\nendLine: ${endLine.map { n => n.toString() } ?? "end of file"}"
-        PrintUtils.printTool("Cat Range", message)
-
-        return catRange(filePath, startLine, endLine: endLine ?? 0)
     }
 }

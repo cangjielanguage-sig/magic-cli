@@ -1,4 +1,4 @@
-package cli.core.tools
+package cli.core.tools.fs_utils
 
 import std.fs.*
 import std.process.*
@@ -34,7 +34,7 @@ private func findRecursive(currentPath: Path, pattern: Regex, results: ArrayList
             results.add(itemPath.toString())
         }
 
-        if (item.isDirectory() && !FSTool.ignored(itemPath)) {
+        if (item.isDirectory() && !ignored(itemPath)) {
             findRecursive(itemPath, pattern, results)
         }
     }

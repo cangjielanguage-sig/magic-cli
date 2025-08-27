@@ -1,4 +1,4 @@
-package cli.core.tools
+package cli.core.tools.fs_utils
 
 import std.fs.*
 import std.io.*
@@ -52,38 +52,6 @@ public func cat(filePath: String): String {
         return "Error reading file: ${e}"
     }
     throw UnsupportedException("Unreachable")
-}
-
-/**
- * Reads and returns the full content of a single file without line numbers.
- * Simple version that returns raw file content.
- *
- * @param filePath Absolute path to the file to read
- * @return String containing the raw file content
- */
-public func catSimple(filePath: String): String {
-    if (!Path(filePath).isAbsolute()) {
-        return "File path must be absolute"
-    }
-
-    if (!exists(filePath)) {
-        return "File does not exist: ${filePath}"
-    }
-
-    let path = Path(filePath)
-    if (!FileInfo(path).isRegular()) {
-        return "Path is not a regular file: ${filePath}"
-    }
-
-    try {
-        let fileContent = File.readFrom(filePath)
-        return String.fromUtf8(fileContent)
-
-    } catch (e: FSException) {
-        return "Failed to read file: ${e}"
-    } catch (e: Exception) {
-        return "Error reading file: ${e}"
-    }
 }
 
 /**

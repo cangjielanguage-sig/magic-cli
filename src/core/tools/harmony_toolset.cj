@@ -7,7 +7,7 @@ import magic.dsl.*
 import magic.prelude.*
 
 @toolset
-public class HarmonyTool {
+public class HarmonyToolset {
     @tool[
         description: "Create a new HarmonyOS/OpenHarmony application project using ohpm (OpenHarmony Package Manager). This is the preferred way to start a new project, automatically generating standard project structure and configuration files.",
         parameters: {
@@ -71,7 +71,7 @@ public class HarmonyTool {
         }
     }
 
-    
+
     @tool[
         description: "List all available hvigorw build tasks in the current project. This is useful for discovering executable operations, such as module-specific build tasks or check tasks.",
         parameters: {}
