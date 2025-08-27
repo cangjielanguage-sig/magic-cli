@@ -107,4 +107,24 @@ protected class PrintUtils {
         }
         return WorkingIndicator(future)
     }
+
+    static public func renderDiff(content: String): String {
+        return String.join(
+            content.split("\n") |>
+                map { line =>
+                    // Add background colors to diff lines
+                    if (line.startsWith("+")) {
+                        line.withBgColor(THEME_BG_SUCCESS)  // Green background for added lines
+                    } else if (line.startsWith("-")) {
+                        line.withBgColor(THEME_BG_ERROR)    // Red background for deleted lines
+                    } else if (line.startsWith("@@")) {
+                        line.withColor(THEME_MUTED)         // Muted color for hunk headers
+                    } else {
+                        line  // No color for context lines
+                    }
+                } |>
+                collectArray,
+            delimiter: "\n"
+        )
+    }
 }

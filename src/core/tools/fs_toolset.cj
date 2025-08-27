@@ -231,20 +231,19 @@ public class FSToolset {
             return "File path must be absolute"
         }
 
-        let message = filePath + "\nold content:\n" + oldContent + "\nnew content:\n" + newContent
-        if (let Deny(userInput) <- InputUtils.confirm("Edit File Content", message)) {
-            return "User cancelled the operation, feedback: ${userInput}"
-        }
-
         try {
-            let content = String.fromUtf8(File.readFrom(filePath))
-            if (!content.contains(oldContent)) {
+            let oldFileContent = String.fromUtf8(File.readFrom(filePath))
+            if (!oldFileContent.contains(oldContent)) {
                 return "File ${filePath} does not contain the specified content '${oldContent}', cannot modify"
             }
-            let updatedContent = content.replace(oldContent, newContent)
-            let file = File(filePath, Write)
-            file.write(updatedContent.toArray())
-            file.close()
+            let newFileContent = oldFileContent.replace(oldContent, newContent)
+
+            let message = diff(oldFileContent, newFileContent) |> PrintUtils.renderDiff
+            if (let Deny(userInput) <- InputUtils.confirm("Edit File (${filePath})", message)) {
+                return "User cancelled the operation, feedback: ${userInput}"
+            }
+
+            File.writeTo(filePath, newFileContent.toArray())
             return "File ${filePath} content modified successfully"
         } catch (e: FSException) {
             return "File path error or file is not readable/writable"

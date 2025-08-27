@@ -11,15 +11,6 @@ private const HORIZONTAL_BORDER = "═"
 private const HORIZONTAL_SEPARATOR = "─"
 private const VERTICAL_BORDER = "║"
 
-/*
- * Calculate the rune size except for the ANSI escape characters
- */
-private func sizeOf(str: String): Int64 {
-    let regex = Regex("\u{1B}\\[\\d*[a-zA-Z]")
-    let strWithoutAnsiEscape = regex.replaceAll(str, "")
-    return strWithoutAnsiEscape.toRuneArray().size
-}
-
 func padString(content: String, width!: Int64, center!: Bool = false): String {
     let sizeToPad = max(0, width - displayWidthOf(content))
     if (center) {
