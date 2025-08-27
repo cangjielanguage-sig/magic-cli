@@ -27,7 +27,6 @@ protected class PrintUtils {
 
         let welcomeMessage = String.join(
             [
-                "✨ Welcome to Magic CLI!\n".withColor(THEME_SUCCESS),
                 "🚦 ${THEME_MUTED}Input '${THEME_YELLOW}/help${THEME_MUTED}' to check the manual and '${THEME_YELLOW}/exit${THEME_MUTED}' to exit the program.${RESET}\n\n"
             ],
             delimiter: "\n"
@@ -36,7 +35,7 @@ protected class PrintUtils {
     }
 
     static public func printLogo() {
-        println(buildBanner())
+        printMagicCliLogo()
     }
 
     static public func printExitMessage() {
@@ -45,9 +44,10 @@ protected class PrintUtils {
 
     static let HELP_INFO = [
         ("help",    "Show this help message"),
-        ("clear",   "Clear the screen"),
+        ("clear",   "Clear conversation history"),
         ("compact", "Compact the conversation"),
         ("mcp",     "Show loaded MCP tools"),
+        ("resume",  "Resume last conversation history"),
         ("exit",    "Exit the program")
     ]
 

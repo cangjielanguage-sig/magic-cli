@@ -127,9 +127,7 @@ main(args: Array<String>): Int64 {
 
     // Load MCP servers and add their tools to the agent
     let mcpManager = MCPConfigManager()
-    for (client in mcpManager.loadMCPServers()) {
-        agent.toolManager.addTools(client.tools)
-    }
+    agent.toolManager.addTools(mcpManager.loadMCPServers())
 
     // Initialize the conversation compactor to use
     let compactor = Compactor()
@@ -144,8 +142,21 @@ main(args: Array<String>): Int64 {
             case "/help" | "help" =>
                 PrintUtils.printHelpMessage()
             case "/clear" | "clear" =>
+                agent.conversation.clear()
                 PrintUtils.clearScreen()
                 PrintUtils.printLogo()
+            case "/resume" | "resume" =>
+                // Load previous conversation if necessary
+                if (exists(CliConfig.conversationFile)) {
+                    let savedConversation = Conversation.load(CliConfig.conversationFile)
+                    agent.conversation.clear()
+                    for (chatRound in savedConversation) {
+                        agent.conversation.addChatRound(chatRound)
+                    }
+                    println("Conversation resumed successfully!")
+                } else {
+                    println("No saved conversation found. Starting a new one.")
+                }
             case "/compact" | "compact" =>
                 if (let Some(index) <- compactor.calculateCompactIndex(agent.conversation)) {
                     PrintUtils.printTool("Compacting conversation...", "🚀 Working on it...")
