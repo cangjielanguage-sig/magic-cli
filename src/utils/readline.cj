@@ -7,8 +7,6 @@ import std.deriving.*
 import std.fs.{File, Path, exists}
 import cli.core.config.CliConfig
 
-let WORKSPACE: String = toUnixStyle(CliConfig.cwd.normalize().toString())
-
 class Command {
     public Command(let trigger: Rune, let cmd: String, let visual: Bool) {
     }
@@ -155,9 +153,8 @@ private func redraw(prompt: String, content: Array<Rune>, cursorPos: Int64, phas
     // clear all bytes below
     moveCursor(1, DOWN)
     clearRunes(BEHIND)
-    print("\r\n${BRIGHT_BLACK}${BOLD}WORKSPACE: ${WORKSPACE}${RESET}")
     // restore curosr
-    moveCursor(2, UP)
+    moveCursor(1, UP)
     moveCursor(col: cursorSavePos)
     // strBuilder.append(wrapLineWithVerticalBorder("${prompt}${String(content)}"))
     // // Compute the offset of the cursor to move
@@ -206,16 +203,11 @@ private func redrawCmd(prompt: String, content: Array<Rune>, cmd: Command, curso
     clearRunes(BEHIND)
     moveCursor(1, UP)
 
-    let extendLine = wrapShowList(showLst, selectIdx, prefix: cmd.pure)
+    let extendLine = wrapShowList(showLst, selectIdx)
     if (extendLine != String.empty) {
         let colomShift = extendLine.lines().count() - 1
         print(extendLine, flush: true)
-        print("\r\n${BRIGHT_BLACK}${BOLD}WORKSPACE: ${WORKSPACE}${RESET}")
-        moveCursor(colomShift + 1, UP)
-    } else {
-        moveCursor(1, DOWN)
-        print("\r\n${BRIGHT_BLACK}${BOLD}WORKSPACE: ${WORKSPACE}${RESET}")
-        moveCursor(2, UP)
+        moveCursor(colomShift, UP)
     }
     moveCursor(col: cursorSavePos)
 }
