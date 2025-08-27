@@ -129,7 +129,7 @@ private func redraw(prompt: String, content: Array<Rune>, cursorPos: Int64, phas
     // move the cursor to the first line because the current line in at the second line
     if (phase != DrawPhase.First) {
         moveCursor(1, UP)
-        clearRunes(LINE)
+        clearScreen(EntireLine)
     }
     if (phase == DrawPhase.Last) {
         print(wrapBox("${prompt}${String(content)}"), flush: true)
@@ -141,7 +141,7 @@ private func redraw(prompt: String, content: Array<Rune>, cursorPos: Int64, phas
     // Move cursor from the third line to the second line
     moveCursor(1, UP)
     // Clear the second line
-    clearRunes(LINE)
+    clearScreen(EntireLine)
     // Construct the content and print it
     let strBuilder = StringBuilder()
     strBuilder.append(prompt)
@@ -152,7 +152,7 @@ private func redraw(prompt: String, content: Array<Rune>, cursorPos: Int64, phas
     print(wrapLineWithVerticalBorder(strBuilder.toString()), flush: true)
     // clear all bytes below
     moveCursor(1, DOWN)
-    clearRunes(BEHIND)
+    clearScreen(AfterCursorScreen)
     // restore curosr
     moveCursor(1, UP)
     moveCursor(col: cursorSavePos)
@@ -175,7 +175,7 @@ private func redrawCmd(prompt: String, content: Array<Rune>, cmd: Command, curso
     // move the cursor to the first line because the current line in at the second line
     if (phase != DrawPhase.First) {
         moveCursor(1, UP)
-        clearRunes(LINE)
+        clearScreen(EntireLine)
     }
     if (phase == DrawPhase.Last) {
         print(wrapBox("${prompt}${String(content)}"), flush: true)
@@ -187,7 +187,7 @@ private func redrawCmd(prompt: String, content: Array<Rune>, cmd: Command, curso
     // Move cursor from the third line to the second line
     moveCursor(1, UP)
     // Clear the second line
-    clearRunes(LINE)
+    clearScreen(EntireLine)
     // Construct the content and print it
     let strBuilder = StringBuilder()
     strBuilder.append(prompt)
@@ -200,7 +200,7 @@ private func redrawCmd(prompt: String, content: Array<Rune>, cmd: Command, curso
     print(wrappedLine, flush: true)
     // clear all bytes below
     moveCursor(1, DOWN)
-    clearRunes(BEHIND)
+    clearScreen(AfterCursorScreen)
     moveCursor(1, UP)
 
     let extendLine = wrapShowList(showLst, selectIdx)
@@ -300,7 +300,7 @@ private func readlineImplCmdLst(runeBox: Box<?Rune>, prompt: String, history: Ar
             if (cmdArr.size == 0) {
                 moveCursor(1, UP)
                 moveCursor(col: 0)
-                clearRunes(BEHIND)
+                clearScreen(AfterCursorScreen)
                 moveCursor(1, DOWN)
                 redraw(prompt, buf.toArray(), cursor, phase: DrawPhase.Last)
                 return Some(line)
@@ -330,7 +330,7 @@ private func readlineImplCmdLst(runeBox: Box<?Rune>, prompt: String, history: Ar
                 } else {
                     moveCursor(1, UP)
                     moveCursor(col: 0)
-                    clearRunes(BEHIND)
+                    clearScreen(AfterCursorScreen)
                     redraw(prompt, buf.toArray(), cursor, phase: DrawPhase.First)
                     cursorBox.value = cursor
                     selectIdxBox.value = 0
@@ -404,7 +404,7 @@ private func readlineImplAt(runeBox: Box<?Rune>, prompt: String, history: ArrayL
             if (fileArr.size == 0) {
                 moveCursor(1, UP)
                 moveCursor(col: 0)
-                clearRunes(BEHIND)
+                clearScreen(AfterCursorScreen)
                 moveCursor(1, DOWN)
                 redraw(prompt, buf.toArray(), cursor, phase: DrawPhase.Last)
                 return Some(line)
@@ -434,7 +434,7 @@ private func readlineImplAt(runeBox: Box<?Rune>, prompt: String, history: ArrayL
                 } else {
                     moveCursor(1, UP)
                     moveCursor(col: 0)
-                    clearRunes(BEHIND)
+                    clearScreen(AfterCursorScreen)
                     redraw(prompt, buf.toArray(), cursor, phase: DrawPhase.First)
                     cursorBox.value = cursor
                     selectIdxBox.value = 0

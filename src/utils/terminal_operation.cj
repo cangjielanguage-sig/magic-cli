@@ -5,7 +5,8 @@ protected enum Direction {
 }
 
 protected enum ClearMode {
-    BEHIND | LINE
+    | AfterCursorScreen     // Clear from cursor to end of screen
+    | EntireLine           // Clear the current line and move the cursor to the start
 }
 
 protected func moveCursor(lines: Int64, direction: Direction) {
@@ -26,10 +27,10 @@ protected func moveCursor(row!: ?Int64 = None, col!: ?Int64 = None) {
     }
 }
 
-protected func clearRunes(mode: ClearMode) {
+protected func clearScreen(mode: ClearMode) {
     match (mode) {
-        case BEHIND => print("\u{1B}[J", flush: true)
-        case _ => print("\r\u{1B}[K", flush: true)
+        case AfterCursorScreen => print("\u{1B}[J", flush: true)
+        case EntireLine => print("\r\u{1B}[K", flush: true)
     }
 }
 

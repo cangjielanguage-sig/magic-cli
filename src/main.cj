@@ -7,14 +7,20 @@ import magic.agent.ConversationAgent
 import magic.interaction.ConsolePrinter
 import magic.log.LogUtils
 import magic.core.message.Conversation
+
+import magic.core.interaction.EventResponse
+import magic.interaction.{EventHandlerManager, PromptValidateEvent, ToolCallEvent}
+
 import cli.core.agents.{GeneralCodeAgent, CangjieCodeAgent, Compactor}
 import cli.core.config.CliConfig
 import cli.core.mcp.MCPConfigManager
-import cli.utils.{InputUtils, PrintUtils}
+import cli.utils.{InputUtils, PrintUtils, WorkingIndicator}
+
 import std.argopt.{parseArguments, ArgumentSpec, ArgumentMode, ArgumentParseException}
 import std.fs.{exists, File, FSException, Path}
 import std.regex.Regex
 import std.env.atExit
+import std.sync.AtomicOptionReference
 
 private func printHelp(): Unit {
     println("Magic Cli")
@@ -105,7 +111,7 @@ main(args: Array<String>): Int64 {
     setConfig()
     PrintUtils.printWelcome()
 
-    let agent = if (CliConfig.language == 'Cangjie') {
+    let agent = if (CliConfig.language.toAsciiLower() == 'cangjie') {
         ConversationAgent(CangjieCodeAgent())
     } else {
         ConversationAgent(GeneralCodeAgent())
@@ -123,6 +129,28 @@ main(args: Array<String>): Int64 {
     // Initialize the conversation compactor to use
     let compactor = Compactor()
 
+    // Register event handlers to display the indicator of using models
+    let indicator = AtomicOptionReference<WorkingIndicator>()
+    // Although we cannot precisely insert instrumentation before and after using the model,
+    // since the agent operates in a tool-loop mode (i.e., "model-tool" cycle),
+    // we can implement event handling as follows:
+    // The PromptValidateEvent happens before using the model
+    EventHandlerManager.global.addHandler { evt: PromptValidateEvent =>
+        // There may be other agents during the execution.
+        // Only show the indicator of the main agent
+        if (evt.agent.name == agent.name) {
+            indicator.store(PrintUtils.printWorkingIndicator(message: "💭 Thinking"))
+        }
+        EventResponse.Continue
+    }
+    // The ToolCallEvent happens after the model giving its reply
+    EventHandlerManager.global.addHandler { evt: ToolCallEvent =>
+        if (evt.agent.name == agent.name && let Some(i) <- indicator.load()) {
+            i.stop()
+        }
+        EventResponse.Continue
+    }
+
     // Start the event loop
     while (true) {
         let input = InputUtils.getUserInput()
@@ -130,7 +158,7 @@ main(args: Array<String>): Int64 {
             case "/exit" | "exit" =>
                 PrintUtils.printExitMessage()
                 break
-            case "/help" | "help" => 
+            case "/help" | "help" =>
                 PrintUtils.printHelpMessage()
             case "/clear" | "clear" =>
                 agent.conversation.clear()
@@ -154,9 +182,9 @@ main(args: Array<String>): Int64 {
                     agent.conversation.compactBy(compactor, firstN: index, keepOrigin: false)
                     PrintUtils.printTool("Compacting conversation...", "🥳 Compacted successfully!")
                 } else {
-                    PrintUtils.printTool("Compacting conversation...", "🌱 Conversation context is still short, no need to compact!")
+                    PrintUtils.printTool("Compacting conversation...", "🌱 Conversation context is short enough, no need to compact!")
                 }
-            case "/mcp" | "mcp" => 
+            case "/mcp" | "mcp" =>
                 mcpManager.showLoadedMCPTools(agent)
             case _ =>
                 let response = agent.chat(AgentRequest(input))

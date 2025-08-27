@@ -23,7 +23,7 @@ protected class InputUtils {
         READLINE.readline(buildPrompt(prompt), withBox: withBox) ?? "exit"
     }
 
-    public static func confirm(name: String, message: String): Confirmation {
+    public static func confirm(title: String, content: String): Confirmation {
         // Print the confirm message
         let mark = if (CliConfig.auto) {
             "✔ ".withColor(THEME_SUCCESS)
@@ -32,8 +32,8 @@ protected class InputUtils {
         }
         println(
             wrapBox(
-                mark + name.withColor(THEME_PRIMARY),
-                content: message
+                mark + title.withColor(THEME_PRIMARY),
+                content: content
             )
         )
         if (CliConfig.auto) {
@@ -41,42 +41,13 @@ protected class InputUtils {
         }
         // If user deny the confirmation, we let her/him input one more message
         if (InputUtils.getConfirmation()) {
-            println("🔧 ${name} Executing ...".withColor(THEME_SUCCESS))
+            println("└─ 🔧 Approved to run...".withColor(THEME_MUTED))
             return Confirmation.Approve
         } else {
-            print("✖ Cancelled.\n".withColor(THEME_SECONDARY), flush: true)
-            let input = InputUtils.getUserInput(prompt: "User Adjustment")
+            print("└─ ✖ Cancelled...\n".withColor(THEME_MUTED), flush: true)
+            let input = InputUtils.getUserInput()
             return Confirmation.Deny(input)
         }
-    }
-
-    private static func getConfirmationBackup(): Bool {
-        var selected: Int64 = 0
-        while (true) {
-            let selectMessage = if (selected == 0) {
-                "\r${THEME_SUCCESS}${BOLD}  ► Yes${RESET}${THEME_MUTED}      No${RESET}"
-            } else {
-                "\r${THEME_MUTED}    Yes${RESET}${THEME_ERROR}${BOLD}    ► No${RESET}"
-            }
-            print(selectMessage)
-            var c = getchar()
-            if (c == 13) {
-                if (selected == 0) {
-                    println("")
-                    return true
-                } else {
-                    return false
-                }
-            } else if (c == 0) {
-                c = getchar()
-                if (c == 75) {
-                    selected = 0
-                } else if (c == 77) {
-                    selected = 1
-                }
-            }
-        }
-        throw UnsupportedException("Unreachable")
     }
 
     private static func getConfirmation(): Bool {
@@ -84,6 +55,9 @@ protected class InputUtils {
             "(Enter to confirm, any other key to cancel): ".withColor(THEME_PRIMARY),
             withBox: false
         ) ?? ""
+        // Clear the confirmation prompt line
+        moveCursor(1, Direction.UP)
+        clearScreen(ClearMode.EntireLine)
         return input.isEmpty()
     }
 }
