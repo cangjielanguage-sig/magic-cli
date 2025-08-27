@@ -7,12 +7,24 @@ import std.time.DateTime
 import std.process.executeWithOutput
 import std.env.getVariable
 
+/**
+ * The working indicator is printed by another thread
+ * We need a data structure to hold the thread future and stop the thread
+ */
+protected class WorkingIndicator {
+    WorkingIndicator(
+        private let future: Future<Unit>
+    ) { }
+
+    protected func stop(): Unit {
+        future.cancel()
+        future.get()
+    }
+}
+
 protected class PrintUtils {
     static public func clearScreen() {
-        let osName = getVariable("OS") ?? "Unknown"
-        let isWindows = osName.toAsciiLower().contains("windows")
-
-        let (exitCode, stdOutData, stdErrData) = if (isWindows) {
+        let (exitCode, stdOutData, stdErrData) = if (InfoUtils.os == "windows") {
             executeWithOutput("powershell", ["-Command", "clear"])
         } else {
             executeWithOutput("/bin/bash", ["-c", "clear"])
@@ -25,13 +37,10 @@ protected class PrintUtils {
         let currentTime = DateTime.now()
         let formattedTime = currentTime.format("yyyy-MM-dd HH:mm:ss")
 
-        let welcomeMessage = String.join(
-            [
-                "🚦 ${THEME_MUTED}Input '${THEME_YELLOW}/help${THEME_MUTED}' to check the manual and '${THEME_YELLOW}/exit${THEME_MUTED}' to exit the program.${RESET}\n\n"
-            ],
-            delimiter: "\n"
+        print(
+            "🚦 ${THEME_MUTED}Input '${THEME_YELLOW}/help${THEME_MUTED}' to check the manual and '${THEME_YELLOW}/exit${THEME_MUTED}' to exit the program.${RESET}\n\n",
+            flush: true
         )
-        print(welcomeMessage)
     }
 
     static public func printLogo() {
@@ -39,7 +48,7 @@ protected class PrintUtils {
     }
 
     static public func printExitMessage() {
-        println("\nExiting the CLI. Goodbye!\n".withColor(THEME_SECONDARY))
+        println("\n👋 Goodbye ✨!\n".withColor(THEME_SECONDARY))
     }
 
     static let HELP_INFO = [
@@ -80,5 +89,22 @@ protected class PrintUtils {
         println(
             wrapBox("${InputUtils.buildPrompt("🔮 Agent")}${response.content}")
         )
+    }
+
+    static let INDICATORS = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"]
+
+    static public func printWorkingIndicator(message!: String = "Working"): WorkingIndicator {
+        clearScreen(EntireLine)
+        let future = spawn {
+            var idx = 0
+            while (!Thread.currentThread.hasPendingCancellation) {
+                let spinner = INDICATORS[idx % INDICATORS.size]
+                print("\r${spinner} ${message}...".withColor(THEME_MUTED), flush: true)
+                sleep(Duration.millisecond * 100)
+                idx = (idx + 1) % INDICATORS.size
+            }
+            clearScreen(EntireLine)
+        }
+        return WorkingIndicator(future)
     }
 }
