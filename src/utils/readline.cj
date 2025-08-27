@@ -7,7 +7,7 @@ import std.deriving.*
 import std.fs.{File, Path, exists}
 import cli.core.config.CliConfig
 
-let WORKSPACE:String = toUnixStyle(CliConfig.cwd.normalize().toString())
+let WORKSPACE: String = toUnixStyle(CliConfig.cwd.normalize().toString())
 
 class Command {
     public Command(let trigger: Rune, let cmd: String, let visual: Bool) {
@@ -50,7 +50,8 @@ func detectTrigger(buf: Collection<Rune>, rune: Rune, trigger: Rune, prefixOnly!
     }
 }
 
-private func getCommand(buf: Collection<Rune>, rune: Rune, trigger: Rune, prefixOnly!: Bool = false, visual!: Bool = false): Option<Command> {    
+private func getCommand(buf: Collection<Rune>, rune: Rune, trigger: Rune, prefixOnly!: Bool = false,
+    visual!: Bool = false): Option<Command> {
     if (rune == trigger && !prefixOnly) {
         return Command(trigger, trigger.toString(), visual)
     }
@@ -154,7 +155,7 @@ private func redraw(prompt: String, content: Array<Rune>, cursorPos: Int64, phas
     // clear all bytes below
     moveCursor(1, DOWN)
     clearRunes(BEHIND)
-    print("\r\n${BRIGHT_RED}${BOLD}WORKSPACE: ${WORKSPACE}${RESET}")
+    print("\r\n${BRIGHT_BLACK}${BOLD}WORKSPACE: ${WORKSPACE}${RESET}")
     // restore curosr
     moveCursor(2, UP)
     moveCursor(col: cursorSavePos)
@@ -209,11 +210,11 @@ private func redrawCmd(prompt: String, content: Array<Rune>, cmd: Command, curso
     if (extendLine != String.empty) {
         let colomShift = extendLine.lines().count() - 1
         print(extendLine, flush: true)
-        print("\r\n${BRIGHT_RED}${BOLD}WORKSPACE: ${WORKSPACE}${RESET}")
+        print("\r\n${BRIGHT_BLACK}${BOLD}WORKSPACE: ${WORKSPACE}${RESET}")
         moveCursor(colomShift + 1, UP)
     } else {
         moveCursor(1, DOWN)
-        print("\r\n${BRIGHT_RED}${BOLD}WORKSPACE: ${WORKSPACE}${RESET}")
+        print("\r\n${BRIGHT_BLACK}${BOLD}WORKSPACE: ${WORKSPACE}${RESET}")
         moveCursor(2, UP)
     }
     moveCursor(col: cursorSavePos)
@@ -381,7 +382,7 @@ private func readlineImplCmdLst(runeBox: Box<?Rune>, prompt: String, history: Ar
     return None
 }
 
-private func readlineImplAt(runeBox:Box<?Rune>, prompt: String, history: ArrayList<String>, cursorBox: Box<Int64>,
+private func readlineImplAt(runeBox: Box<?Rune>, prompt: String, history: ArrayList<String>, cursorBox: Box<Int64>,
     selectIdxBox: Box<Int64>, buf: LinkedList<Rune>): Option<String> {
     let rune = runeBox.value.getOrThrow()
     var cursor = cursorBox.value
@@ -480,7 +481,7 @@ private func readlineImpl(prompt: String, history: ArrayList<String>): Option<St
     redraw(prompt, buf.toArray(), cursor.value, phase: DrawPhase.First)
 
     while (true) {
-        let rune = if(let Some(r) <- runeBox.value) {
+        let rune = if (let Some(r) <- runeBox.value) {
             r
         } else if (let Some(r) <- RawInputUtils.rawGetRune()) {
             r
