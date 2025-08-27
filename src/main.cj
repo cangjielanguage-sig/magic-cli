@@ -107,19 +107,12 @@ main(args: Array<String>): Int64 {
     setConfig()
     PrintUtils.printWelcome()
 
-    // Load previous conversation if necessary
-    let savedConversation: Option<Conversation> = if (exists(CliConfig.conversationFile)) {
-        Conversation.load(CliConfig.conversationFile)
-    } else {
-        None
-    }
     let agent = if(CliConfig.language == 'Cangjie') {
-        ConversationAgent(CangjieCodeAgent(), conversation: savedConversation)
+        ConversationAgent(CangjieCodeAgent())
     } else {
-        ConversationAgent(GeneralCodeAgent(), conversation: savedConversation)
+        ConversationAgent(GeneralCodeAgent())
     }
-        
-
+    
     // Register the callback to save conversation
     atExit({ =>
         agent.conversation.save(CliConfig.conversationFile)
