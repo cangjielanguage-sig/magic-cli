@@ -7,12 +7,10 @@ import magic.agent.ConversationAgent
 import magic.interaction.ConsolePrinter
 import magic.log.LogUtils
 import magic.core.message.Conversation
-
 import cli.core.agents.{GeneralCodeAgent, CangjieCodeAgent, Compactor}
 import cli.core.config.CliConfig
 import cli.core.mcp.MCPConfigManager
 import cli.utils.{InputUtils, PrintUtils}
-
 import std.argopt.{parseArguments, ArgumentSpec, ArgumentMode, ArgumentParseException}
 import std.fs.{exists, File, FSException, Path}
 import std.regex.Regex
@@ -107,12 +105,12 @@ main(args: Array<String>): Int64 {
     setConfig()
     PrintUtils.printWelcome()
 
-    let agent = if(CliConfig.language == 'Cangjie') {
+    let agent = if (CliConfig.language == 'Cangjie') {
         ConversationAgent(CangjieCodeAgent())
     } else {
         ConversationAgent(GeneralCodeAgent())
     }
-    
+
     // Register the callback to save conversation
     atExit({ =>
         agent.conversation.save(CliConfig.conversationFile)
@@ -132,7 +130,7 @@ main(args: Array<String>): Int64 {
             case "/exit" | "exit" =>
                 PrintUtils.printExitMessage()
                 break
-            case "/help" | "help" =>
+            case "/help" | "help" => 
                 PrintUtils.printHelpMessage()
             case "/clear" | "clear" =>
                 agent.conversation.clear()
@@ -158,7 +156,7 @@ main(args: Array<String>): Int64 {
                 } else {
                     PrintUtils.printTool("Compacting conversation...", "🌱 Conversation context is still short, no need to compact!")
                 }
-            case "/mcp" | "mcp" =>
+            case "/mcp" | "mcp" => 
                 mcpManager.showLoadedMCPTools(agent)
             case _ =>
                 let response = agent.chat(AgentRequest(input))
