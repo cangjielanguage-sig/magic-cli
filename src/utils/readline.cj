@@ -305,12 +305,25 @@ private func readlineImplCmdLst(runeBox: Box<?Rune>, prompt: String, history: Ar
             if (line.size > 0) {
                 history.add(line)
             }
-            moveCursor(1, UP)
-            moveCursor(col: 0)
-            clearRunes(BEHIND)
-            moveCursor(1, DOWN)
-            redraw(prompt, buf.toArray(), cursor, phase: DrawPhase.Last)
-            return Some(line)
+            if (cmdArr.size == 0) {
+                moveCursor(1, UP)
+                moveCursor(col: 0)
+                clearRunes(BEHIND)
+                moveCursor(1, DOWN)
+                redraw(prompt, buf.toArray(), cursor, phase: DrawPhase.Last)
+                return Some(line)
+            } else {
+                let cmdStr = '${cmdArr[selectIdx]}'
+                let line = String(buf).removeSuffix(cmd.full) + cmdStr
+                buf.clear()
+                for (rr in line.toRuneArray()) {
+                    buf.addLast(rr)
+                }
+                selectIdx = 0
+                cursor = buf.size
+                cmdArr = listCmds(prefix: cmdStr)
+                cmd = Command(r'/', cmdStr, false)
+            }
         case r'\u{7F}' | r'\b' => // Delete or Backspace
             if (buf.size > 0) {
                 if (let Some(rune) <- buf.removeLast()) {
@@ -396,12 +409,25 @@ private func readlineImplAt(runeBox: Box<?Rune>, prompt: String, history: ArrayL
             if (line.size > 0) {
                 history.add(line)
             }
-            moveCursor(1, UP)
-            moveCursor(col: 0)
-            clearRunes(BEHIND)
-            moveCursor(1, DOWN)
-            redraw(prompt, buf.toArray(), cursor, phase: DrawPhase.Last)
-            return Some(line)
+            if (fileArr.size == 0) {
+                moveCursor(1, UP)
+                moveCursor(col: 0)
+                clearRunes(BEHIND)
+                moveCursor(1, DOWN)
+                redraw(prompt, buf.toArray(), cursor, phase: DrawPhase.Last)
+                return Some(line)
+            } else {
+                let fstr = '@${fileArr[selectIdx]}'
+                let line = String(buf).removeSuffix(cmd.full) + fstr
+                buf.clear()
+                for (rr in line.toRuneArray()) {
+                    buf.addLast(rr)
+                }
+                selectIdx = 0
+                cursor = buf.size
+                fileArr = listFiles(prefix: fstr.replace("@", ""))
+                cmd = Command(r'@', fstr, true)
+            }
         case r'\u{7F}' | r'\b' => // Delete or Backspace
             if (buf.size > 0) {
                 if (let Some(rune) <- buf.removeLast()) {
