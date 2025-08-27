@@ -78,4 +78,9 @@ protected class CliConfig {
      * The chat model to use
      */
     public static var model: String = "ark:kimi-k2-250711"
+
+    /**
+    * language in [Cangjie, General]
+    */
+    public static var language: String = 'General'
 }
