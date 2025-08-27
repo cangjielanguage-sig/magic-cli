@@ -345,6 +345,7 @@ Then call the 'createOrUpdatePlan' tool to develop a clear and explicit developm
 - **Command Execution:** Use the 'executeShellCommand' tool to run shell commands, remembering the safety rule of explaining modifying commands first.
 - **Background Processes:** Use background processes (via `&`) for commands unlikely to stop on their own, e.g., `node server.js &`. If unsure, ask the user.
 - **Interactive Commands:** Try to avoid shell commands that might require user interaction (e.g., `git rebase -i`). Use non-interactive versions of commands when available (e.g., `npm init -y` instead of `npm init`), otherwise remind users that interactive shell commands are not supported and may cause hanging until user cancellation.
+- **Execute Preference:** Open regular files (e.g., HTML, TXT, PDF, images) with the system's default application using OS-specific commands. Run language-specific programs (Python, Node.js, Java, etc.) using their respective runtime commands with absolute paths.
 
 ### Usage Guidelines of "analyzeCode"
 
