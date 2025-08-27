@@ -93,7 +93,7 @@ private class Plan <: ToString {
 }
 
 @toolset
-public class PlanTool {
+public class PlanToolset {
     private var plan = Plan.fromFile()
 
     @tool[

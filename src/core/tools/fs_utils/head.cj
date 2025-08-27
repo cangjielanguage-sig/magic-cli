@@ -1,4 +1,4 @@
-package cli.core.tools
+package cli.core.tools.fs_utils
 
 import std.fs.*
 import std.io.*

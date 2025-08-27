@@ -1,4 +1,4 @@
-package cli.core.tools
+package cli.core.tools.fs_utils
 
 import std.fs.*
 import std.process.*
@@ -29,7 +29,7 @@ public func grep(pattern: String, path: Option<String>, include: Option<String>)
             "Get-ChildItem -Recurse ${includeArg} | Select-String -Pattern \"${pattern}\" | Select-Object Path, LineNumber, Line"
         } else {
             let grepCmd = ArrayList<String>(["grep", '-r', '-n', '-H', '-E'])
-            for (dir in FSTool.IGNORED_DIR) {
+            for (dir in IGNORED_DIR) {
                 grepCmd.add("--exclude-dir=${dir}")
             }
             if (let Some(include) <- include) {

@@ -1,4 +1,4 @@
-package cli.core.tools
+package cli.core.tools.fs_utils
 
 import cli.core.config.CliConfig
 
@@ -129,14 +129,6 @@ private func testCatEdgeCases(): Unit {
     if (!specialChars.isEmpty()) {
         testCatOnFile(specialChars, "Cat file with special characters")
         cleanupTempFile(specialChars)
-    }
-
-    // Test catSimple vs cat comparison
-    let testContent = createTestFileContent(3)
-    let tempFile = createTempFile(testContent)
-    if (!tempFile.isEmpty()) {
-        compareCatVsCatSimple(tempFile, "Compare cat vs catSimple")
-        cleanupTempFile(tempFile)
     }
 }
 
@@ -341,28 +333,6 @@ private func testCatRangeError(filePath: String, startLine: Int64, endLine: Int6
 }
 
 /**
- * Compares cat vs catSimple output
- */
-private func compareCatVsCatSimple(filePath: String, description: String): Unit {
-    println("\nTesting: ${description}")
-
-    let catResult = cat(filePath)
-    let catSimpleResult = catSimple(filePath)
-
-    println("Cat result length: ${catResult.size}")
-    println("CatSimple result length: ${catSimpleResult.size}")
-
-    // Basic validation
-    @PowerAssert(catResult.size > 0)
-    @PowerAssert(catSimpleResult.size > 0)
-
-    // Cat should be longer (includes line numbers)
-    @PowerAssert(catResult.size > catSimpleResult.size)
-
-    println("✓ Cat vs CatSimple comparison passed")
-}
-
-/**
  * Helper function to find and test a file recursively
  */
 private func findAndTestCatFile(searchPath: Path, pattern: String, description: String): Unit {
@@ -378,7 +348,7 @@ private func findAndTestCatFile(searchPath: Path, pattern: String, description: 
                 continue
             }
         }
-        if (item.isDirectory() && !FSTool.ignored(item.path)) {
+        if (item.isDirectory() && !ignored(item.path)) {
             findAndTestCatFile(item.path, pattern, description)
         }
     }
@@ -503,16 +473,11 @@ private func testCatVariants(): Unit {
 
     if (!tempFile.isEmpty()) {
         let catResult = cat(tempFile)
-        let catSimpleResult = catSimple(tempFile)
         let catRangeResult = catRange(tempFile, 2, endLine: 4)
 
         // All should return valid results
         @PowerAssert(catResult.size > 0)
-        @PowerAssert(catSimpleResult.size > 0)
         @PowerAssert(catRangeResult.size > 0)
-
-        // Cat should be longest (has line numbers)
-        @PowerAssert(catResult.size > catSimpleResult.size)
 
         // Range should be shortest (subset of lines)
         @PowerAssert(catRangeResult.size < catResult.size)

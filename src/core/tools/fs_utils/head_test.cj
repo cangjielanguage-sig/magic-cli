@@ -1,4 +1,4 @@
-package cli.core.tools
+package cli.core.tools.fs_utils
 
 import cli.core.config.CliConfig
 
@@ -246,7 +246,7 @@ private func findAndTestFile(searchPath: Path, pattern: String, lines: Int64, de
             testHeadOnFile(item.path.toString(), lines, description)
             return
         }
-        if (item.isDirectory() && !FSTool.ignored(item.path)) {
+        if (item.isDirectory() && !ignored(item.path)) {
             findAndTestFile(item.path, pattern, lines, description)
         }
     }

@@ -28,8 +28,8 @@ private class DocSummaryAssistant {
 }
 
 @toolset
-public class CJTool{
-    public CJTool(
+public class CangjieToolset {
+    public CangjieToolset(
         private let model: ChatModel
     ) { }
 
@@ -155,7 +155,6 @@ public class CJTool{
             let cmd = "cjpm"
             let args: Array<String> = ["init"]
 
-            eprintln("Executing command: ${cmd} ${args}")
             let (exitCode, stdOutData, stdErrData) = executeWithOutput(cmd, args, workingDirectory: Path(path))
 
             if (exitCode == 0) {
@@ -178,17 +177,16 @@ public class CJTool{
 
     @tool[
         description: "Compile a single Cangjie file in the specified directory, generating an executable file main",
-        parameters: { path: "Directory path corresponding to the Cangjie file, must be an absolute path", name: "Name of the Cangjie file to compile, e.g., test.cj" }
+        parameters: {
+            path: "Directory path corresponding to the Cangjie file, must be an absolute path",
+            name: "Name of the Cangjie file to compile, e.g., test.cj"
+        }
     ]
     public func cjCompiler(path: String, name: String): String {
         PrintUtils.printTool("CJ Compiler", path + "/" + name)
 
         try {
-            let cmd = "cjc"
-            var args: Array<String> = [name]
-
-            eprintln("Executing command: ${cmd} ${args}")
-            let (exitCode, stdOutData, stdErrData) = executeWithOutput(cmd, args, workingDirectory: Path(path))
+            let (exitCode, stdOutData, stdErrData) = executeWithOutput("cjc", [name], workingDirectory: Path(path))
 
             if (exitCode == 0) {
                 let outputString = String.fromUtf8(stdOutData)
@@ -222,7 +220,6 @@ public class CJTool{
                 args = ["build", "-i"]
             }
 
-            eprintln("Executing command: ${cmd} ${args}")
             let (exitCode, stdOutData, stdErrData) = executeWithOutput(cmd, args, workingDirectory: Path(path))
 
             if (exitCode == 0) {
@@ -254,7 +251,6 @@ public class CJTool{
             let cmd = "cjpm"
             let args: Array<String> = ["run", "--name", name]
 
-            eprintln("Executing command: ${cmd} ${args}")
             let (exitCode, stdOutData, stdErrData) = executeWithOutput(cmd, args, workingDirectory: Path(path))
 
             if (exitCode == 0) {
@@ -286,7 +282,6 @@ public class CJTool{
             let cmd = "cjpm"
             let args: Array<String> = ["clean"]
 
-            eprintln("Executing command: ${cmd} ${args}")
             let (exitCode, stdOutData, stdErrData) = executeWithOutput(cmd, args, workingDirectory: Path(path))
 
             if (exitCode == 0) {

@@ -58,7 +58,7 @@ You:
     model: "${CliConfig.model}",
     executor: "tool-loop:1000",
     tools: [
-        FSTool()
+        FSToolset()
     ]
 ]
 public class CodeAnalyzer {
