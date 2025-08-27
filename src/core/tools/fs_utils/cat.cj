@@ -30,11 +30,6 @@ public func cat(filePath: String): String {
         var lineNumber: Int64 = 1
         let reader = StringReader(file)
         while (let Some(line) <- reader.readln()) {
-            if (line.isEmpty()) {
-                // End of file reached
-                break
-            }
-
             // Format with line number (right-aligned, tab-separated)
             let lineNo = lineNumber.toString()
             result.append("${lineNo.padEnd(6)}:${line}\n")

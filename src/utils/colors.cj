@@ -62,8 +62,20 @@ const THEME_INFO = BRIGHT_WHITE
 const THEME_MUTED = BRIGHT_BLACK
 const THEME_YELLOW = BRIGHT_YELLOW
 
+// Light background colors (256-color mode for better visibility)
+const BG_LIGHT_GREEN = "\u{1B}[48;5;22m"   // Dark green background
+const BG_LIGHT_RED = "\u{1B}[48;5;52m"     // Dark red background
+
+// Background theme colors
+const THEME_BG_SUCCESS = BG_LIGHT_GREEN
+const THEME_BG_ERROR = BG_LIGHT_RED
+
 protected interface WithColor {
     func withColor(color: String): String
+
+    func withColor(color: AnsiColor): String
+
+    func withBgColor(bgColor: String): String
 }
 
 extend String <: WithColor {
@@ -73,5 +85,9 @@ extend String <: WithColor {
 
     public func withColor(color: AnsiColor): String {
         return "${color}${this}${RESET}"
+    }
+
+    public func withBgColor(bgColor: String): String {
+        return "${bgColor}${this}${RESET}"
     }
 }
