@@ -1,6 +1,8 @@
 package cli.core.config
 
-import std.fs.{canonicalize, exists, Path, Directory}
+import std.fs.*
+import std.io.readToEnd
+import magic.log.LogUtils
 
 protected class CliConfig {
     private static const DOT_DIR_NAME = ".magic-cli"
@@ -70,6 +72,15 @@ protected class CliConfig {
     }
 
     /**
+     * User Rules Config
+     */
+    public static prop uerRuleFile: Path {
+        get() {
+            CliConfig.dotDir.join("MAGIC.md")
+        }
+    }
+
+    /**
      * Whether agent runs autonomously, i.e., tools will be be confirmed by users
      */
     public static var auto: Bool = false
@@ -83,4 +94,15 @@ protected class CliConfig {
     * language in [Cangjie, General]
     */
     public static var language: String = 'General'
+
+    public static prop userRules: String {
+        get() {
+            let ruleFile = uerRuleFile
+            if (exists(ruleFile)) {
+                String.fromUtf8(readToEnd(File(ruleFile, OpenMode.Read)))    
+            } else {
+                ""
+            }
+        }
+    }
 }

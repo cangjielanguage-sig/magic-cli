@@ -30,7 +30,6 @@ class Command {
  */
 func detectTrigger(buf: Collection<Rune>, rune: Rune, trigger: Rune, prefixOnly!: Bool = false): Bool {
     if (rune == r' ') {
-        LogUtils.info("EMPTY RUNE!!!!")
         return false
     }
     if (prefixOnly) {
