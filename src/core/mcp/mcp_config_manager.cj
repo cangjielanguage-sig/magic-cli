@@ -11,7 +11,7 @@ import cli.core.config.CliConfig
 import cli.utils.*
 
 import std.fs.{exists, File, Path}
-import std.collection.{HashMap, ArrayList}
+import std.collection.{HashMap, ArrayList, filter, collectArray}
 import std.env.getVariable
 import stdx.encoding.json.*
 
@@ -63,6 +63,19 @@ public class MCPConfigManager {
         this.configPath = CliConfig.dotDir.join("settings.json")
     }
 
+    /**
+     * Standard Json does not support comments,
+     * we add // as Json comment.
+     */
+    private func loadJsonFile(path: Path): String {
+        return String.join(
+            String.fromUtf8(File.readFrom(configPath)).split("\n") |>
+                filter { line => !line.trimAscii().startsWith("//") } |>
+                collectArray,
+            delimiter: "\n"
+        )
+    }
+
     private func loadMCPConfigs(): HashMap<String, MCPServerConfig> {
         let configs = HashMap<String, MCPServerConfig>()
 
@@ -72,7 +85,7 @@ public class MCPConfigManager {
         }
 
         try {
-            let content = String.fromUtf8(File.readFrom(configPath))
+            let content = this.loadJsonFile(configPath)
             let jsonValue = JsonValue.fromStr(content)
             let setting = Setting.fromJsonValue(jsonValue)
             if (let Some(jo) <- setting.mcpServers) {
