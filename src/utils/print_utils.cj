@@ -52,12 +52,12 @@ protected class PrintUtils {
     }
 
     static let HELP_INFO = [
-        ("help",    "Show this help message"),
-        ("clear",   "Clear conversation history"),
-        ("compact", "Compact the conversation"),
-        ("mcp",     "Show loaded MCP tools"),
-        ("resume",  "Resume last conversation history"),
-        ("exit",    "Exit the program")
+        ("help",         "Show this help message"),
+        ("clear",        "Clear conversation history"),
+        ("compact",      "Compact the conversation"),
+        ("conversation", "Manage conversations"),
+        ("mcp",          "Show loaded MCP tools"),
+        ("exit",         "Exit the program")
     ]
 
     static public func printHelpMessage() {

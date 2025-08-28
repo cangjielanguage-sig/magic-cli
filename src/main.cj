@@ -14,6 +14,7 @@ import magic.interaction.{EventHandlerManager, PromptValidateEvent, ToolCallEven
 import cli.core.agents.{GeneralCodeAgent, CangjieCodeAgent, Compactor}
 import cli.core.config.CliConfig
 import cli.core.mcp.MCPConfigManager
+import cli.core.conversation.ConversationManager
 import cli.utils.{InputUtils, PrintUtils, WorkingIndicator}
 import std.collection.ArrayList
 
@@ -118,12 +119,16 @@ main(args: Array<String>): Int64 {
         ConversationAgent(GeneralCodeAgent())
     }
 
-    // Register the callback to save conversation
+    // Initialize conversation manager
+    let conversationManager = ConversationManager()
+    
+    // Register the callback to auto-save conversation
     atExit({ =>
-        agent.conversation.save(CliConfig.conversationFile)
+        conversationManager.autoSave(agent)
     })
 
     // Load MCP servers and add their tools to the agent
+    // TODO: 需要加个错误处理
     let mcpManager = MCPConfigManager()
     agent.toolManager.addTools(mcpManager.loadMCPServers())
 
@@ -162,21 +167,9 @@ main(args: Array<String>): Int64 {
             case "/help" | "help" =>
                 PrintUtils.printHelpMessage()
             case "/clear" | "clear" =>
-                agent.conversation.clear()
+                conversationManager.clearConversation(agent)
                 PrintUtils.clearScreen()
                 PrintUtils.printLogo()
-            case "/resume" | "resume" =>
-                // Load previous conversation if necessary
-                if (exists(CliConfig.conversationFile)) {
-                    let savedConversation = Conversation.load(CliConfig.conversationFile)
-                    agent.conversation.clear()
-                    for (chatRound in savedConversation) {
-                        agent.conversation.addChatRound(chatRound)
-                    }
-                    println("Conversation resumed successfully!")
-                } else {
-                    println("No saved conversation found. Starting a new one.")
-                }
             case "/compact" | "compact" =>
                 if (let Some(index) <- compactor.calculateCompactIndex(agent.conversation)) {
                     PrintUtils.printTool("Compacting conversation...", "🚀 Working on it...")
@@ -188,6 +181,9 @@ main(args: Array<String>): Int64 {
             case _ =>
                 if (input.startsWith("/mcp") || input.startsWith("mcp")) {
                     mcpManager.handleCommand(input.split(" "), agent)
+                } else if (input.startsWith("/conversation") || input.startsWith("conversation")) {
+                    // Handle /conversation command and subcommands
+                    conversationManager.handleCommand(input.split(" "), agent)
                 } else {
                     let response = agent.chat(AgentRequest(input))
                     PrintUtils.printAgentResponse(response)

@@ -1,0 +1,240 @@
+package cli.core.conversation
+
+import magic.agent.ConversationAgent
+import magic.core.message.Conversation
+import cli.core.config.CliConfig
+import std.fs.{exists, Directory, Path, remove, FSException}
+import std.collection.*
+import std.sort.sort
+import magic.log.LogUtils
+
+/**
+ * Handles all conversation operations including save, resume, list, and remove
+ */
+protected class ConversationManager {
+    public static let AUTO_SAVE_NAME = "last-conversation"
+
+    public func handleCommand(args: Array<String>, agent: ConversationAgent): Unit {
+        if (args.size < 2) {
+            listConversations()
+            return
+        }
+
+        let subCommand = args[1].trimAscii()
+        match (subCommand) {
+            case "list" => listConversations()
+            case "save" =>
+                if (args.size < 3) {
+                    println("Error: Please provide a name for the conversation.\nUsage: /conversation save <name>")
+                } else {
+                    saveConversation(agent, args[2].trimAscii())
+                }
+            case "resume" | "load" =>
+                if (args.size < 3) {
+                    println(
+                        "Error: Please provide the name of the conversation to resume.\nUsage: /conversation resume <name>")
+                } else {
+                    resumeConversation(agent, args[2].trimAscii())
+                }
+            case "remove" | "delete" =>
+                if (args.size < 3) {
+                    println(
+                        "Error: Please provide the name of the conversation to delete.\nUsage: /conversation remove <name>")
+                } else {
+                    removeConversation(args[2].trimAscii())
+                }
+            case "help" => showHelpText()
+            case _ =>
+                println("Unknown subcommand: ${subCommand}")
+                showHelpText()
+        }
+    }
+
+    /**
+     * Auto-save conversation on exit
+     */
+    public func autoSave(agent: ConversationAgent): Unit {
+        ensureHistoryDirectory()
+        let filePath = getConversationPath(AUTO_SAVE_NAME)
+        try {
+            agent.conversation.save(filePath)
+        } catch (e: Exception) {
+            LogUtils.error("Failed to auto-save conversation: ${e.message}")
+        }
+    }
+
+    /**
+     * Clear current conversation
+     */
+    public func clearConversation(agent: ConversationAgent): Unit {
+        agent.conversation.clear()
+        println("✅ Conversation history cleared")
+    }
+
+    private func listConversations(): Unit {
+        let conversations = getSavedConversations()
+        if (conversations.size == 0) {
+            println("No saved conversations found.")
+            return
+        }
+
+        println("📚 Available Conversations:")
+        for (convName in conversations) {
+            if (convName == AUTO_SAVE_NAME) {
+                println("  • ${convName} (auto-saved conversation)")
+            } else {
+                println("  • ${convName}")
+            }
+        }
+        println("\nUse '/conversation resume <name>' to load a conversation")
+    }
+
+    private func saveConversation(agent: ConversationAgent, name: String): Unit {
+        if (name.isEmpty()) {
+            println("Error: Conversation name cannot be empty.")
+            return
+        }
+
+        if (name == AUTO_SAVE_NAME) {
+            println(
+                "Error: '${AUTO_SAVE_NAME}' is reserved for auto-saved conversations. Please choose a different name.")
+            return
+        }
+
+        if (!isValidName(name)) {
+            println("Error: Invalid conversation name. Name cannot contain: < > : \" / \\ | ? *")
+            return
+        }
+
+        try {
+            ensureHistoryDirectory()
+            let filePath = getConversationPath(name)
+            agent.conversation.save(filePath)
+            println("✅ Conversation saved as '${name}'")
+        } catch (e: Exception) {
+            println("❌ Failed to save conversation '${name}': ${e.message}")
+        }
+    }
+
+    private func resumeConversation(agent: ConversationAgent, name: String): Unit {
+        if (name.isEmpty()) {
+            println("Error: Conversation name cannot be empty.")
+            return
+        }
+
+        let filePath = getConversationPath(name)
+        if (!exists(filePath)) {
+            println("❌ Conversation '${name}' not found.")
+            listConversations()
+            return
+        }
+
+        try {
+            let loadedConversation = Conversation.load(filePath)
+            agent.conversation.clear()
+            for (chatRound in loadedConversation) {
+                agent.conversation.addChatRound(chatRound)
+            }
+
+            if (name == AUTO_SAVE_NAME) {
+                println("✅ Last conversation resumed successfully!")
+            } else {
+                println("✅ Conversation '${name}' resumed successfully!")
+            }
+        } catch (e: Exception) {
+            println("❌ Failed to load conversation '${name}': ${e.message}")
+        }
+    }
+
+    private func removeConversation(name: String): Unit {
+        if (name.isEmpty()) {
+            println("Error: Conversation name cannot be empty.")
+            return
+        }
+
+        if (name == AUTO_SAVE_NAME) {
+            println("Error: Cannot delete the auto-saved session. It will be overwritten on next exit.")
+            return
+        }
+
+        let filePath = getConversationPath(name)
+        if (!exists(filePath)) {
+            println("❌ Conversation '${name}' does not exist.")
+            return
+        }
+
+        try {
+            remove(filePath)
+            println("✅ Conversation '${name}' deleted successfully")
+        } catch (e: FSException) {
+            println("❌ Failed to delete conversation '${name}': ${e.message}")
+        }
+    }
+
+    private func getSavedConversations(): Array<String> {
+        let historyDir = CliConfig.conversationHistoryDir
+        if (!exists(historyDir)) {
+            return []
+        }
+
+        let conversations = ArrayList<String>()
+
+        try {
+            for (entry in Directory.readFrom(historyDir)) {
+                if (entry.isRegular()) {
+                    let fileName = entry.name
+                    if (fileName.endsWith(".history")) {
+                        let nameWithoutExt = fileName.replace(".history", "")
+                        conversations.add(nameWithoutExt)
+                    }
+                }
+            }
+        } catch (e: FSException) {
+            LogUtils.error("Failed to list conversations: ${e.message}")
+        }
+
+        let result = conversations.toArray()
+        sort(result)
+        return result
+    }
+
+    private func ensureHistoryDirectory(): Unit {
+        let historyDir = CliConfig.conversationHistoryDir
+        if (!exists(historyDir)) {
+            try {
+                Directory.create(historyDir, recursive: true)
+            } catch (e: FSException) {
+                LogUtils.error("Failed to create conversation history directory: ${e.message}")
+            }
+        }
+    }
+
+    private func getConversationPath(name: String): Path {
+        return CliConfig.conversationHistoryDir.join("${name}.history")
+    }
+
+    private func isValidName(name: String): Bool {
+        if (name.isEmpty()) {
+            return false
+        }
+        let invalidChars = ["<", ">", ":", "\"", "/", "\\", "|", "?", "*"]
+        for (char in invalidChars) {
+            if (name.contains(char)) {
+                return false
+            }
+        }
+        return true
+    }
+
+    private func showHelpText(): Unit {
+        println(
+            """
+📖 Conversation Management Commands:
+  /conversation                      - List all saved conversations
+  /conversation list                 - List all saved conversations  
+  /conversation save <name>          - Save current conversation
+  /conversation resume <name>        - Load a saved conversation
+  /conversation remove <name>        - Delete a saved conversation
+  /conversation help                 - Show this help""")
+    }
+}
