@@ -9,6 +9,7 @@
 - 📚 **文档检索** - 内置 RAG 系统，可查询 Cangjie 官方文档和代码示例
 - 🧠 **上下文管理** - 智能对话压缩，保持长期会话效率
 - 🚀 **一键构建** - 自动化项目构建和依赖管理
+- 🔌 **MCP 集成** - 支持 Model Context Protocol，扩展外部工具和服务能力
 
 ## 🛠️ 技术栈
 
@@ -18,6 +19,7 @@
 | 框架 | **CangjieMagic** (AI Agent 框架) |
 | 依赖 | Cangjie stdx 标准库 + Magic 框架 |
 | 模型 | 支持配置 LLM (默认远程 API) |
+| 集成 | **MCP** (Model Context Protocol) 支持用户自定义配置 |
 
 ## 🏗️ 项目结构
 
@@ -92,6 +94,18 @@ func identity<T>(x: T): T {
 }
 ```
 
+### MCP 集成
+```bash
+🔮 Agent > /mcp add filesystem npx -y @modelcontextprotocol/server-filesystem ~/Documents
+✅ Added stdio MCP server: filesystem
+
+🔮 Agent > /mcp
+📡 filesystem (Stdio) - 3 tools:
+  • read_file
+  • write_file  
+  • list_directory
+```
+
 ## 🔧 开发命令
 
 | 命令 | 说明 |
@@ -124,7 +138,8 @@ func identity<T>(x: T): T {
 
 ## 🙋‍♂️ 支持
 
-- 📖 [文档](docs/)
+- 📖 [项目文档](docs/)
+- 🔌 [MCP 配置文档](docs/mcp.md)
 - 🐛 [问题反馈](https://github.com/your-repo/issues)
 - 💬 [讨论区](https://github.com/your-repo/discussions)
 

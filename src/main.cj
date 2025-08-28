@@ -15,6 +15,7 @@ import cli.core.agents.{GeneralCodeAgent, CangjieCodeAgent, Compactor}
 import cli.core.config.CliConfig
 import cli.core.mcp.MCPConfigManager
 import cli.utils.{InputUtils, PrintUtils, WorkingIndicator}
+import std.collection.ArrayList
 
 import std.argopt.{parseArguments, ArgumentSpec, ArgumentMode, ArgumentParseException}
 import std.fs.{exists, File, FSException, Path}
@@ -184,15 +185,17 @@ main(args: Array<String>): Int64 {
                 } else {
                     PrintUtils.printTool("Compacting conversation...", "🌱 Conversation context is short enough, no need to compact!")
                 }
-            case "/mcp" | "mcp" =>
-                mcpManager.showLoadedMCPTools(agent)
             case _ =>
-                let response = agent.chat(AgentRequest(input))
-                PrintUtils.printAgentResponse(response)
-                if (let Some(index) <- compactor.calculateCompactIndex(agent.conversation)) {
-                    PrintUtils.printTool("Compacting conversation...", "🚀 Working on it...")
-                    agent.conversation.compactBy(compactor, firstN: index, keepOrigin: false)
-                    PrintUtils.printTool("Compacting conversation...", "🥳 Compacted successfully!")
+                if (input.startsWith("/mcp") || input.startsWith("mcp")) {
+                    mcpManager.handleCommand(input.split(" "), agent)
+                } else {
+                    let response = agent.chat(AgentRequest(input))
+                    PrintUtils.printAgentResponse(response)
+                    if (let Some(index) <- compactor.calculateCompactIndex(agent.conversation)) {
+                        PrintUtils.printTool("Compacting conversation...", "🚀 Working on it...")
+                        agent.conversation.compactBy(compactor, firstN: index, keepOrigin: false)
+                        PrintUtils.printTool("Compacting conversation...", "🥳 Compacted successfully!")
+                    }
                 }
         }
     }
