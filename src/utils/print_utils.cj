@@ -87,7 +87,7 @@ protected class PrintUtils {
 
     static public func printAgentResponse(response: AgentResponse) {
         println(
-            wrapBox("${InputUtils.buildPrompt("🔮 Agent")}${response.content}")
+            wrapBox("${InputUtils.buildPrompt("🔮")}${response.content}")
         )
     }
 
