@@ -401,7 +401,7 @@ public class MCPConfigManager {
     private func loadMcpServersConfig(): (JsonObject, JsonObject) {
         let config = if (exists(configPath)) {
             try {
-                let content = String.fromUtf8(File.readFrom(configPath))
+                let content = this.loadJsonFile(configPath)
                 let jsonValue = JsonValue.fromStr(content)
                 jsonValue.asObject()
             } catch (ex: Exception) {
