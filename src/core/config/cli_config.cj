@@ -63,11 +63,11 @@ protected class CliConfig {
     }
 
     /**
-     * The history file of user-agent conversation
+     * The user-agent conversation history directory
      */
-    public static prop conversationFile: Path {
+    public static prop conversationHistoryDir: Path {
         get() {
-            CliConfig.dotDir.join("conversation.history")
+            CliConfig.dotDir.join("conversation-history")
         }
     }
 
