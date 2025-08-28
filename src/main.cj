@@ -130,13 +130,7 @@ main(args: Array<String>): Int64 {
     // Load MCP servers and add their tools to the agent
     let mcpManager = MCPConfigManager()
     try {
-        let mcpTools = mcpManager.loadMCPServers()
-        agent.toolManager.addTools(mcpTools)
-        if (mcpTools.size > 0) {
-            LogUtils.info("Successfully loaded ${mcpTools.size} MCP tools")
-        } else {
-            LogUtils.info("No MCP tools loaded")
-        }
+        agent.toolManager.addTools(mcpManager.loadMCPServers())
     } catch (e: Exception) {
         LogUtils.error("Failed to load MCP servers: ${e.message}")
         PrintUtils.printTool("MCP Loading", "❗ Warning: Failed to load MCP servers, continuing without MCP tools")
@@ -201,7 +195,6 @@ main(args: Array<String>): Int64 {
                 if (input.startsWith("/mcp") || input.startsWith("mcp")) {
                     mcpManager.handleCommand(input.split(" "), agent)
                 } else if (input.startsWith("/conversation") || input.startsWith("conversation")) {
-                    // Handle /conversation command and subcommands
                     conversationManager.handleCommand(input.split(" "), agent)
                 } else {
                     let response = agent.chat(AgentRequest(input))
