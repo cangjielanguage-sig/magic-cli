@@ -8,6 +8,8 @@
 - 🔧 **代码工具链** - 集成 Cangjie 开发全套工具（初始化、编译、运行、调试）
 - 📚 **文档检索** - 内置 RAG 系统，可查询 Cangjie 官方文档和代码示例
 - 🧠 **上下文管理** - 智能对话压缩，保持长期会话效率
+- 💾 **对话持久化** - 支持保存和恢复对话会话，项目切换无缝衔接
+- 🧠 **用户记忆** - 通过 MAGIC.md 文件自定义项目规则和上下文
 - 🚀 **一键构建** - 自动化项目构建和依赖管理
 - 🔌 **MCP 集成** - 支持 Model Context Protocol，扩展外部工具和服务能力
 
@@ -52,11 +54,11 @@ magic-cli/
    cd magic-cli
    ```
 
-2. **配置依赖路径**  
-   编辑 `cjpm.toml`，确保依赖路径指向你的 CangjieMagic 和 Cangjie stdx 库位置：
-   ```toml
-   [dependencies]
-   magic = { path = "/path/to/CangjieMagic" }
+2. **配置环境变量**
+   创建 `.env` 文件设置必需的环境变量：
+   ```env
+   MAGIC_PATH=/path/to/CangjieMagic
+   # 其他 API 密钥配置...
    ```
 
 3. **启动应用**
@@ -64,13 +66,18 @@ magic-cli/
    cjpm run --name cli
    ```
 
+4. **首次使用提示**
+   - 程序启动后会自动创建 `.magic-cli/` 目录存储配置和历史
+   - 输入 `/help` 查看所有可用命令
+   - 可创建`.magic-cli/`目录下的 `MAGIC.md` 文件来自定义 AI 行为规则
+
 ## 🎯 使用示例
 
 ### 基本对话
 ```
-🤖 Magic-CLI > 帮我创建一个 Cangjie 项目
+🤖 Magic-CLI > 帮我创建一个 Cangjie 项目，实现一个贪吃蛇游戏
 ✨ 正在为您创建项目...
-📁 已创建新项目：my-cangjie-app
+📁 已创建新项目：cj_snake_game
 ```
 
 ### 代码生成
@@ -104,6 +111,65 @@ func identity<T>(x: T): T {
   • read_file
   • write_file  
   • list_directory
+```
+
+## 📋 命令参考
+
+Magic-CLI 提供了丰富的内置命令来管理对话、配置和系统功能：
+
+### 基础命令
+- **`/help`** - 显示帮助信息和所有可用命令
+- **`/exit`** - 退出程序
+- **`/clear`** - 清除当前对话历史
+- **`/compact`** - 压缩对话上下文，优化长期会话性能
+
+### 对话管理
+Magic-CLI 支持保存和恢复对话会话：
+
+- **`/conversation`** - 列出所有保存的对话
+- **`/conversation list`** - 同上，列出所有对话  
+- **`/conversation save <name>`** - 保存当前对话为指定名称
+- **`/conversation resume <name>`** - 恢复指定名称的对话
+- **`/conversation remove <name>`** - 删除指定的对话
+
+**使用示例：**
+```bash
+🔮 Agent > /conversation save my-project-work
+✅ Conversation saved as 'my-project-work'
+
+🔮 Agent > /conversation resume my-project-work  
+✅ Conversation 'my-project-work' resumed successfully!
+
+🔮 Agent > /conversation list
+📚 Available Conversations:
+  • my-project-work
+  • last-conversation (auto-saved conversation)
+```
+
+### 用户记忆管理
+- **`/memory`** - 查看当前目录下 MAGIC.md 文件的内容
+
+MAGIC.md 是用户自定义规则文件，可以包含项目相关的上下文、编码规范或特殊指令。AI 会在处理请求时参考这些规则。
+
+**使用示例：**
+```bash
+🔮 Agent > /memory
+📝 Current MAGIC.md content:
+## 项目规范
+- 使用 4 空格缩进
+- 函数命名使用 camelCase
+- 注释使用中文
+```
+
+### MCP 工具管理
+- **`/mcp`** - 显示当前加载的所有 MCP 服务器和工具
+- **`/mcp add <name> <command> [args...]`** - 添加新的 stdio MCP 服务器
+- **`/mcp add-sse <name> <url>`** - 添加新的 SSE MCP 服务器  
+- **`/mcp remove <name>`** - 移除指定的 MCP 服务器
+
+**环境变量配置：**
+```bash
+/mcp add myserver uvx server-name --env API_KEY=your_key ENV_VAR=value
 ```
 
 ## 🔧 开发命令
@@ -142,6 +208,26 @@ func identity<T>(x: T): T {
 - 🔌 [MCP 配置文档](docs/mcp.md)
 - 🐛 [问题反馈](https://github.com/your-repo/issues)
 - 💬 [讨论区](https://github.com/your-repo/discussions)
+
+### 配置文件说明
+
+| 文件 | 位置 | 说明 |
+|------|------|------|
+| `.env` | 项目根目录 | 环境变量配置（API 密钥等）|
+| `MAGIC.md` | 项目根目录 | 用户自定义规则和上下文 |
+| `settings.json` | `.magic-cli/` | MCP 服务器配置 |
+| `*.history` | `.magic-cli/conversation-history/` | 保存的对话记录 |
+
+### 常见问题
+
+**Q: MCP 服务器加载失败怎么办？**
+A: 程序会显示警告但继续运行。检查 `.magic-cli/settings.json` 配置和网络连接。
+
+**Q: 对话历史丢失了？**
+A: 程序会在退出时自动保存为 `last-conversation`，可通过 `/conversation resume last-conversation` 恢复。
+
+**Q: 如何自定义 AI 行为？**
+A: 在项目`.magic-cli/`目录创建 `MAGIC.md` 文件，写入项目相关的规则和上下文。
 
 ---
 
