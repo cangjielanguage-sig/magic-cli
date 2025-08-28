@@ -3,13 +3,13 @@ package cli.utils
 import std.regex.Regex
 import std.collection.ArrayList
 
-private const LEFT_TOP = "╔"
-private const LEFT_BOTTOM = "╚"
-private const RIGHT_TOP = "╗"
-private const RIGHT_BOTTOM = "╝"
-private const HORIZONTAL_BORDER = "═"
+private const LEFT_TOP = "┌"
+private const LEFT_BOTTOM = "└"
+private const RIGHT_TOP = "┐"
+private const RIGHT_BOTTOM = "┘"
+private const HORIZONTAL_BORDER = "─"
+private const VERTICAL_BORDER = "│"
 private const HORIZONTAL_SEPARATOR = "─"
-private const VERTICAL_BORDER = "║"
 
 func padString(content: String, width!: Int64, center!: Bool = false): String {
     let sizeToPad = max(0, width - displayWidthOf(content))
