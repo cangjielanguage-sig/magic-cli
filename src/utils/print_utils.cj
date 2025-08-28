@@ -57,6 +57,7 @@ protected class PrintUtils {
         ("compact",      "Compact the conversation"),
         ("conversation", "Manage conversations"),
         ("mcp",          "Show loaded MCP tools"),
+        ("memory",       "Show MAGIC.md content"),
         ("exit",         "Exit the program")
     ]
 

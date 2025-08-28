@@ -128,9 +128,19 @@ main(args: Array<String>): Int64 {
     })
 
     // Load MCP servers and add their tools to the agent
-    // TODO: 需要加个错误处理
     let mcpManager = MCPConfigManager()
-    agent.toolManager.addTools(mcpManager.loadMCPServers())
+    try {
+        let mcpTools = mcpManager.loadMCPServers()
+        agent.toolManager.addTools(mcpTools)
+        if (mcpTools.size > 0) {
+            LogUtils.info("Successfully loaded ${mcpTools.size} MCP tools")
+        } else {
+            LogUtils.info("No MCP tools loaded")
+        }
+    } catch (e: Exception) {
+        LogUtils.error("Failed to load MCP servers: ${e.message}")
+        PrintUtils.printTool("MCP Loading", "❗ Warning: Failed to load MCP servers, continuing without MCP tools")
+    }
 
     // Initialize the conversation compactor to use
     let compactor = Compactor()
@@ -177,6 +187,15 @@ main(args: Array<String>): Int64 {
                     PrintUtils.printTool("Compacting conversation...", "🥳 Compacted successfully!")
                 } else {
                     PrintUtils.printTool("Compacting conversation...", "🌱 Conversation context is short enough, no need to compact!")
+                }
+            case "/memory" | "memory" =>
+                let userRules = CliConfig.userRules
+                if (userRules.isEmpty()) {
+                    PrintUtils.printTool("User Memory (MAGIC.md)", "📝 No MAGIC.md file found in current directory")
+                    println("Create a MAGIC.md file in your project to set custom rules and context for Magic-cli to use.")
+                } else {
+                    PrintUtils.printTool("User Memory (MAGIC.md)", "📝 Current MAGIC.md content:")
+                    println(userRules)
                 }
             case _ =>
                 if (input.startsWith("/mcp") || input.startsWith("mcp")) {
