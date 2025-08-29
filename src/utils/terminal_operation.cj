@@ -10,6 +10,9 @@ protected enum ClearMode {
 }
 
 protected func moveCursor(lines: Int64, direction: Direction) {
+    if (lines <= 0) {
+        return
+    }
     match (direction) {
         case UP => print("\u{1B}[${lines}A", flush: true)
         case DOWN => print("\u{1B}[${lines}B", flush: true)

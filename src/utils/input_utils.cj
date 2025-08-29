@@ -13,8 +13,8 @@ protected class InputUtils {
         let time = DateTime.now().format("HH:mm:ss").withColor(THEME_INFO)
         let prefix = " 🕒 ".withColor(THEME_MUTED) + time + " |".withColor(THEME_MUTED)
         let roleInfo = role.padEnd(5).withColor(THEME_SUCCESS)
-        let postfix = ">".withColor(THEME_PRIMARY)
-        return "${prefix} ${roleInfo} ${postfix} "
+        let postfix = "> ".withColor(THEME_PRIMARY)
+        return "${prefix} ${roleInfo} ${postfix}"
     }
 
     private static let READLINE = Readline(CliConfig.readlineFile)

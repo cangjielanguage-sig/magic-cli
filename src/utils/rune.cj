@@ -2,6 +2,18 @@ package cli.utils
 
 import std.regex.Regex
 
+func removeAnsiEscape(str: String): String {
+    let regex = Regex("\u{1B}\\[[\\d;]*[a-zA-Z]")
+    regex.replaceAll(str, "")
+}
+/**
+* Get Input Line size
+*/
+func runeSizeOf(str: String): Int64 {
+    let strWithoutAnsiEscape = removeAnsiEscape(str)
+    return strWithoutAnsiEscape.toRuneArray().size
+}
+
 /**
  * Compute the display width of a rune
  */
@@ -23,8 +35,7 @@ func displayWidthOf(rune: Rune): Int64 {
  * Compute the display width of a string except for the ANSI escape characters
  */
 func displayWidthOf(str: String): Int64 {
-    let regex = Regex("\u{1B}\\[[\\d;]*[a-zA-Z]")
-    let strWithoutAnsiEscape = regex.replaceAll(str, "")
+    let strWithoutAnsiEscape = removeAnsiEscape(str)
     var width = 0
     for (rune in strWithoutAnsiEscape.toRuneArray()) {
         width += displayWidthOf(rune)
