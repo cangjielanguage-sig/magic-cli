@@ -59,7 +59,6 @@ private func redraw(curDraw: Draw, preDraw:Draw, phase!: DrawPhase) {
     }
 
     moveCursor(totalLines - cRow - 2, UP)
-    LogUtils.info("LAST ROW: ${totalLines - cRow - 2}")
     moveCursor(col: cCol)
 }
 
@@ -70,7 +69,7 @@ private func readlineImpl(buf: LinkedList<Rune>, rune: Rune, prompt: String, his
     var selectIdx = selectIdxBox.value
     var command = detectCommand(buf, rune)
     var showList = listCmdsStr(command)
-    let orgPage = Draw(Page(prompt, String(buf), cursor), UnderList(selectIdx, showList))
+    let orgDraw = Draw(Page(prompt, String(buf), cursor), UnderList(selectIdx, showList))
     match (rune) {
         case r'\r' | r'\n' => // Enter
             let line = String(buf)
@@ -89,7 +88,7 @@ private func readlineImpl(buf: LinkedList<Rune>, rune: Rune, prompt: String, his
                 command = Command(showItem, cmd.option)
                 showList = listCmdsStr(command)
             } else {
-                redraw(orgPage, orgPage, phase: DrawPhase.Last)
+                redraw(orgDraw, orgDraw, phase: DrawPhase.Last)
                 return Some(line)
             }
         case r'\u{7F}' | r'\b' => // Delete or Backspace
@@ -188,8 +187,8 @@ private func readlineImpl(buf: LinkedList<Rune>, rune: Rune, prompt: String, his
             }
             cursor += 1
     }
-    let curPage = Draw(Page(prompt, String(buf), cursor), UnderList(selectIdx, showList))
-    redraw(curPage, orgPage, phase: DrawPhase.Mid)
+    let curDraw = Draw(Page(prompt, String(buf), cursor), UnderList(selectIdx, showList))
+    redraw(curDraw, orgDraw, phase: DrawPhase.Mid)
     cursorBox.value = cursor
     selectIdxBox.value = selectIdx
     return None

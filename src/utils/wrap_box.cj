@@ -154,26 +154,21 @@ protected func calculateCursorPos(wrappedContent: String, cursorPos: Int64, pref
         cursorLeft -= cursorRunes
         cursorWidth += lineWidth
     }
-    let col = widthList[widthList.size - 1] + displayWidthOf(VERTICAL_BORDER.withColor(boxColor)) + 1
-    var total = 0
-    for (w in widthList) {
-        total += w
-    }
-    let row = findRow(widthList, cursorWidth)
-    return (row, col)
+    let (row, col)= findCoordinates(widthList, cursorWidth)
+    return (row, col + displayWidthOf(VERTICAL_BORDER.withColor(boxColor)) + 1)
 }
 
-private func findRow(widthList: ArrayList<Int64>, target:Int64): Int64 {
+private func findCoordinates(widthList: ArrayList<Int64>, target:Int64): (Int64, Int64) {
     if (target < 0) {
-        return 0
+        return (0, 0)
     }
     var total = 0
     for (i in 0..widthList.size) {
         let lineWidth = widthList[i]
-        total += lineWidth
-        if (total >= target) {
-            return i
+        if (total + lineWidth >= target) {
+            return (i, target - total)
         }
+        total += lineWidth
     }
-    return widthList.size // target > total width only backspace condition
+    return (widthList.size, target - total) // target > total width only backspace condition
 }
