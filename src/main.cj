@@ -7,22 +7,22 @@ import magic.agent.ConversationAgent
 import magic.interaction.ConsolePrinter
 import magic.log.LogUtils
 import magic.core.message.Conversation
-
 import magic.core.interaction.EventResponse
 import magic.interaction.{EventHandlerManager, PromptValidateEvent, ToolCallEvent}
-
 import cli.core.agents.{GeneralCodeAgent, CangjieCodeAgent, Compactor}
 import cli.core.config.CliConfig
 import cli.core.mcp.MCPConfigManager
 import cli.core.conversation.ConversationManager
-import cli.utils.{InputUtils, PrintUtils, WorkingIndicator}
+import cli.core.context.*
+import cli.bean.CliMode
+import cli.utils.*
 import std.collection.ArrayList
-
 import std.argopt.{parseArguments, ArgumentSpec, ArgumentMode, ArgumentParseException}
 import std.fs.{exists, File, FSException, Path}
 import std.regex.Regex
 import std.env.atExit
 import std.sync.AtomicOptionReference
+import std.console.*
 
 private func printHelp(): Unit {
     println("Magic Cli")
@@ -105,14 +105,7 @@ private func setConfig(): Unit {
     loadEnvFile()
 }
 
-main(args: Array<String>): Int64 {
-    if (!parseArgs(args)) {
-        printHelp()
-        return 0
-    }
-    setConfig()
-    PrintUtils.printWelcome()
-
+private func initCliContext() {
     let agent = if (CliConfig.language.toAsciiLower() == 'cangjie') {
         ConversationAgent(CangjieCodeAgent())
     } else {
@@ -121,10 +114,10 @@ main(args: Array<String>): Int64 {
 
     // Initialize conversation manager
     let conversationManager = ConversationManager()
-    
+
     // Register the callback to auto-save conversation
-    atExit({ =>
-        conversationManager.autoSave(agent)
+    atExit({
+        => conversationManager.autoSave(agent)
     })
 
     // Load MCP servers and add their tools to the agent
@@ -145,67 +138,115 @@ main(args: Array<String>): Int64 {
     // since the agent operates in a tool-loop mode (i.e., "model-tool" cycle),
     // we can implement event handling as follows:
     // The PromptValidateEvent happens before using the model
-    EventHandlerManager.global.addHandler { evt: PromptValidateEvent =>
-        // There may be other agents during the execution.
-        // Only show the indicator of the main agent
-        if (evt.agent.name == agent.name) {
-            indicator.store(PrintUtils.printWorkingIndicator(message: "💭 Thinking"))
+    EventHandlerManager
+        .global
+        .addHandler {
+            evt: PromptValidateEvent =>
+            // There may be other agents during the execution.
+            // Only show the indicator of the main agent
+            if (evt.agent.name == agent.name) {
+                indicator.store(PrintUtils.printWorkingIndicator(message: "💭 Thinking"))
+            }
+            EventResponse.Continue
         }
-        EventResponse.Continue
-    }
     // The ToolCallEvent happens after the model giving its reply
-    EventHandlerManager.global.addHandler { evt: ToolCallEvent =>
-        if (evt.agent.name == agent.name && let Some(i) <- indicator.load()) {
-            i.stop()
+    EventHandlerManager
+        .global
+        .addHandler {
+            evt: ToolCallEvent =>
+            if (evt.agent.name == agent.name && let Some(i) <- indicator.load()) {
+                i.stop()
+            }
+            EventResponse.Continue
         }
-        EventResponse.Continue
+    setContext(Context(agent, compactor, conversationManager, mcpManager, CliConfig.cwd, mode: CliMode.TERMINAL))
+    return getContext()
+}
+
+main(args: Array<String>): Int64 {
+    if (!parseArgs(args)) {
+        printHelp()
+        return 0
     }
+    setConfig()
+    PrintUtils.printWelcome()
+
+    let context = initCliContext()
 
     // Start the event loop
     while (true) {
-        let input = InputUtils.getUserInput()
+        let input = InputUtils.getUserInput(mode: context.mode)
         match (input) {
             case "/exit" | "exit" =>
                 PrintUtils.printExitMessage()
                 break
-            case "/help" | "help" =>
-                PrintUtils.printHelpMessage()
-            case "/clear" | "clear" =>
-                conversationManager.clearConversation(agent)
-                PrintUtils.clearScreen()
-                PrintUtils.printLogo()
-            case "/compact" | "compact" =>
+            case _ => match (context.mode) {
+                case CliMode.AGENTIC => agenticProcess(input, context)
+                case _ => terminalProcess(input, context)
+            }
+        }
+    }
+    return 0
+}
+
+private func agenticProcess(input: String, context: Context) {
+    let agent = context.agent
+    let compactor = context.compactor
+    let conversationManager = context.conversationManager
+    let mcpManager = context.mcpManager
+    match (input) {
+        case "/help" | "help" => PrintUtils.printHelpMessage()
+        case "/clear" | "clear" =>
+            conversationManager.clearConversation(agent)
+            PrintUtils.clearScreen()
+            PrintUtils.printLogo()
+        case "/compact" | "compact" =>
+            if (let Some(index) <- compactor.calculateCompactIndex(agent.conversation)) {
+                PrintUtils.printTool("Compacting conversation...", "🚀 Working on it...")
+                agent.conversation.compactBy(compactor, firstN: index, keepOrigin: false)
+                PrintUtils.printTool("Compacting conversation...", "🥳 Compacted successfully!")
+            } else {
+                PrintUtils.printTool("Compacting conversation...",
+                    "🌱 Conversation context is short enough, no need to compact!")
+            }
+        case "/memory" | "memory" =>
+            let userRules = CliConfig.userRules
+            if (userRules.isEmpty()) {
+                PrintUtils.printTool("User Memory (MAGIC.md)", "📝 No MAGIC.md file found in current directory")
+                println("Create a MAGIC.md file in your project to set custom rules and context for Magic-cli to use.")
+            } else {
+                PrintUtils.printTool("User Memory (MAGIC.md)", "📝 Current MAGIC.md content:")
+                println(userRules)
+            }
+        case "!" => 
+            context.changeMode(CliMode.TERMINAL)
+        case _ =>
+            if (input.startsWith("/mcp") || input.startsWith("mcp")) {
+                mcpManager.handleCommand(input.split(" "), agent)
+            } else if (input.startsWith("/conversation") || input.startsWith("conversation")) {
+                conversationManager.handleCommand(input.split(" "), agent)
+            } else {
+                let response = agent.chat(AgentRequest(input))
+                PrintUtils.printAgentResponse(response)
                 if (let Some(index) <- compactor.calculateCompactIndex(agent.conversation)) {
                     PrintUtils.printTool("Compacting conversation...", "🚀 Working on it...")
                     agent.conversation.compactBy(compactor, firstN: index, keepOrigin: false)
                     PrintUtils.printTool("Compacting conversation...", "🥳 Compacted successfully!")
-                } else {
-                    PrintUtils.printTool("Compacting conversation...", "🌱 Conversation context is short enough, no need to compact!")
                 }
-            case "/memory" | "memory" =>
-                let userRules = CliConfig.userRules
-                if (userRules.isEmpty()) {
-                    PrintUtils.printTool("User Memory (MAGIC.md)", "📝 No MAGIC.md file found in current directory")
-                    println("Create a MAGIC.md file in your project to set custom rules and context for Magic-cli to use.")
-                } else {
-                    PrintUtils.printTool("User Memory (MAGIC.md)", "📝 Current MAGIC.md content:")
-                    println(userRules)
-                }
-            case _ =>
-                if (input.startsWith("/mcp") || input.startsWith("mcp")) {
-                    mcpManager.handleCommand(input.split(" "), agent)
-                } else if (input.startsWith("/conversation") || input.startsWith("conversation")) {
-                    conversationManager.handleCommand(input.split(" "), agent)
-                } else {
-                    let response = agent.chat(AgentRequest(input))
-                    PrintUtils.printAgentResponse(response)
-                    if (let Some(index) <- compactor.calculateCompactIndex(agent.conversation)) {
-                        PrintUtils.printTool("Compacting conversation...", "🚀 Working on it...")
-                        agent.conversation.compactBy(compactor, firstN: index, keepOrigin: false)
-                        PrintUtils.printTool("Compacting conversation...", "🥳 Compacted successfully!")
-                    }
-                }
-        }
+            }
     }
-    return 0
+}
+
+private func terminalProcess(command: String, context: Context) {
+    if (command == "!") {
+        context.changeMode(CliMode.AGENTIC)
+        return
+    }
+    let (exitCode, stdOutData, stdErrData) = TerminalUtils.execute(command, context.workspace)
+    let output = if (exitCode == 0) {
+        String.fromUtf8(stdOutData).trimAscii()
+    } else {
+        String.fromUtf8(stdErrData).trimAscii()
+    }
+    PrintUtils.printTerminalResponse(output)
 }

@@ -92,6 +92,10 @@ protected class PrintUtils {
         )
     }
 
+    static public func printTerminalResponse(output: String) {
+        print(output + '\r')
+    }
+
     static let INDICATORS = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"]
 
     static public func printWorkingIndicator(message!: String = "Working"): WorkingIndicator {

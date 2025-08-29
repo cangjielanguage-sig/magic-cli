@@ -6,7 +6,6 @@ import magic.dsl.*
 import magic.prelude.*
 
 import std.fs.*
-import std.process.*
 import std.io.*
 import std.env.*
 
@@ -26,12 +25,7 @@ public class ShellTool {
         }
 
         try {
-            let (exitCode, stdOutData, stdErrData) = if (InfoUtils.os == "windows") {
-                executeWithOutput("powershell", ["-Command", command], workingDirectory: Path(path))
-            } else {
-                executeWithOutput("/bin/bash", ["-c", command], workingDirectory: Path(path))
-            }
-
+            let (exitCode, stdOutData, stdErrData) = TerminalUtils.execute(command, Path(path))
             if (exitCode == 0) {
                 let outString = String.fromUtf8(stdOutData).trimAscii()
                 return "Command executed successfully, output:\n${outString}"

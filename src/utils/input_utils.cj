@@ -2,6 +2,7 @@ package cli.utils
 
 import cli.core.config.CliConfig
 import std.time.DateTime
+import cli.bean.CliMode
 
 protected enum Confirmation {
     | Approve
@@ -15,8 +16,12 @@ protected class InputUtils {
 
     private static let READLINE = Readline(CliConfig.readlineFile)
 
-    public static func getUserInput(prompt!: String = "", withBox!: Bool = true): String {
-        READLINE.readline(buildPrompt("🪄"), withBox: withBox) ?? "exit"
+    public static func getUserInput(withBox!: Bool = true, mode!: CliMode = AGENTIC): String {
+        let icon = match (mode) {
+            case AGENTIC => '🌝'
+            case _=> '🌚'
+        }
+        READLINE.readline(buildPrompt(icon), withBox: withBox) ?? "exit"
     }
 
     public static func confirm(title: String, content: String): Confirmation {
