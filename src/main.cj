@@ -159,7 +159,7 @@ private func initCliContext() {
             }
             EventResponse.Continue
         }
-    setContext(Context(agent, compactor, conversationManager, mcpManager, CliConfig.cwd, mode: CliMode.TERMINAL))
+    setContext(Context(agent, compactor, conversationManager, mcpManager, CliConfig.cwd, mode: CliMode.AGENTIC))
     return getContext()
 }
 
