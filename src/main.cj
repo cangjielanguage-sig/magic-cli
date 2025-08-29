@@ -13,6 +13,7 @@ import cli.core.agents.{GeneralCodeAgent, CangjieCodeAgent, Compactor}
 import cli.core.config.CliConfig
 import cli.core.mcp.MCPConfigManager
 import cli.core.conversation.ConversationManager
+import cli.core.commands.CustomCommandManager
 import cli.core.context.*
 import cli.bean.CliMode
 import cli.utils.*
@@ -114,6 +115,9 @@ private func initCliContext() {
 
     // Initialize conversation manager
     let conversationManager = ConversationManager()
+    
+    // Initialize custom command manager
+    let customCommandManager = CustomCommandManager()
 
     // Register the callback to auto-save conversation
     atExit({
@@ -159,7 +163,7 @@ private func initCliContext() {
             }
             EventResponse.Continue
         }
-    setContext(Context(agent, compactor, conversationManager, mcpManager, CliConfig.cwd, mode: CliMode.TERMINAL))
+    setContext(Context(agent, compactor, conversationManager, mcpManager, customCommandManager, CliConfig.cwd, mode: CliMode.AGENTIC))
     return getContext()
 }
 
@@ -194,6 +198,7 @@ private func agenticProcess(input: String, context: Context) {
     let compactor = context.compactor
     let conversationManager = context.conversationManager
     let mcpManager = context.mcpManager
+    let customCommandManager = context.customCommandManager
     match (input) {
         case "/help" | "help" => PrintUtils.printHelpMessage()
         case "/clear" | "clear" =>
@@ -221,7 +226,9 @@ private func agenticProcess(input: String, context: Context) {
         case "!" => 
             context.changeMode(CliMode.TERMINAL)
         case _ =>
-            if (input.startsWith("/mcp") || input.startsWith("mcp")) {
+            if (input.startsWith("/cmd")) {
+                customCommandManager.handleCommand(input, agent)
+            } else if (input.startsWith("/mcp") || input.startsWith("mcp")) {
                 mcpManager.handleCommand(input.split(" "), agent)
             } else if (input.startsWith("/conversation") || input.startsWith("conversation")) {
                 conversationManager.handleCommand(input.split(" "), agent)

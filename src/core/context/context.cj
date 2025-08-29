@@ -6,6 +6,7 @@ import magic.agent.ConversationAgent
 import cli.core.agents.Compactor
 import cli.core.conversation.ConversationManager
 import cli.core.mcp.MCPConfigManager
+import cli.core.commands.CustomCommandManager
 import std.fs.Path
 import cli.bean.*
 
@@ -14,15 +15,17 @@ protected class Context {
     protected var compactor: Compactor
     protected var conversationManager: ConversationManager
     protected var mcpManager: MCPConfigManager
+    protected var customCommandManager: CustomCommandManager
     protected var mode: CliMode
     protected var workspace: Path
 
     protected init(agent: ConversationAgent, compactor: Compactor, conversationManager: ConversationManager,
-        mcpManager: MCPConfigManager, workspace: Path, mode!: CliMode = AGENTIC) {
+        mcpManager: MCPConfigManager, customCommandManager: CustomCommandManager, workspace: Path, mode!: CliMode = AGENTIC) {
             this.agent = agent
             this.compactor = compactor
             this.conversationManager = conversationManager
             this.mcpManager = mcpManager
+            this.customCommandManager = customCommandManager
             this.mode = mode
             this.workspace = workspace
     }

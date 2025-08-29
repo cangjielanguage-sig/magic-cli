@@ -18,8 +18,8 @@ protected class InputUtils {
 
     public static func getUserInput(withBox!: Bool = true, mode!: CliMode = AGENTIC): String {
         let icon = match (mode) {
-            case AGENTIC => '🌝'
-            case _=> '🌚'
+            case AGENTIC => '⚡'
+            case _=> '💻'
         }
         READLINE.readline(buildPrompt(icon), withBox: withBox) ?? "exit"
     }
