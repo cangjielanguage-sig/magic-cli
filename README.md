@@ -7,9 +7,10 @@
 - 🎯 **智能对话** - 交互式 CLI 界面，支持自然语言处理 Cangjie 编程任务
 - 🔧 **代码工具链** - 集成 Cangjie 开发全套工具（初始化、编译、运行、调试）
 - 📚 **文档检索** - 内置 RAG 系统，可查询 Cangjie 官方文档和代码示例
-- 🧠 **上下文管理** - 智能对话压缩，保持长期会话效率
+- 🗂️ **上下文管理** - 智能对话压缩，保持长期会话效率
 - 💾 **对话持久化** - 支持保存和恢复对话会话，项目切换无缝衔接
-- 🧠 **用户记忆** - 通过 MAGIC.md 文件自定义项目规则和上下文
+- 📝 **用户记忆** - 通过 MAGIC.md 文件自定义项目规则和上下文
+- ⚡ **自定义命令** - 支持用户定义 prompt 模板，固化常用工作流程
 - 🚀 **一键构建** - 自动化项目构建和依赖管理
 - 🔌 **MCP 集成** - 支持 Model Context Protocol，扩展外部工具和服务能力
 
@@ -159,6 +160,41 @@ MAGIC.md 是用户自定义规则文件，可以包含项目相关的上下文�
 - 使用 4 空格缩进
 - 函数命名使用 camelCase
 - 注释使用中文
+```
+
+### 自定义命令
+Magic-CLI 支持用户自定义 prompt 模板命令，实现常用工作流程的快速执行：
+
+- **`/cmd`** 或 **`/cmd list`** - 列出所有可用的自定义命令
+- **`/cmd help <name>`** - 显示指定命令的详细信息和用法
+- **`/cmd reload`** - 重新加载命令配置（编辑配置文件后使用）
+- **`/cmd:<name> [参数]`** - 执行指定的自定义命令
+
+**配置方法：**
+在 `.magic-cli/commands/` 目录下创建 JSON 文件：
+```json
+{
+  "description": "生成规范的 git commit message",
+  "prompt": "请基于当前的代码改动生成一个规范的 commit message。要求：$ARGS"
+}
+```
+
+**使用示例：**
+```bash
+🔮 Agent > /cmd list
+📋 Available custom commands:
+  • commit - 生成规范的 git commit message
+  • explain - 解释代码的功能和实现原理
+  • refactor - 提供代码重构建议
+
+🔮 Agent > /cmd:commit 修复用户登录bug
+[AI 会基于 git diff 和用户要求生成 commit message]
+
+🔮 Agent > /cmd help commit
+📖 commit
+Description: 生成规范的 git commit message
+Usage: /cmd:commit [your arguments]
+Prompt template: 请基于当前的代码改动生成一个规范的 commit message。要求：$ARGS
 ```
 
 ### MCP 工具管理
