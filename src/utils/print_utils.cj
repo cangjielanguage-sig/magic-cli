@@ -66,7 +66,7 @@ protected class PrintUtils {
             "Available Commands".withColor(THEME_PRIMARY),
             lines: HELP_INFO |>
                 map { info =>
-                    let cmd = "/${info[0]}".padEnd(10).withColor(THEME_YELLOW)
+                    let cmd = "/${info[0]}".padEnd(15).withColor(THEME_YELLOW)
                     let separator = " ║ ".withColor(THEME_MUTED)
                     let message = "- ${info[1]}".withColor(THEME_MUTED)
                     " ${cmd}${separator}${message}"
