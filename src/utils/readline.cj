@@ -162,6 +162,22 @@ private func readlineImpl(buf: LinkedList<Rune>, rune: Rune, prompt: String, his
             cursor = max(0, cursor - 1)
         case r'\u{2192}' => // Right →
             cursor = min(buf.size, cursor + 1)
+        case r'!' => 
+            if (let Some(cmd) <- command) { // MODE CHANGE COMMAND
+                moveCursor(1, UP)
+                moveCursor(col: 0)
+                clearScreen(AfterCursorScreen)
+                return Some('!')
+            } else {
+                // Add the current rune to the input buffer
+                if (cursor == buf.size) {
+                    buf.addLast(rune)
+                } else {
+                    let node = buf.nodeAt(cursor).getOrThrow()
+                    buf.addBefore(node, rune)
+                }
+                cursor += 1
+            }
         case _ =>
             // Add the current rune to the input buffer
             if (cursor == buf.size) {
