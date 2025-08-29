@@ -14,7 +14,9 @@ import magic.interaction.{EventHandlerManager, PromptValidateEvent, ToolCallEven
 import cli.core.agents.{GeneralCodeAgent, CangjieCodeAgent, Compactor}
 import cli.core.config.CliConfig
 import cli.core.mcp.MCPConfigManager
+import cli.core.conversation.ConversationManager
 import cli.utils.{InputUtils, PrintUtils, WorkingIndicator}
+import std.collection.ArrayList
 
 import std.argopt.{parseArguments, ArgumentSpec, ArgumentMode, ArgumentParseException}
 import std.fs.{exists, File, FSException, Path}
@@ -117,14 +119,22 @@ main(args: Array<String>): Int64 {
         ConversationAgent(GeneralCodeAgent())
     }
 
-    // Register the callback to save conversation
+    // Initialize conversation manager
+    let conversationManager = ConversationManager()
+    
+    // Register the callback to auto-save conversation
     atExit({ =>
-        agent.conversation.save(CliConfig.conversationFile)
+        conversationManager.autoSave(agent)
     })
 
     // Load MCP servers and add their tools to the agent
     let mcpManager = MCPConfigManager()
-    agent.toolManager.addTools(mcpManager.loadMCPServers())
+    try {
+        agent.toolManager.addTools(mcpManager.loadMCPServers())
+    } catch (e: Exception) {
+        LogUtils.error("Failed to load MCP servers: ${e.message}")
+        PrintUtils.printTool("MCP Loading", "❗ Warning: Failed to load MCP servers, continuing without MCP tools")
+    }
 
     // Initialize the conversation compactor to use
     let compactor = Compactor()
@@ -161,21 +171,9 @@ main(args: Array<String>): Int64 {
             case "/help" | "help" =>
                 PrintUtils.printHelpMessage()
             case "/clear" | "clear" =>
-                agent.conversation.clear()
+                conversationManager.clearConversation(agent)
                 PrintUtils.clearScreen()
                 PrintUtils.printLogo()
-            case "/resume" | "resume" =>
-                // Load previous conversation if necessary
-                if (exists(CliConfig.conversationFile)) {
-                    let savedConversation = Conversation.load(CliConfig.conversationFile)
-                    agent.conversation.clear()
-                    for (chatRound in savedConversation) {
-                        agent.conversation.addChatRound(chatRound)
-                    }
-                    println("Conversation resumed successfully!")
-                } else {
-                    println("No saved conversation found. Starting a new one.")
-                }
             case "/compact" | "compact" =>
                 if (let Some(index) <- compactor.calculateCompactIndex(agent.conversation)) {
                     PrintUtils.printTool("Compacting conversation...", "🚀 Working on it...")
@@ -184,15 +182,28 @@ main(args: Array<String>): Int64 {
                 } else {
                     PrintUtils.printTool("Compacting conversation...", "🌱 Conversation context is short enough, no need to compact!")
                 }
-            case "/mcp" | "mcp" =>
-                mcpManager.showLoadedMCPTools(agent)
+            case "/memory" | "memory" =>
+                let userRules = CliConfig.userRules
+                if (userRules.isEmpty()) {
+                    PrintUtils.printTool("User Memory (MAGIC.md)", "📝 No MAGIC.md file found in current directory")
+                    println("Create a MAGIC.md file in your project to set custom rules and context for Magic-cli to use.")
+                } else {
+                    PrintUtils.printTool("User Memory (MAGIC.md)", "📝 Current MAGIC.md content:")
+                    println(userRules)
+                }
             case _ =>
-                let response = agent.chat(AgentRequest(input))
-                PrintUtils.printAgentResponse(response)
-                if (let Some(index) <- compactor.calculateCompactIndex(agent.conversation)) {
-                    PrintUtils.printTool("Compacting conversation...", "🚀 Working on it...")
-                    agent.conversation.compactBy(compactor, firstN: index, keepOrigin: false)
-                    PrintUtils.printTool("Compacting conversation...", "🥳 Compacted successfully!")
+                if (input.startsWith("/mcp") || input.startsWith("mcp")) {
+                    mcpManager.handleCommand(input.split(" "), agent)
+                } else if (input.startsWith("/conversation") || input.startsWith("conversation")) {
+                    conversationManager.handleCommand(input.split(" "), agent)
+                } else {
+                    let response = agent.chat(AgentRequest(input))
+                    PrintUtils.printAgentResponse(response)
+                    if (let Some(index) <- compactor.calculateCompactIndex(agent.conversation)) {
+                        PrintUtils.printTool("Compacting conversation...", "🚀 Working on it...")
+                        agent.conversation.compactBy(compactor, firstN: index, keepOrigin: false)
+                        PrintUtils.printTool("Compacting conversation...", "🥳 Compacted successfully!")
+                    }
                 }
         }
     }

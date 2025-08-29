@@ -4,13 +4,13 @@ import std.regex.Regex
 import std.collection.{ArrayList, collectArray}
 import magic.log.LogUtils
 
-private const LEFT_TOP = "╔"
-private const LEFT_BOTTOM = "╚"
-private const RIGHT_TOP = "╗"
-private const RIGHT_BOTTOM = "╝"
-private const HORIZONTAL_BORDER = "═"
+private const LEFT_TOP = "┌"
+private const LEFT_BOTTOM = "└"
+private const RIGHT_TOP = "┐"
+private const RIGHT_BOTTOM = "┘"
+private const HORIZONTAL_BORDER = "─"
+private const VERTICAL_BORDER = "│"
 private const HORIZONTAL_SEPARATOR = "─"
-private const VERTICAL_BORDER = "║"
 private const PAD = "\u{202F}" //只可以使用2字节字符  TODO-LINUX测试
 func padString(content: String, width!: Int64, center!: Bool = false): String {
     let sizeToPad = max(0, width - displayWidthOf(content))

@@ -1,77 +1,207 @@
-# cj-rag
+# Graph RAG for Cangjie Documentation
 
-## 项目介绍
-这是一个基于 Milvus 和 Embeddings 模型的向量检索项目，用于存储和检索 Cangjie 语言的文档。项目支持命令行参数区分构建向量数据库和启动服务器功能，并使用 Pydantic 模型提高代码可读性和数据验证能力。
+## Installation
 
-## 功能特点
-1. 读取 JSONL 格式的文档数据并使用 Pydantic 模型进行验证
-2. 支持两种嵌入模型方式：
-   - 使用 langchain-huggingface 中的 HuggingFaceEmbeddings
-   - 直接使用 transformers 库加载模型
-3. 将数据存储到 Milvus 向量数据库
-4. 提供检索 API，根据查询返回最相关的文档
-5. 支持命令行参数区分构建数据库和启动服务器功能
-
-## 目录结构
-```
-.
-├── main.py         # 主程序入口
-├── README.md       # 项目说明
-└── data/           # 数据目录
-    └── cangjiedoc.jsonl # 文档数据
-```
-
-## 安装依赖
+1. Install dependencies:
 ```bash
-uv pip install .
+pip install -r requirements.txt
 ```
 
-## 使用方法
-### 命令行参数
-- `--embed`: 仅构建向量数据库，不启动服务器
-- `--serve`: 仅启动服务器，不构建数据库（前提是数据库已存在）
-- `--port`: 服务器端口（默认：8000）
-- `--db`: 向量数据库路径（默认：milvus_cangjie_doc.db）
-- `--doc`: 文档JSONL文件路径（默认：./data/cangjiedoc.jsonl）
-- `--embed-model`: 嵌入模型路径（默认：./model/Conan-embedding-v1）
-
-### 运行方式
-1. **构建数据库并启动服务器（默认行为）**
-   ```bash
-   python main.py
-   ```
-
-2. **仅构建数据库**
-   ```bash
-   python main.py --embed
-   ```
-
-3. **仅启动服务器**
-   ```bash
-   python main.py --serve
-   ```
-
-### 检索示例
-服务器启动后，可以通过 POST 请求访问 `/retrieve` 端点进行检索
+2. Start Milvus (if using full vector storage):
 ```bash
-curl -X POST "http://0.0.0.0:8000/retrieve" \
--H "Content-Type: application/json" \
--d '{"query": "function", "num2retrieve": 5}'
+# Using Docker Compose
+curl -sfL https://raw.githubusercontent.com/milvus-io/milvus/master/scripts/standalone_embed.sh -o standalone_embed.sh
+bash standalone_embed.sh start
 ```
 
-## API 说明
-### POST /retrieve
-根据查询内容从数据库中检索相关文档
+Or use the fallback in-memory storage (no Milvus required).
 
-**参数:**
-- `query`: 检索查询内容（必填）
-- `num2retrieve`: 要检索的文档数量（可选，默认值为 5）
+## Quick Start
 
-**返回:**
-- 包含检索结果的 JSON 数组，每个结果包含文档 ID、得分、文本内容等信息
+### 1. Build Index from Documentation
 
-## 注意事项
-1. 首次运行时，建议使用 `--embed` 选项构建数据库
-2. 确保有足够的内存来运行嵌入模型和 Milvus 数据库
-3. 如果修改了数据文件，需要使用 `--embed` 选项重新构建数据库
-4. 确保嵌入模型路径正确
+**From Markdown files:**
+```bash
+python main.py build --docs /path/to/cangjie/docs --collection my_docs
+```
+
+**From JSONL file:**
+```bash
+python main.py build --jsonl /path/to/data.jsonl --collection my_docs
+```
+
+**From both sources:**
+```bash
+python main.py build --docs /path/to/docs --jsonl /path/to/data.jsonl --collection my_docs
+```
+
+### 2. Query Documentation
+
+```bash
+python main.py query "How to define a function with parameters?" --collection my_docs
+```
+
+### 3. Interactive Mode
+
+```bash
+python main.py interactive --collection my_docs
+```
+
+## Programmatic Usage
+
+```python
+from src import GraphRAGRetriever, RetrievalConfig
+
+# Build system from directory
+retriever = GraphRAGRetriever.from_directory(
+    docs_path="./cangjie_docs/",
+    vector_config={'collection_name': 'cangjie_docs'}
+)
+
+# Configure retrieval
+config = RetrievalConfig(
+    initial_k=5,           # Initial semantic search results
+    max_graph_distance=2,  # Maximum hops in graph traversal
+    max_total_chunks=15    # Maximum final results
+)
+
+# Query documentation
+results = retriever.retrieve(
+    "How to define a function with named parameters?",
+    config=config
+)
+
+for result in results:
+    print(f"Score: {result.score:.3f}")
+    print(f"Content: {result.content[:200]}...")
+    print(f"Code Elements: {result.metadata.code_elements}")
+    print("---")
+```
+
+## Cangjie Code Elements Supported
+
+The system can extract and link the following Cangjie language elements:
+
+### Function Definitions
+```cangjie
+func calculateSum(a: Int64, b: Int64): Int64 {
+    return a + b
+}
+```
+
+### Type Definitions
+```cangjie
+class DataProcessor {
+    // class body
+}
+
+struct Point {
+    x: Float64
+    y: Float64
+}
+
+interface Drawable {
+    func draw(): Unit
+}
+
+enum Color {
+    Red, Green, Blue
+}
+```
+
+### Function Calls
+```cangjie
+// Method calls
+processor.validate(data)
+
+// Function calls
+calculateSum(10, 20)
+```
+
+## JSONL Data Source Support
+
+The system supports JSONL files with the following schema:
+
+### DocumentModel Schema
+```python
+class DocumentModel(BaseModel):
+    id: str                                    # Unique document ID
+    text: str                                  # Main document content
+    parent_ids: List[str]                      # Parent document IDs for relationships
+    source: str                                # Source file/location
+    short: str                                 # Summary for embedding and retrieval
+    example_code: Optional[str] = None         # Cangjie code examples
+    example_coding_problem: Optional[str] = None  # Coding problems/exercises
+    url: str                                   # Documentation URL
+```
+
+### JSONL File Format
+Each line in the JSONL file should be a valid JSON object:
+
+```jsonl
+{"id": "doc1", "text": "Functions are basic building blocks...", "parent_ids": [], "source": "functions.md", "short": "Introduction to functions", "example_code": "func add(a: Int64, b: Int64): Int64 { return a + b }", "url": "https://docs.cangjie.com/functions"}
+{"id": "doc2", "text": "Named parameters allow...", "parent_ids": ["doc1"], "source": "functions.md", "short": "Named parameters in functions", "example_code": "func greet(name: String, age!: Int64 = 0) { println(\"Hello ${name}\") }", "url": "https://docs.cangjie.com/functions/named"}
+```
+
+### Usage Examples:
+
+```bash
+# JSONL only
+python main.py build --jsonl ./data/cangjiedoc.jsonl
+
+# JSONL + Markdown
+python main.py build --jsonl ./data/cangjiedoc.jsonl --docs ./markdown_docs/
+
+# Run JSONL example
+python example_jsonl.py
+```
+
+## Configuration
+
+### RetrievalConfig Options
+
+- `initial_k` (int): Number of initial semantic search results (default: 5)
+- `max_graph_distance` (int): Maximum hops in graph traversal (default: 2)
+- `relevance_threshold` (float): Minimum score for graph expansion (default: 0.3)
+- `max_total_chunks` (int): Maximum final results (default: 20)
+- `rerank_by_graph` (bool): Re-rank using graph centrality (default: True)
+
+### Vector Store Configuration
+
+- `host`: Milvus server host (default: "localhost")
+- `port`: Milvus server port (default: 19530)
+- `collection_name`: Collection name (default: "cangjie_docs")
+- `embedding_model`: Sentence transformer model (default: "all-MiniLM-L6-v2")
+
+## CLI Commands
+
+### Build Index
+```bash
+python main.py build [options]
+  --docs <path>          # Markdown documentation directory
+  --jsonl <path>         # JSONL file with DocumentModel schema
+  --collection <name>    # Milvus collection name
+  --embed-model <path>   # Embedding model path
+  --chunk-size <size>    # Maximum chunk size
+```
+
+### Query
+```bash
+python main.py query <query> [options]
+  --collection <name>    # Milvus collection name
+  --initial-k <k>       # Initial search results
+  --max-distance <d>    # Graph traversal distance
+  --max-results <n>     # Maximum final results
+  --output <file>       # Output JSON file
+```
+
+### Interactive Mode
+```bash
+python main.py interactive [options]
+  --collection <name>   # Milvus collection name
+
+# Interactive commands:
+# /config initial_k 10     # Change configuration
+# /stats                   # Show system statistics
+# /quit                    # Exit
+```

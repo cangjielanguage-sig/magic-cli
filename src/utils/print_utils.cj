@@ -52,12 +52,13 @@ protected class PrintUtils {
     }
 
     static let HELP_INFO = [
-        ("help",    "Show this help message"),
-        ("clear",   "Clear conversation history"),
-        ("compact", "Compact the conversation"),
-        ("mcp",     "Show loaded MCP tools"),
-        ("resume",  "Resume last conversation history"),
-        ("exit",    "Exit the program")
+        ("help",         "Show this help message"),
+        ("clear",        "Clear conversation history"),
+        ("compact",      "Compact the conversation"),
+        ("conversation", "Manage conversations"),
+        ("mcp",          "Show loaded MCP tools"),
+        ("memory",       "Show MAGIC.md content"),
+        ("exit",         "Exit the program")
     ]
 
     static public func printHelpMessage() {
@@ -87,7 +88,7 @@ protected class PrintUtils {
 
     static public func printAgentResponse(response: AgentResponse) {
         println(
-            wrapBox("${InputUtils.buildPrompt("🔮 Agent")}${response.content}")
+            wrapBox("${InputUtils.buildPrompt("🔮")}${response.content}")
         )
     }
 

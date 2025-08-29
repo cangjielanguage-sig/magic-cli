@@ -9,18 +9,14 @@ protected enum Confirmation {
 }
 
 protected class InputUtils {
-    public static func buildPrompt(role: String): String {
-        let time = DateTime.now().format("HH:mm:ss").withColor(THEME_INFO)
-        let prefix = " 🕒 ".withColor(THEME_MUTED) + time + " |".withColor(THEME_MUTED)
-        let roleInfo = role.padEnd(5).withColor(THEME_SUCCESS)
-        let postfix = "> ".withColor(THEME_PRIMARY)
-        return "${prefix} ${roleInfo} ${postfix}"
+    public static func buildPrompt(prompt: String): String {
+        return " ${prompt} > ".withColor(THEME_MUTED)
     }
 
     private static let READLINE = Readline(CliConfig.readlineFile)
 
-    public static func getUserInput(prompt!: String = "User", withBox!: Bool = true): String {
-        READLINE.readline(buildPrompt(prompt), withBox: withBox) ?? "exit"
+    public static func getUserInput(prompt!: String = "", withBox!: Bool = true): String {
+        READLINE.readline(buildPrompt("🪄"), withBox: withBox) ?? "exit"
     }
 
     public static func confirm(title: String, content: String): Confirmation {
