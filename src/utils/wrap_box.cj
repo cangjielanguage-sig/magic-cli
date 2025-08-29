@@ -54,9 +54,7 @@ private func splitLine(line: String, width: Int64): Array<String> {
         idx += 1
     }
     let lastSubLine = currSubLine.toString()
-    if (!lastSubLine.isEmpty()) {
-        subLines.add(lastSubLine)
-    }
+    subLines.add(lastSubLine)
     return subLines.toArray()
 }
 
@@ -162,8 +160,6 @@ protected func calculateCursorPos(wrappedContent: String, cursorPos: Int64, pref
         total += w
     }
     let row = findRow(widthList, cursorWidth)
-    LogUtils.info("R:${row}, C:${col}")
-    LogUtils.info("TOTAL:${total}, CUR:${cursorWidth}")
     return (row, col)
 }
 
