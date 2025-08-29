@@ -17,13 +17,6 @@ protected func toUnixStyle(pathStr: String, appendSuffix!: Bool = false) {
     }
 }
 
-protected func listCmds(prefix!: String = ""): Array<String> {
-    // HELP_INFO: (command, description)
-    let cmdArray = PrintUtils.HELP_INFO.map { info => "/${info[0]}" } |> collectArray
-    sort(cmdArray, stable: true)
-    return cmdArray |> filter {str => str.startsWith(prefix) && str != prefix} |> collectArray
-}
-
 protected func listFiles(workDir!: Path = CliConfig.cwd, prefix!: String = ""): Array<String> {
     var workSpace = try {
         workDir.join(prefix)
@@ -80,16 +73,4 @@ protected func listFiles(workDir!: Path = CliConfig.cwd, prefix!: String = ""): 
         stable: true
     )
     arr
-}
-
-private func istFilesRecursive(workDir: Path, lst: ArrayList<String>): Bool {
-    Directory.walk(workDir) {
-        fileInfo: FileInfo => if (fileInfo.isDirectory()) {
-            lst.add(fileInfo.path.normalize().toString())
-            return istFilesRecursive(fileInfo.path, lst)
-        } else {
-            return true
-        }
-    }
-    return true
 }

@@ -1,7 +1,8 @@
 package cli.utils
 
 import std.regex.Regex
-import std.collection.ArrayList
+import std.collection.{ArrayList, collectArray}
+import magic.log.LogUtils
 
 private const LEFT_TOP = "┌"
 private const LEFT_BOTTOM = "└"
@@ -10,16 +11,15 @@ private const RIGHT_BOTTOM = "┘"
 private const HORIZONTAL_BORDER = "─"
 private const VERTICAL_BORDER = "│"
 private const HORIZONTAL_SEPARATOR = "─"
-
+private const PAD = "\u{202F}" //只可以使用2字节字符  TODO-LINUX测试
 func padString(content: String, width!: Int64, center!: Bool = false): String {
     let sizeToPad = max(0, width - displayWidthOf(content))
     if (center) {
         let leftToPad = sizeToPad / 2
         let rightToPad = sizeToPad - leftToPad
-        return "${' ' * leftToPad}${content}${' ' * rightToPad}"
+        return "${PAD * leftToPad}${content}${PAD * rightToPad}"
     } else {
-        // println("${content}: ${displaySizeOf(content)} + ${sizeToPad}")
-        return "${content}${(' ' * sizeToPad)}"
+        return "${content}${(PAD * sizeToPad)}"
     }
 }
 
@@ -43,7 +43,7 @@ private func splitLine(line: String, width: Int64): Array<String> {
             currSubLine.append(runes[idx])
         } else {
             let widthOfRune = displayWidthOf(rune)
-            if (widthOfRune + currWidthOfSubLine >= width) {
+            if (widthOfRune + currWidthOfSubLine > width) {
                 subLines.add(currSubLine.toString())
                 currSubLine.reset()
                 currWidthOfSubLine = 0
@@ -75,20 +75,20 @@ protected func wrapBox(title: String, lines!: Array<String>, width!: Int64 = 100
     centerTitle!: Bool = false): String {
     let strBuilder = StringBuilder()
     // Add the top line
-    strBuilder.append("${LEFT_TOP}${HORIZONTAL_BORDER * width}${RIGHT_TOP}\n".withColor(boxColor))
+    strBuilder.append("${LEFT_TOP}${HORIZONTAL_BORDER * width}${RIGHT_TOP}".withColor(boxColor))
+    strBuilder.append("\n")
     // Add the title
     if (!title.isEmpty()) {
         strBuilder.append(
             "${VERTICAL_BORDER.withColor(boxColor)}${padString(title, width: width, center: centerTitle)}${VERTICAL_BORDER.withColor(boxColor)}\n")
-        strBuilder.append("${VERTICAL_BORDER}${HORIZONTAL_SEPARATOR * width}${VERTICAL_BORDER}\n".withColor(boxColor))
+        strBuilder.append("${VERTICAL_BORDER}${HORIZONTAL_SEPARATOR * width}${VERTICAL_BORDER}".withColor(boxColor))
+        strBuilder.append('\n')
     }
     // Add content lines if necessary
     if (!lines.isEmpty()) {
         for (line in lines) {
-            // Split the line as multiple lines if it's too long
-            for (subLine in splitLine(line, width)) {
-                strBuilder.append("${wrapLineWithVerticalBorder(subLine, width: width, boxColor: boxColor)}\n")
-            }
+            strBuilder.append("${wrapLineWithVerticalBorder(line, width: width, boxColor: boxColor)}")
+            strBuilder.append('\n')
         }
     }
     // Add the bottom line
@@ -98,14 +98,19 @@ protected func wrapBox(title: String, lines!: Array<String>, width!: Int64 = 100
 
 protected func wrapLineWithVerticalBorder(line: String, width!: Int64 = 100, boxColor!: String = BRIGHT_BLACK): String {
     let border = VERTICAL_BORDER.withColor(boxColor)
-    return "${border}${padString(line, width: width)}${border}"
+    let subLines: ArrayList<String> = ArrayList()
+    // Split the line as multiple lines if it's too long
+    for (subLine in splitLine(line, width)) {
+        subLines.add("${border}${padString(subLine, width: width)}${border}")
+    }
+    return String.join(subLines.toArray(), delimiter: '\n')
 }
 
 protected func wrapShowList(showArray: Array<String>, selectIdx: Int64): String {
-    let lstSb = StringBuilder('\n')
     if (showArray.size == 0) {
         return ""
     }
+    let lstSb = StringBuilder()
     let maxExtend = 8
     let rangeEnd = min(max(selectIdx + 1, maxExtend), showArray.size)
     let rangeStart = max(0, rangeEnd - maxExtend)
@@ -125,4 +130,54 @@ protected func wrapShowList(showArray: Array<String>, selectIdx: Int64): String 
         lstSb.append("\n▼(${selectIdx + 1}/${showArray.size})")
     }
     return lstSb.toString()
+}
+
+protected func calculateCursorPos(wrappedContent: String, cursorPos: Int64, prefix!: String = String.empty,
+    width!: Int64 = 100, boxColor!: String = BRIGHT_BLACK): (Int64, Int64) {
+    let realCursorPos = cursorPos + runeSizeOf(prefix)
+    let widthList = ArrayList<Int64>()
+    var lines = collectArray(wrappedContent.lines())
+    var cursorLeft = realCursorPos
+    lines = lines[1..(lines.size - 1)]
+    var cursorWidth = 0
+    for (i in 0..lines.size) {
+        let line = lines[i]
+            .removePrefix(VERTICAL_BORDER.withColor(boxColor))
+            .removeSuffix(VERTICAL_BORDER.withColor(boxColor))
+            .replace(PAD, '')
+        let lineRunes = removeAnsiEscape(line).toRuneArray()
+        let lineWidth = displayWidthOf(lineRunes)
+        widthList.add(lineWidth)
+        let cursorRunes = min(cursorLeft, lineRunes.size)
+        if (cursorLeft - cursorRunes <= 0) { // pruning
+            cursorWidth += displayWidthOf(lineRunes[0..cursorRunes])
+            break
+        }
+        cursorLeft -= cursorRunes
+        cursorWidth += lineWidth
+    }
+    let col = widthList[widthList.size - 1] + displayWidthOf(VERTICAL_BORDER.withColor(boxColor)) + 1
+    var total = 0
+    for (w in widthList) {
+        total += w
+    }
+    let row = findRow(widthList, cursorWidth)
+    LogUtils.info("R:${row}, C:${col}")
+    LogUtils.info("TOTAL:${total}, CUR:${cursorWidth}")
+    return (row, col)
+}
+
+private func findRow(widthList: ArrayList<Int64>, target:Int64): Int64 {
+    if (target < 0) {
+        return 0
+    }
+    var total = 0
+    for (i in 0..widthList.size) {
+        let lineWidth = widthList[i]
+        total += lineWidth
+        if (total >= target) {
+            return i
+        }
+    }
+    return widthList.size // target > total width only backspace condition
 }
