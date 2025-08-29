@@ -161,6 +161,8 @@ private func readlineImpl(buf: LinkedList<Rune>, rune: Rune, prompt: String, his
             cursor = max(0, cursor - 1)
         case r'\u{2192}' => // Right →
             cursor = min(buf.size, cursor + 1)
+        case r'\u{1B}' => // ESC
+            return None // TODO - Do Something
         case r'!' => 
             if (let Some(cmd) <- command) { // MODE CHANGE COMMAND
                 moveCursor(1, UP)
@@ -279,6 +281,21 @@ public class Readline {
         } else {
             print(prompt, flush: true)
             return readln()
+        }
+    }
+}
+
+public class GetRune {
+    public static func getRune(): Rune {
+        try {
+            RawInputUtils.rawEnter()
+            if (let Some(r) <- RawInputUtils.rawGetRune()) {
+                r
+            } else {
+                r'\0'
+            }
+        } finally {
+            RawInputUtils.rawExit()
         }
     }
 }

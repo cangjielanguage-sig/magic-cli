@@ -159,7 +159,7 @@ private func initCliContext() {
             }
             EventResponse.Continue
         }
-    setContext(Context(agent, compactor, conversationManager, mcpManager, CliConfig.cwd, mode: CliMode.TERMINAL))
+    setContext(Context(agent, compactor, conversationManager, mcpManager, CliConfig.cwd, mode: CliMode.AGENTIC))
     return getContext()
 }
 
@@ -181,7 +181,8 @@ main(args: Array<String>): Int64 {
                 PrintUtils.printExitMessage()
                 break
             case _ => match (context.mode) {
-                case CliMode.AGENTIC => agenticProcess(input, context)
+                case AGENTIC => agenticProcess(input, context)
+                case CHATTING => chattingProcess(input, context)
                 case _ => terminalProcess(input, context)
             }
         }
@@ -226,15 +227,26 @@ private func agenticProcess(input: String, context: Context) {
             } else if (input.startsWith("/conversation") || input.startsWith("conversation")) {
                 conversationManager.handleCommand(input.split(" "), agent)
             } else {
-                let response = agent.chat(AgentRequest(input))
-                PrintUtils.printAgentResponse(response)
-                if (let Some(index) <- compactor.calculateCompactIndex(agent.conversation)) {
-                    PrintUtils.printTool("Compacting conversation...", "🚀 Working on it...")
-                    agent.conversation.compactBy(compactor, firstN: index, keepOrigin: false)
-                    PrintUtils.printTool("Compacting conversation...", "🥳 Compacted successfully!")
+                context.changeMode(CHATTING)
+                spawn {
+                    try {
+                        sleep(100 * Duration.second)
+                        PrintUtils.printAgentResponse(AgentResponse("OKOK!"))
+                    } finally {
+                        //context.changeMode(AGENTIC)
+                    }
                 }
+                LogUtils.info("MESSAGE FROM MAIN")
             }
     }
+}
+
+private func chattingProcess(input: String, context: Context) {
+    if (input != "\u{1B}") {
+        return
+    }
+    // interrupt
+    return context.changeMode(AGENTIC)
 }
 
 private func terminalProcess(command: String, context: Context) {
