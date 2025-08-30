@@ -9,7 +9,7 @@ import magic.log.LogUtils
 import magic.core.message.Conversation
 import magic.core.interaction.EventResponse
 import magic.interaction.{EventHandlerManager, PromptValidateEvent, ToolCallEvent}
-import cli.core.agents.{GeneralCodeAgent, CangjieCodeAgent, Compactor}
+import cli.core.agents.{GeneralCodeAgent, CangjieCodeAgent, Compactor, CodeAnalyzer}
 import cli.core.config.CliConfig
 import cli.core.mcp.MCPConfigManager
 import cli.core.conversation.ConversationManager
@@ -223,6 +223,8 @@ private func agenticProcess(input: String, context: Context) {
                 PrintUtils.printTool("User Memory (MAGIC.md)", "📝 Current MAGIC.md content:")
                 println(userRules)
             }
+        case "/init" | "init" =>
+            initMagicFile()
         case "!" => 
             context.changeMode(CliMode.TERMINAL)
         case _ =>
@@ -256,4 +258,53 @@ private func terminalProcess(command: String, context: Context) {
         String.fromUtf8(stdErrData).trimAscii()
     }
     PrintUtils.printTerminalResponse(output)
+}
+
+private func initMagicFile(): Unit {
+    let agent = CodeAnalyzer()
+    let magicFilePath = CliConfig.uerRuleFile
+    
+    if (exists(magicFilePath)) {
+        if(let Deny(userInput) <- InputUtils.confirm("MAGIC.md already exists.", "Overwrite?")){
+            return
+        }
+    }
+    
+    let prompt = """
+Please analyze the current project directory and generate practical MAGIC.md configuration file content.
+
+Requirements:
+1. Analyze project type, programming languages, frameworks, and tools in depth
+2. Identify project structure, important files, and configurations
+3. Infer appropriate coding standards and best practices
+4. Generate project-specific development guidelines and considerations
+5. Include specific guidance for AI assistant behavior
+
+Output format requirements:
+- Return the complete MAGIC.md file content directly, no explanatory text
+- Use Markdown format
+- Include sections: project info, coding standards, development guide, AI assistant guidance
+- Content should be specific and practical to guide future AI assistance work
+- DO NOT create or write any files, only return the content
+
+Please start analyzing the project and return the MAGIC.md content:"""
+    
+    PrintUtils.printTool("MAGIC.md Init", "🔍 Analyzing project structure and generating MAGIC.md...")
+    let response = agent.chat(AgentRequest(prompt))
+    
+    try {
+        File.writeTo(magicFilePath, response.content.toArray())
+        PrintUtils.printTool("MAGIC.md Init", "✅ MAGIC.md initialized successfully!")
+        
+        let preview = if (response.content.size > 300) {
+            response.content[0..300] + "..."
+        } else {
+            response.content
+        }
+        println("📝 Content preview:")
+        println(preview)
+        println("\n💡 Use '/memory' to view the full content anytime!")
+    } catch (e: Exception) {
+        println("❌ Failed to write MAGIC.md: ${e.message}")
+    }
 }
