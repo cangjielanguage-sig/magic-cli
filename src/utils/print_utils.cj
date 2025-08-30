@@ -59,6 +59,7 @@ protected class PrintUtils {
         ("mcp",          "Show loaded MCP tools"),
         ("memory",       "Show MAGIC.md content"),
         ("cmd",          "Manage custom commands"),
+        ("init",         "Initialize MAGIC.md for project"),
         ("exit",         "Exit the program")
     ]
 
