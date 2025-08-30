@@ -18,12 +18,11 @@ protected class InputUtils {
 
     public static func getUserInput(withBox!: Bool = true, mode!: CliMode = AGENTIC): String {
         match (mode) {
-            case AGENTIC => READLINE.readline(buildPrompt('🌝'), withBox: withBox) ?? "exit"
-            case TERMINAL => READLINE.readline(buildPrompt('🌚'), withBox: withBox) ?? "exit"
-            case _=>
-                sleep(200 * Duration.millisecond)
-                GetRune.getRune().toString()
-                
+            case AGENTIC => 
+                READLINE.readline(buildPrompt('🌝'), withBox: withBox) ?? "exit"
+            case TERMINAL => 
+                READLINE.readline(buildPrompt('🌚'), withBox: withBox) ?? "exit"
+            case _=> ListenEsc.listen() ?? ""
         }
     }
 

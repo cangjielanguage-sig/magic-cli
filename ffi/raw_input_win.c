@@ -355,3 +355,31 @@ int getRawUtf8(BYTE *bytes) {
 
     return size;
 }
+
+/**
+ * listen ESC Button, make sure in `raw mode` before calling this function
+ * @return: Enter Desc In dwTimeoutMs ms
+ */
+BOOL listenEsc(DWORD dwTimeoutMs) {
+    DWORD waitResult = WaitForSingleObject(h_console, dwTimeoutMs);
+    switch (waitResult) {
+        case WAIT_TIMEOUT:
+            return FALSE;
+        case WAIT_FAILED:
+            return FALSE;
+        case WAIT_OBJECT_0:
+            WORD charValue = 0;
+            BOOL isVirtual = FALSE;
+            if (!getConsoleChar(&charValue, &isVirtual)) {
+                return FALSE;
+            }
+            if (isVirtual && charValue == VK_ESCAPE) {
+                return TRUE; 
+            } else {
+                return FALSE; 
+            }
+
+        default:
+            return FALSE;
+    }
+}

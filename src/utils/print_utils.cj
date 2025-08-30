@@ -78,6 +78,10 @@ protected class PrintUtils {
         println(helpMessage)
     }
 
+    static public func printInterrupt() {
+        println (" ❗ Interrupted ...")
+    }
+
     static public func printTool(name: String, message: String) {
         let toolMessage = wrapBox(
             " ✔  ".withColor(THEME_SUCCESS) + name.withColor(THEME_PRIMARY),

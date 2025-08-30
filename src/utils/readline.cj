@@ -14,9 +14,8 @@ private enum DrawPhase {
     | Mid
 }
 
-
 private class Page {
-    public Page(let prefix:String, let content: String, let cursor:Int64){}
+    public Page(let prefix: String, let content: String, let cursor: Int64) {}
 }
 
 private class UnderList {
@@ -29,7 +28,7 @@ private class Draw {
 /**
  * Clear the line and redraw it
  */
-private func redraw(curDraw: Draw, preDraw:Draw, phase!: DrawPhase) {
+private func redraw(curDraw: Draw, preDraw: Draw, phase!: DrawPhase) {
     let pPage = preDraw.page
     let pWrapped = wrapBox("${pPage.prefix}${pPage.content}")
     let (pRow, _) = calculateCursorPos(pWrapped, pPage.cursor, prefix: pPage.prefix)
@@ -163,7 +162,7 @@ private func readlineImpl(buf: LinkedList<Rune>, rune: Rune, prompt: String, his
             cursor = min(buf.size, cursor + 1)
         case r'\u{1B}' => // ESC
             return None // TODO - Do Something
-        case r'!' => 
+        case r'!' =>
             if (let Some(cmd) <- command) { // MODE CHANGE COMMAND
                 moveCursor(1, UP)
                 moveCursor(col: 0)
@@ -285,14 +284,14 @@ public class Readline {
     }
 }
 
-public class GetRune {
-    public static func getRune(): Rune {
+public class ListenEsc {
+    public static func listen(): ?String {
         try {
             RawInputUtils.rawEnter()
-            if (let Some(r) <- RawInputUtils.rawGetRune()) {
-                r
+            if (RawInputUtils.listenEscRune()) {
+                return '\u{1B}'
             } else {
-                r'\0'
+                return None
             }
         } finally {
             RawInputUtils.rawExit()

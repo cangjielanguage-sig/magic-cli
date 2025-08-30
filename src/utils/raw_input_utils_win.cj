@@ -10,6 +10,8 @@ foreign {
     func getRawUtf8(bytes: CPointer<Byte>): IntNative
 
     func exitRaw(): Unit
+
+    func listenEsc(timeout: UInt32): Int64
 }
 
 @When[os == "Windows"]
@@ -36,5 +38,9 @@ class RawInputUtils {
             throw Exception("Read bytes(${len}) != Expected bytes(${size})")
         }
         return r
+    }
+
+    static func listenEscRune(): Bool {
+        return unsafe { listenEsc(50u32) } == 1
     }
 }
