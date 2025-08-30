@@ -18,7 +18,8 @@ protected let CONTROL_RUNES = [CARRIAGE_RETURN, ENTER, DELETE, BACK, TAB, ARROW_
 protected let AT = CommandOption(r'@', ANY, true)
 protected let SLASH = CommandOption(r'/', PREFIX, false)
 protected let MODE = CommandOption(r'!', SINGLE, true)
-protected let INNER_COMMANDS = [AT, SLASH, MODE]
+protected let MODE_CN = CommandOption(r'！', SINGLE, true)
+protected let INNER_COMMANDS = [AT, SLASH, MODE, MODE_CN]
 
 protected enum CommandMode {
     | SINGLE // only single char at begging

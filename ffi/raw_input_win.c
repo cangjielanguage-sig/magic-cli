@@ -36,6 +36,7 @@ typedef struct {
     size_t         buf_len;  
 } VkToUtf8Map;
 
+
 const VkToUtf8Map vk_utf8_map[] = {
     {VK_UP,    VK_UP_UTF8,    sizeof(VK_UP_UTF8)},
     {VK_DOWN,  VK_DOWN_UTF8,  sizeof(VK_DOWN_UTF8)},
@@ -49,6 +50,24 @@ const VkToUtf8Map vk_utf8_map[] = {
 };
 
 static int vk_map_count = sizeof(vk_utf8_map)/sizeof(VkToUtf8Map);
+
+
+BOOL isCommonVirtualKey(WORD vkCode) {
+    switch (vkCode) {
+        case VK_BACK:
+        case VK_TAB:
+        case VK_ENTER:
+        case VK_ESCAPE:
+        case VK_DELETE:
+        case VK_UP:
+        case VK_DOWN:
+        case VK_LEFT:
+        case VK_RIGHT:
+            return TRUE;
+        default:
+            return 0;
+    }
+}
 
 /**
  * Enters raw input mode.
@@ -96,7 +115,6 @@ void exitRaw() {
     }
 }
 
-
 /*
  *Function: Reads console input characters, compatible with both ASCII and wide characters, and returns results via pointers.
  *Parameter Description:
@@ -104,7 +122,7 @@ void exitRaw() {
  *isVirtualPtr: Indicates whether the input is a virtual key (TRUE = virtual key, FALSE = regular character).
  * return TRUE if continue FALSE if error
  */
-BOOL getConsoleChar(unsigned short* charValuePtr, BOOL* isVirtualPtr) {
+BOOL getConsoleChar(WORD* charValuePtr, BOOL* isVirtualPtr) {
     *charValuePtr = 0;
     *isVirtualPtr = FALSE;
     if (charValuePtr == NULL || isVirtualPtr == NULL) {
@@ -119,31 +137,18 @@ BOOL getConsoleChar(unsigned short* charValuePtr, BOOL* isVirtualPtr) {
 
     if (inputRecord.EventType == KEY_EVENT && inputRecord.Event.KeyEvent.bKeyDown) {
         KEY_EVENT_RECORD keyEvent = inputRecord.Event.KeyEvent;
-        if (keyEvent.wVirtualKeyCode != 0 
-            && keyEvent.uChar.UnicodeChar == 0 
-            && keyEvent.uChar.AsciiChar == 0) {
+        if (isCommonVirtualKey(keyEvent.wVirtualKeyCode)) {
             *isVirtualPtr = TRUE;
             *charValuePtr = keyEvent.wVirtualKeyCode;
+        } else if (keyEvent.uChar.UnicodeChar != 0) {
+            *isVirtualPtr = FALSE;
+            *charValuePtr = keyEvent.uChar.UnicodeChar;
+        } else if (keyEvent.uChar.AsciiChar != 0) {
+            *isVirtualPtr = FALSE;
+            *charValuePtr = keyEvent.uChar.AsciiChar;
         } else {
-            *isVirtualPtr = FALSE;
-            unsigned short charCode = 0;
-            if (keyEvent.uChar.UnicodeChar != 0) {
-                charCode = keyEvent.uChar.UnicodeChar;
-            } else if (keyEvent.uChar.AsciiChar != 0) {
-                charCode = keyEvent.uChar.AsciiChar;
-            } else {
-                return TRUE;
-            }
-            
-            // Filter other control character
-            if (charCode < 0x20) {
-                // ENTER、TAB..
-                if (charCode != 0x09 && charCode != 0x0D && charCode != 0x0A && charCode !=0x08) {
-                    return TRUE;
-                }
-            }
-            *isVirtualPtr = FALSE;
-            *charValuePtr = charCode;
+            *isVirtualPtr = TRUE;
+            *charValuePtr = 0;
         }
         return TRUE;
     }
@@ -349,4 +354,32 @@ int getRawUtf8(BYTE *bytes) {
     }
 
     return size;
+}
+
+/**
+ * listen ESC Button, make sure in `raw mode` before calling this function
+ * @return: Enter Desc In dwTimeoutMs ms
+ */
+BOOL listenEsc(DWORD dwTimeoutMs) {
+    DWORD waitResult = WaitForSingleObject(h_console, dwTimeoutMs);
+    switch (waitResult) {
+        case WAIT_TIMEOUT:
+            return FALSE;
+        case WAIT_FAILED:
+            return FALSE;
+        case WAIT_OBJECT_0:
+            WORD charValue = 0;
+            BOOL isVirtual = FALSE;
+            if (!getConsoleChar(&charValue, &isVirtual)) {
+                return FALSE;
+            }
+            if (isVirtual && charValue == VK_ESCAPE) {
+                return TRUE; 
+            } else {
+                return FALSE; 
+            }
+
+        default:
+            return FALSE;
+    }
 }

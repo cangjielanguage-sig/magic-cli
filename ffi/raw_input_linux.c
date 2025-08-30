@@ -166,3 +166,30 @@ int getRawUtf8(unsigned char *bytes) {
 
     return -1; // Invalid start byte
 }
+
+int listenEsc(uint32_t dwTimeoutMs) {
+    struct pollfd fds;
+    int ret;
+    unsigned char c;
+
+    fds.fd = STDIN_FILENO;
+    fds.events = POLLIN;
+    fds.revents = 0;
+
+    ret = poll(&fds, 1, dwTimeoutMs);
+
+    if (ret == -1) {
+        return 0;
+    } else if (ret == 0) {
+        return 0;
+    }
+    if (fds.revents & POLLIN) {
+        if (read(STDIN_FILENO, &c, 1) == 1) {
+            if (c == 0x1b) {
+                return 1;
+            }
+        }
+    }
+
+    return 0;
+}

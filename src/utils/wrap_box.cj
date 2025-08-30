@@ -36,11 +36,11 @@ private func splitLine(line: String, width: Int64): Array<String> {
     while (idx < runes.size) {
         let rune = runes[idx]
         if (rune == r'\u{1B}') { // ANSI escape char \u{1B}[\d*\w, skip it
-            while (!runes[idx].isAsciiLetter()) { // skip until
-                currSubLine.append(runes[idx])
+            currSubLine.append(rune)
+            while (idx < runes.size - 1 && !runes[idx].isAsciiLetter()) { // skip until
                 idx += 1
+                currSubLine.append(runes[idx])
             }
-            currSubLine.append(runes[idx])
         } else {
             let widthOfRune = displayWidthOf(rune)
             if (widthOfRune + currWidthOfSubLine > width) {

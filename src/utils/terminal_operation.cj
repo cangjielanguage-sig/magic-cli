@@ -44,3 +44,9 @@ protected func restoreCursorPosition() {
 protected func storeCursorPosition() {
     print("\u{1B}[s", flush: true)
 }
+
+protected func clearFromPreLine() {
+    moveCursor(1, UP)
+    moveCursor(col: 0)
+    clearScreen(AfterCursorScreen)
+}

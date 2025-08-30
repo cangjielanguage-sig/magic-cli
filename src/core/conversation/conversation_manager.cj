@@ -2,7 +2,9 @@ package cli.core.conversation
 
 import magic.agent.ConversationAgent
 import magic.core.message.Conversation
+import cli.utils.PrintUtils
 import cli.core.config.CliConfig
+import cli.core.agents.Compactor
 import std.fs.{exists, Directory, Path, remove, FSException}
 import std.collection.*
 import std.sort.sort
@@ -14,7 +16,20 @@ import magic.log.LogUtils
 protected class ConversationManager {
     public static let AUTO_SAVE_NAME = "last-conversation"
 
-    public func handleCommand(args: Array<String>, agent: ConversationAgent): Unit {
+    public ConversationManager(var _agent: ConversationAgent, let compactor: Compactor) {
+
+    }
+
+    public mut prop agent: ConversationAgent {
+        get() {
+            this._agent
+        }
+        set(agent) {
+            this._agent = agent
+        }
+    }
+
+    public func handleCommand(args: Array<String>): Unit {
         if (args.size < 2) {
             listConversations()
             return
@@ -27,14 +42,14 @@ protected class ConversationManager {
                 if (args.size < 3) {
                     println("Error: Please provide a name for the conversation.\nUsage: /conversation save <name>")
                 } else {
-                    saveConversation(agent, args[2].trimAscii())
+                    saveConversation(args[2].trimAscii())
                 }
             case "resume" | "load" =>
                 if (args.size < 3) {
                     println(
                         "Error: Please provide the name of the conversation to resume.\nUsage: /conversation resume <name>")
                 } else {
-                    resumeConversation(agent, args[2].trimAscii())
+                    resumeConversation(args[2].trimAscii())
                 }
             case "remove" | "delete" =>
                 if (args.size < 3) {
@@ -53,7 +68,7 @@ protected class ConversationManager {
     /**
      * Auto-save conversation on exit
      */
-    public func autoSave(agent: ConversationAgent): Unit {
+    public func autoSave(): Unit {
         ensureHistoryDirectory()
         let filePath = getConversationPath(AUTO_SAVE_NAME)
         try {
@@ -66,7 +81,7 @@ protected class ConversationManager {
     /**
      * Clear current conversation
      */
-    public func clearConversation(agent: ConversationAgent): Unit {
+    public func clearConversation(): Unit {
         agent.conversation.clear()
         println("✅ Conversation history cleared")
     }
@@ -89,7 +104,7 @@ protected class ConversationManager {
         println("\nUse '/conversation resume <name>' to load a conversation")
     }
 
-    private func saveConversation(agent: ConversationAgent, name: String): Unit {
+    private func saveConversation(name: String): Unit {
         if (name.isEmpty()) {
             println("Error: Conversation name cannot be empty.")
             return
@@ -116,7 +131,7 @@ protected class ConversationManager {
         }
     }
 
-    private func resumeConversation(agent: ConversationAgent, name: String): Unit {
+    private func resumeConversation(name: String): Unit {
         if (name.isEmpty()) {
             println("Error: Conversation name cannot be empty.")
             return
@@ -196,6 +211,17 @@ protected class ConversationManager {
         let result = conversations.toArray()
         sort(result)
         return result
+    }
+
+    public func compact(manual!: Bool = false): Unit {
+        if (let Some(index) <- compactor.calculateCompactIndex(agent.conversation)) {
+            PrintUtils.printTool("Compacting conversation...", "🚀 Working on it...")
+            agent.conversation.compactBy(compactor, firstN: index, keepOrigin: false)
+            PrintUtils.printTool("Compacting conversation...", "🥳 Compacted successfully!")
+        } else if (manual) {
+            PrintUtils.printTool("Compacting conversation...",
+                "🌱 Conversation context is short enough, no need to compact!")
+        }
     }
 
     private func ensureHistoryDirectory(): Unit {

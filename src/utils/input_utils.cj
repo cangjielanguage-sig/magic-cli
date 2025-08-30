@@ -17,11 +17,13 @@ protected class InputUtils {
     private static let READLINE = Readline(CliConfig.readlineFile)
 
     public static func getUserInput(withBox!: Bool = true, mode!: CliMode = AGENTIC): String {
-        let icon = match (mode) {
-            case AGENTIC => '⚡'
-            case _=> '💻'
+        match (mode) {
+            case AGENTIC => 
+                READLINE.readline(buildPrompt('🧠'), withBox: withBox) ?? "exit"
+            case TERMINAL => 
+                READLINE.readline(buildPrompt('💻'), withBox: withBox) ?? "exit"
+            case _=> ListenEsc.listen() ?? ""
         }
-        READLINE.readline(buildPrompt(icon), withBox: withBox) ?? "exit"
     }
 
     public static func confirm(title: String, content: String): Confirmation {
