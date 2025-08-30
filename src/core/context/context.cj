@@ -10,6 +10,7 @@ import magic.interaction.{EventHandlerManager, PromptValidateEvent, ToolCallEven
 import cli.bean.*
 import cli.core.mcp.MCPConfigManager
 import cli.core.conversation.ConversationManager
+import cli.core.commands.CustomCommandManager
 import cli.core.config.CliConfig
 import cli.core.agents.*
 import cli.utils.{PrintUtils, WorkingIndicator, moveCursor, clearScreen, ClearMode}
@@ -23,6 +24,7 @@ protected class Context {
     private var _agent: AtomicReference<ConversationAgent>
     protected var _mode: CliMode = AGENTIC
     protected let conversationManager: ConversationManager
+    protected let customCommandManager: CustomCommandManager
     protected let mcpManager: MCPConfigManager
     protected let workspace: Path
     protected let mtx: Mutex = Mutex()
@@ -46,8 +48,8 @@ protected class Context {
             PrintUtils.printTool("MCP Loading", "❗ Warning: Failed to load MCP servers, continuing without MCP tools")
         }
 
-        // init conversation Manager
         this.conversationManager = ConversationManager(agent, Compactor())
+        this.customCommandManager = CustomCommandManager()
 
         this.workspace = CliConfig.cwd
     }

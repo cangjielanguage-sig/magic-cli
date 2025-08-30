@@ -162,7 +162,7 @@ private func readlineImpl(buf: LinkedList<Rune>, rune: Rune, prompt: String, his
             cursor = min(buf.size, cursor + 1)
         case r'\u{1B}' => // ESC
             return None // TODO - Do Something
-        case r'!' =>
+        case r'!' | r'！' =>
             if (let Some(cmd) <- command) { // MODE CHANGE COMMAND
                 moveCursor(1, UP)
                 moveCursor(col: 0)
