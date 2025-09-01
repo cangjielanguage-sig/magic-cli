@@ -15,14 +15,88 @@ import cli.core.config.CliConfig
 
 /**
  * Main grep function that searches for a regular expression pattern within file contents.
- * Supports filtering by file types and searching in specific directories.
- *
+ * Uses ripgrep if available, falls back to traditional grep/PowerShell.
+ * 
  * @param pattern The regular expression pattern to search for
  * @param path Optional directory path to search in (defaults to current working directory)
  * @param include Optional glob pattern to filter files (e.g., "*.cj", "*.{ts,tsx}")
  * @return String containing matching lines with file paths and line numbers
  */
 public func grep(pattern: String, path: Option<String>, include: Option<String>): String {
+    // Try ripgrep first, fall back to traditional grep
+    if (let Some(rgPath) <- getRipgrepPath()) {
+        return grepWithRipgrep(pattern, path, include, rgPath)
+    } else {
+        return grepWithTraditional(pattern, path, include)
+    }
+}
+
+/**
+ * Check if ripgrep is available in system PATH.
+ */
+private func getRipgrepPath(): Option<String> {
+    try {
+        let checkCommand = if (InfoUtils.os == "windows") { "where" } else { "which" }
+        let (exitCode, stdOutData, _) = executeWithOutput(checkCommand, ["rg"])
+        if (exitCode == 0) {
+            let output = String.fromUtf8(stdOutData).trimAscii()
+            if (!output.isEmpty() && (output.contains("rg.exe") || output.endsWith("rg"))) {
+                try {
+                    let (versionExitCode, _, _) = executeWithOutput("rg", ["--version"])
+                    if (versionExitCode == 0) {
+                        return Some("rg")
+                    }
+                } catch (e: Exception) {
+                    // rg command exists but fails to run, continue to fallback
+                }
+            }
+        }
+    } catch (e: Exception) {
+        // Command not found, continue to fallback
+    }
+    
+    return None
+}
+
+/**
+ * Grep implementation using ripgrep for better performance.
+ */
+private func grepWithRipgrep(pattern: String, path: Option<String>, include: Option<String>, rgPath: String): String {
+    try {
+        let rgCmd = ArrayList<String>([rgPath, "--line-number", "--with-filename", "--no-heading"])
+        
+        // Add glob pattern if specified
+        if (let Some(includePattern) <- include) {
+            rgCmd.add("--glob")
+            rgCmd.add(includePattern)
+        }
+        
+        rgCmd.add(pattern)
+        
+        // Add search path (default to current directory)
+        let searchPath = path ?? "."
+        rgCmd.add(searchPath)
+        
+        let command = String.join(rgCmd.toArray(), delimiter: " ")
+        LogUtils.debug("[Run command] ${command}")
+        
+        let workingDir = path.map { s => Path(s) } ?? CliConfig.cwd
+        let (exitCode, stdOutData, stdErrData) = executeWithOutput(rgPath, rgCmd.toArray()[1..], workingDirectory: workingDir)
+        
+        if (exitCode == 0) {
+            let outString = String.fromUtf8(stdOutData).trimAscii()
+            return parseGrepOutput(outString, workingDir)
+        } else {
+            let errString = String.fromUtf8(stdErrData).trimAscii()
+            return errString
+        }
+    } catch (e: Exception) {
+        LogUtils.info("Ripgrep failed, falling back to traditional grep: ${e.message}")
+        return grepWithTraditional(pattern, path, include)
+    }
+}
+
+private func grepWithTraditional(pattern: String, path: Option<String>, include: Option<String>): String {
     try {
         let command = if (InfoUtils.os == "windows") {
             let includeArg = include.map { s => '-Include "${s}"'} ?? ""
@@ -60,10 +134,12 @@ public func grep(pattern: String, path: Option<String>, include: Option<String>)
     }
 }
 
+
 /**
- * Parses raw grep output and converts relative paths to absolute paths.
+ * Parses grep/ripgrep output and converts relative paths to absolute paths.
+ * Both tools use similar output format: "path:line-number:content"
  *
- * @param rawOutput Raw output from grep command
+ * @param rawOutput Raw output from grep/ripgrep command
  * @param workingDir Working directory used for path resolution
  * @return Formatted output with absolute paths
  */
@@ -71,17 +147,29 @@ private func parseGrepOutput(rawOutput: String, workingDir: Path): String {
     return String.join(
         rawOutput.split("\n") |>
             map { line: String =>
-                // Grep returns "path:line-number:content"
+                // Both grep and ripgrep return "path:line-number:content"
                 let items = line.split(":", 3, removeEmpty: false)
                 if (items.size != 3) {
                     return line
                 }
-                // If the found result is a relative path of "."
-                // Convert it to absolute path
-                let path = if (items[0].startsWith("./")) {
-                    canonicalize(workingDir.join(items[0]))
-                } else {
-                    canonicalize(items[0])
+                // Convert relative paths to absolute paths safely
+                let path = try {
+                    if (items[0].startsWith("./")) {
+                        canonicalize(workingDir.join(items[0]))
+                    } else if (!Path(items[0]).isAbsolute()) {
+                        canonicalize(workingDir.join(items[0]))
+                    } else {
+                        canonicalize(items[0])
+                    }
+                } catch (e: Exception) {
+                    // If canonicalize fails, use the original path
+                    if (items[0].startsWith("./")) {
+                        workingDir.join(items[0])
+                    } else if (!Path(items[0]).isAbsolute()) {
+                        workingDir.join(items[0])
+                    } else {
+                        Path(items[0])
+                    }
                 }
                 let number = items[1]
                 let content = items[2]
