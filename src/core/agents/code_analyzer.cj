@@ -74,10 +74,29 @@ public class CodeAnalyzer {
     )
 }
 
+private const ANALYZE_TOOL_DESCRIPTION = """
+`analyzeCode` is a utility that analyzes the codebase in the current working directory based on the user's query.
+Invoke this tool when the user asks questions that require inspecting actual code content, structure, implementation logic, or technical details—and when the answer cannot be accurately provided from existing context alone.
+
+**When to Use analyzeCode**:
+- The user asks about the implementation of a specific function, class, module, or component.
+- You need to locate where a particular feature is implemented or understand call/dependency relationships.
+- Questions involve code architecture, interfaces, file structure, or execution flow that require static analysis.
+- The user explicitly requests to "analyze", "find", "locate", or "explain how X is implemented in the code".
+
+**When NOT to Use analyzeCode**:
+- The question is about general programming knowledge, best practices, or conceptual topics unrelated to the current codebase (e.g., "What is a closure?").
+- The answer is already known from the conversation context or general knowledge.
+- The query is too broad or ambiguous (e.g., "Analyze the whole project")—instead, ask for clarification.
+- The question can be reasonably answered through reasoning or prior information without code inspection.
+
+Use analyzeCode as a targeted assistance mechanism, not a default response strategy. Rely first on your knowledge and dialogue context. Only invoke the tool when necessary, and always with a clear purpose.
+"""
+
 @tool[
-    description: 'Analyzes the codebase to answer a user\'s query by intelligently combining file navigation, pattern searching, and code understanding. Uses available tools (e.g., `tree`, `glob`, `grep`, `find`, `cat`) to explore the project structure and source code. Interprets the results to provide a clear, concise, and context-aware explanation relevant to the query. Designed to answer questions about implementation details, architecture, function behavior, configuration, and more.',
+    description: "${ANALYZE_TOOL_DESCRIPTION}",
     parameters: {
-        query: "A natural language question or request about the codebase (e.g., 'How is user authentication implemented?', 'Where is the database config loaded?', 'What does the `processOrder` function do?', 'Find all API endpoints that return JSON'). The agent will interpret the intent and perform step-by-step investigation to formulate an accurate response."
+        query: "A natural language question or request about the codebase (e.g., 'How is user authentication implemented?', 'Where is the database config loaded?', 'What does the `processOrder` function do?', 'Find all API endpoints that return JSON')"
     }
 ]
 func analyzeCode(query: String): String {

@@ -25,6 +25,8 @@ foreign {
 
     func getRawUtf8(bytes: CPointer<Byte>): IntNative
 
+    func checkEsc(timeout: UInt32): Int64
+
     func exitRaw(): Unit
 }
 
@@ -99,5 +101,9 @@ class RawInputUtils {
             throw Exception("Read bytes != Expected bytes")
         }
         return r
+    }
+
+    static func checkEsc(): Bool {
+        return unsafe { checkEsc(50u32) } == 1
     }
 }
