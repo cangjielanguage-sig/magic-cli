@@ -84,6 +84,10 @@ protected class PrintUtils {
         println (" ❗ Interrupted ...")
     }
 
+    static public func printUserConfirm() {
+        println ("(Enter to confirm, any other key to cancel): ".withColor(THEME_PRIMARY))
+    }
+
     static public func printTool(name: String, message: String) {
         let toolMessage = wrapBox(
             " ✔  ".withColor(THEME_SUCCESS) + name.withColor(THEME_PRIMARY),

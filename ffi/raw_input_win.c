@@ -12,6 +12,7 @@
 #define VK_DOWN 0x28
 #define VK_LEFT 0x25
 #define VK_RIGHT 0x27
+#define INFINITE 0xFFFFFFFF
 
 // Static storage for original terminal settings
 static HANDLE h_console = 0;
@@ -358,28 +359,29 @@ int getRawUtf8(BYTE *bytes) {
 
 /**
  * listen ESC Button, make sure in `raw mode` before calling this function
- * @return: Enter Desc In dwTimeoutMs ms
+ * @return: keyCode len: 
+ *   -1 = no input in  dwTimeoutMs ms
+ *   1  = ASCII
+ *   2  = CHECKPOINT (half, illegal)
  */
-BOOL listenEsc(DWORD dwTimeoutMs) {
-    DWORD waitResult = WaitForSingleObject(h_console, dwTimeoutMs);
+int listenAscii(DWORD dwTimeoutMs, WORD* keyCode) {
+    DWORD waitTime = (dwTimeoutMs == 0) ? INFINITE : dwTimeoutMs;
+    DWORD waitResult = WaitForSingleObject(h_console, waitTime);
     switch (waitResult) {
         case WAIT_TIMEOUT:
-            return FALSE;
+            return -1;
         case WAIT_FAILED:
-            return FALSE;
+            return -1;
         case WAIT_OBJECT_0:
-            WORD charValue = 0;
-            BOOL isVirtual = FALSE;
-            if (!getConsoleChar(&charValue, &isVirtual)) {
-                return FALSE;
+            BOOL isVirtual = -1;
+            if (!getConsoleChar(keyCode, &isVirtual)) {
+                return -1;
             }
-            if (isVirtual && charValue == VK_ESCAPE) {
-                return TRUE; 
-            } else {
-                return FALSE; 
+            if (is_high_surrogate(*keyCode) || is_low_surrogate(*keyCode)) {
+                return 2;
             }
-
+            return 1;
         default:
-            return FALSE;
+            return -1;
     }
 }

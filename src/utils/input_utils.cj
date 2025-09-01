@@ -2,8 +2,8 @@ package cli.utils
 
 import cli.core.config.CliConfig
 import std.time.DateTime
-import cli.bean.CliMode
-
+import cli.context.*
+import magic.log.LogUtils
 protected enum Confirmation {
     | Approve
     | Deny(String)
@@ -22,7 +22,23 @@ protected class InputUtils {
                 READLINE.readline(buildPrompt('🧠'), withBox: withBox) ?? "exit"
             case TERMINAL => 
                 READLINE.readline(buildPrompt('💻'), withBox: withBox) ?? "exit"
-            case _=> ListenEsc.listen() ?? ""
+            case CHATTING => 
+                if (AsciiListener.listenEsc()) {
+                    '\u{1B}'
+                } else {
+                    ""
+                }
+            case _ => // CONFIRM MODE
+                let context = getContext()
+                let thread = Thread.currentThread
+                if (thread.id != context.workingThread) {
+                    return ""
+                }
+                if (AsciiListener.listenEnter(infinite:true)) {
+                    '\n'
+                } else {
+                    ""
+                }
         }
     }
 
@@ -54,13 +70,18 @@ protected class InputUtils {
     }
 
     private static func getConfirmation(): Bool {
-        let input = READLINE.readline(
-            "(Enter to confirm, any other key to cancel): ".withColor(THEME_PRIMARY),
-            withBox: false
-        ) ?? ""
-        // Clear the confirmation prompt line
-        moveCursor(1, Direction.UP)
-        clearScreen(ClearMode.EntireLine)
-        return input.isEmpty()
+        let context = getContext()
+        try {
+            context.changeMode(CONFIRM)
+            PrintUtils.printUserConfirm()
+            let input = getUserInput(mode: CONFIRM)
+            // Clear the confirmation prompt line
+            moveCursor(1, Direction.UP)
+            clearScreen(ClearMode.EntireLine)
+            return input == '\n'
+        } finally {
+            context.changeMode(CHATTING)
+        }
+       
     }
 }

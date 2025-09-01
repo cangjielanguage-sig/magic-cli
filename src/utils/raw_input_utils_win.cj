@@ -11,7 +11,7 @@ foreign {
 
     func exitRaw(): Unit
 
-    func listenEsc(timeout: UInt32): Int64
+    func listenAscii(timeout: UInt32, keyCode:CPointer<UInt16>): IntNative
 }
 
 @When[os == "Windows"]
@@ -40,7 +40,30 @@ class RawInputUtils {
         return r
     }
 
-    static func listenEscRune(): Bool {
-        return unsafe { listenEsc(50u32) } == 1
+    static func listen(): ?Byte {
+        var keyCode: UInt16 = 0
+        let len = unsafe { listenAscii(50u32, inout keyCode) }
+        if (len == -1) { // NO INPUT in 50ms
+            return None
+        }
+        if (len == 2) { // Not ASCII
+            return 128u8
+        }
+        return UInt8(keyCode)
+    }
+
+    static func listen(byte: Byte, infinite!: Bool = false): Bool {
+        var keyCode: UInt16 = 0
+        let waitTimeMs: UInt32
+        if (infinite) {
+            waitTimeMs = 0
+        } else {
+            waitTimeMs = 50
+        }
+        let len = unsafe { listenAscii(waitTimeMs, inout keyCode) }
+        if (len == 1 && UInt8(keyCode) == byte) { // ASCII
+            return true
+        }
+        return false
     }
 }
