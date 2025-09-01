@@ -47,6 +47,50 @@ magic-cli/
 1. **CangjieMagic 环境** - 参考 [CangjieMagic 安装指南](https://gitcode.com/Cangjie-TPC/CangjieMagic/blob/dev/docs/install.md#%E6%8E%A8%E8%8D%90recommended)
 2. **Cangjie 编译器** - 确保已安装 Cangjie 1.0.0+
 
+### 性能加速（可选推荐）
+
+Magic-CLI 自动使用 [ripgrep](https://github.com/BurntSushi/ripgrep) 来显著提升代码搜索性能，支持自动回退到系统默认工具。
+
+**快速安装 ripgrep：**
+
+**Windows:**
+```bash
+# 使用 Chocolatey
+choco install ripgrep
+
+# 使用 Scoop  
+scoop install ripgrep
+
+# 使用包含的安装脚本（推荐）
+scripts/install-ripgrep.ps1
+```
+
+**macOS:**
+```bash
+# 使用 Homebrew
+brew install ripgrep
+
+# 使用包含的安装脚本
+chmod +x scripts/install-ripgrep.sh && ./scripts/install-ripgrep.sh
+```
+
+**Linux:**
+```bash
+# Ubuntu/Debian
+sudo apt install ripgrep
+
+# Arch Linux
+sudo pacman -S ripgrep  
+
+# Fedora/RHEL
+sudo dnf install ripgrep
+
+# 使用包含的安装脚本
+chmod +x scripts/install-ripgrep.sh && ./scripts/install-ripgrep.sh
+```
+
+> 即使不安装 ripgrep，Magic-CLI 也能正常工作 - 会自动回退到系统的 grep 工具。
+
 ### 安装配置
 
 1. **克隆项目**
