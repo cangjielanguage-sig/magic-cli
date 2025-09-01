@@ -2,8 +2,8 @@ package cli.utils
 
 import cli.core.config.CliConfig
 import std.time.DateTime
-import cli.bean.CliMode
-
+import cli.context.*
+import magic.log.LogUtils
 protected enum Confirmation {
     | Approve
     | Deny(String)
@@ -22,21 +22,23 @@ protected class InputUtils {
                 READLINE.readline(buildPrompt('🍭'), withBox: withBox) ?? "exit"
             case TERMINAL =>
                 READLINE.readline(buildPrompt('💻'), withBox: withBox) ?? "exit"
-            case _ => checkEsc() ?? ""
+            case CHATTING => checkEsc()
+            case _ => checkEnter() // CONFIRM MODE
+                
         }
     }
+    
+    private static func checkEsc(): String {
+        ByteChecker.checkEsc() ?? ""
+    }
 
-    private static func checkEsc(): ?String {
-        try {
-            RawInputUtils.rawEnter()
-            if (RawInputUtils.checkEsc()) {
-                return '\u{1B}'
-            } else {
-                return None
-            }
-        } finally {
-            RawInputUtils.rawExit()
+    private static func checkEnter(): String {
+        let context = getContext()
+        let thread = Thread.currentThread
+        if (thread.id != context.workingThread) {
+            return ""
         }
+        ByteChecker.checkEnter(infinite:true) ?? ""
     }
 
     public static func confirm(title: String, content: String): Confirmation {
@@ -61,19 +63,23 @@ protected class InputUtils {
             return Confirmation.Approve
         } else {
             print("└─ ✖ Cancelled...\n".withColor(THEME_MUTED), flush: true)
-            let input = InputUtils.getUserInput()
-            return Confirmation.Deny(input)
+            return Confirmation.Deny("Cancel current operation")
         }
     }
 
     private static func getConfirmation(): Bool {
-        let input = READLINE.readline(
-            "(Enter to confirm, any other key to cancel): ".withColor(THEME_PRIMARY),
-            withBox: false
-        ) ?? ""
-        // Clear the confirmation prompt line
-        moveCursor(1, Direction.UP)
-        clearScreen(ClearMode.EntireLine)
-        return input.isEmpty()
+        let context = getContext()
+        try {
+            context.changeMode(CONFIRM)
+            PrintUtils.printUserConfirm()
+            let input = getUserInput(mode: CONFIRM)
+            // Clear the confirmation prompt line
+            moveCursor(1, Direction.UP)
+            clearScreen(ClearMode.EntireLine)
+            return input == '\n'
+        } finally {
+            context.changeMode(CHATTING)
+        }
+       
     }
 }

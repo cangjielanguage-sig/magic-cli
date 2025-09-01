@@ -12,7 +12,7 @@ import cli.core.mcp.MCPConfigManager
 import cli.core.conversation.ConversationManager
 import cli.core.context.*
 import cli.core.agents.CodeAnalyzer
-import cli.bean.CliMode
+import cli.context.*
 import cli.utils.*
 import std.collection.ArrayList
 import std.argopt.{parseArguments, ArgumentSpec, ArgumentMode, ArgumentParseException}
@@ -112,14 +112,14 @@ main(args: Array<String>): Int64 {
     PrintUtils.printWelcome()
 
     // register global context
-    let context = Context()
+    let context = CliContext()
     context.registerHooks()
     setContext(context)
 
     // Start the event loop
     while (true) {
         let input = InputUtils.getUserInput(mode: context.mode)
-        if (input == String.empty) {
+        if (input.isEmpty()) {
             continue
         }
         match (context.mode) {
@@ -136,7 +136,7 @@ main(args: Array<String>): Int64 {
     return 0
 }
 
-private func agenticProcess(input: String, context: Context) {
+private func agenticProcess(input: String, context: CliContext) {
     let agent = context.agent
     let mcpManager = context.mcpManager
     let conversationManager = context.conversationManager
@@ -189,7 +189,7 @@ private func agenticProcess(input: String, context: Context) {
     }
 }
 
-private func chattingProcess(input: String, context: Context) {
+private func chattingProcess(input: String, context: CliContext) {
     if (input != "\u{1B}") {
         return
     }
@@ -197,7 +197,7 @@ private func chattingProcess(input: String, context: Context) {
     context.interrupt()
 }
 
-private func terminalProcess(command: String, context: Context) {
+private func terminalProcess(command: String, context: CliContext) {
     match (command) {
         case "/exit" | "exit" | "!" =>
             context.changeMode(CliMode.AGENTIC)

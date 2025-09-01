@@ -93,7 +93,6 @@ private func readlineImpl(buf: LinkedList<Rune>, rune: Rune, prompt: String, his
         case r'\u{7F}' | r'\b' => // Delete or Backspace
             if (buf.size > 0) {
                 if (let Some(node) <- buf.nodeAt(cursor - 1)) {
-                    LogUtils.info("NODE:${node.value.toString()}")
                     let delRune = buf.remove(node)
                     let width = displayWidthOf([delRune])
                     print("\b \b" * width, flush: true)
@@ -282,6 +281,44 @@ public class Readline {
         } else {
             print(prompt, flush: true)
             return readln()
+        }
+    }
+}
+
+public class ByteChecker {
+    private static let VK_BACK: Byte = 0x08
+    private static let VK_TAB: Byte = 0x09
+    private static let VK_ENTER: Byte = 0x0D
+    private static let VK_ESCAPE: Byte = 0x1B
+    private static let VK_DELETE: Byte = 0x2E
+    private static let VK_UP: Byte = 0x26
+    private static let VK_DOWN: Byte = 0x28
+    private static let VK_LEFT: Byte = 0x25
+    private static let VK_RIGHT: Byte = 0x27
+
+    public static func checkEsc(infinite!: Bool = false): ?String {
+        try {
+            RawInputUtils.rawEnter()
+            if (RawInputUtils.checkByte(VK_ESCAPE, infinite: infinite)) {
+                '\u{1B}'
+            } else {
+                None
+            }
+        } finally {
+            RawInputUtils.rawExit()
+        }
+    }
+
+    public static func checkEnter(infinite!: Bool = false): ?String {
+        try {
+            RawInputUtils.rawEnter()
+            if (RawInputUtils.checkByte(VK_ENTER, infinite: infinite)) {
+                '\n'
+            } else {
+                None
+            }
+        } finally {
+            RawInputUtils.rawExit()
         }
     }
 }

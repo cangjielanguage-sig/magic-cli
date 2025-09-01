@@ -11,7 +11,7 @@ foreign {
 
     func exitRaw(): Unit
 
-    func checkEsc(timeout: UInt32): Int64
+    func check(timeout: UInt32, keyCode:CPointer<UInt16>): IntNative
 }
 
 @When[os == "Windows"]
@@ -40,7 +40,18 @@ class RawInputUtils {
         return r
     }
 
-    static func checkEsc(): Bool {
-        return unsafe { checkEsc(50u32) } == 1
+    static func checkByte(byte: Byte, infinite!: Bool = false): Bool {
+        var keyCode: UInt16 = 0
+        let waitTimeMs: UInt32
+        if (infinite) {
+            waitTimeMs = 0
+        } else {
+            waitTimeMs = 50
+        }
+        let len = unsafe { check(waitTimeMs, inout keyCode) }
+        if (len == 1 && UInt8(keyCode) == byte) { // ASCII
+            return true
+        }
+        return false
     }
 }
