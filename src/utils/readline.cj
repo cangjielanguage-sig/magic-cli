@@ -92,8 +92,10 @@ private func readlineImpl(buf: LinkedList<Rune>, rune: Rune, prompt: String, his
             }
         case r'\u{7F}' | r'\b' => // Delete or Backspace
             if (buf.size > 0) {
-                if (let Some(rune) <- buf.removeLast()) {
-                    let width = displayWidthOf([rune])
+                if (let Some(node) <- buf.nodeAt(cursor - 1)) {
+                    LogUtils.info("NODE:${node.value.toString()}")
+                    let delRune = buf.remove(node)
+                    let width = displayWidthOf([delRune])
                     print("\b \b" * width, flush: true)
                     cursor -= 1
                     selectIdx = 0
