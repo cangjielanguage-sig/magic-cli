@@ -2,6 +2,7 @@ package cli.utils
 import std.collection.*
 import std.sort.*
 import magic.log.LogUtils
+import cli.context.*
 
 protected const CARRIAGE_RETURN = r'\r'
 protected const ENTER = r'\n'
@@ -19,7 +20,8 @@ protected let AT = CommandOption(r'@', ANY, true)
 protected let SLASH = CommandOption(r'/', PREFIX, false)
 protected let MODE = CommandOption(r'!', SINGLE, true)
 protected let MODE_CN = CommandOption(r'！', SINGLE, true)
-protected let INNER_COMMANDS = [AT, SLASH, MODE, MODE_CN]
+protected let AGENTIC_COMMANDS = [AT, SLASH, MODE, MODE_CN]
+protected let TERMINAL_COMMANDS = [SLASH, MODE, MODE_CN]
 
 protected enum CommandMode {
     | SINGLE // only single char at begging
@@ -111,7 +113,13 @@ private func getCommand(buf: Collection<Rune>, rune: Rune, option: CommandOption
 }
 
 protected func detectCommand(buf: Collection<Rune>, rune: Option<Rune>): Option<Command> {
-    for (option in INNER_COMMANDS) {
+    let mode = getContext().mode
+    let commands: Array<CommandOption> = match(mode) {
+        case AGENTIC => AGENTIC_COMMANDS
+        case TERMINAL => TERMINAL_COMMANDS
+        case _ => []
+    }
+    for (option in commands) {
         if (let Some(cmd) <- getCommand(buf, rune ?? r'\0', option)) {
             return cmd
         }
@@ -120,10 +128,14 @@ protected func detectCommand(buf: Collection<Rune>, rune: Option<Rune>): Option<
 }
 
 protected func listCmdsStr(command: Option<Command>): Array<String> {
+    let mode = getContext().mode
     if (let Some(cmd) <- command) {
         let cmdArray: Array<String> = if (cmd.option.trigger == r'/') {
             // HELP_INFO: (command, description)
-            PrintUtils.HELP_INFO.map { info => "/${info[0]}" } |> collectArray
+            match (mode) {
+                case AGENTIC => PrintUtils.HELP_INFO.map { info => "/${info[0]}" } |> collectArray
+                case _ => ['/exit']
+            }
         } else if (cmd.option.trigger == r'@') {
             listFiles(prefix: cmd.pure)
         } else { // !
