@@ -39,6 +39,7 @@ public class GeneralCodeAgent {
         ShellTool(),
         CangjieToolset(this.model),
         PlanToolset(),
+        // fixCangjieProjectCompileError,
         analyzeCode
     ]
 ]
@@ -50,7 +51,7 @@ public class CangjieCodeAgent {
         Reply in the same language as the user's input. If unsure, reply in Chinese.
 
         Finally, you are an agent - please keep going until the user's query is completely resolved.
-        
+
         ${CliConfig.userRules}
         """
     )

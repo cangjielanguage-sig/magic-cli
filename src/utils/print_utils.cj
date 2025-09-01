@@ -2,7 +2,7 @@ package cli.utils
 
 import magic.core.agent.AgentResponse
 
-import std.collection.{map, collectArray}
+import std.collection.{map, enumerate, collectArray}
 import std.time.DateTime
 import std.process.executeWithOutput
 import std.env.getVariable
@@ -80,21 +80,75 @@ protected class PrintUtils {
         println(helpMessage)
     }
 
+    //----------------------------------------------------------------------------------
+    // The following print methods are called by tools
+    //----------------------------------------------------------------------------------
+
+    static var CURRENT_INDENT = 0
+
+    static public func beginSubAgent(): Unit {
+        CURRENT_INDENT += 4
+    }
+
+    static public func endSubAgent(): Unit {
+        CURRENT_INDENT -= 4
+    }
+
     static public func printInterrupt() {
+        if (CURRENT_INDENT > 0) {
+            print(" " * CURRENT_INDENT)
+        }
         println (" ❗ Interrupted ...")
     }
 
     static public func printUserConfirm() {
+        if (CURRENT_INDENT > 0) {
+            print(" " * CURRENT_INDENT)
+        }
         println ("(Enter to confirm, any other key to cancel): ".withColor(THEME_PRIMARY))
     }
 
-    static public func printTool(name: String, message: String) {
-        let toolMessage = wrapBox(
-            " ✔  ".withColor(THEME_SUCCESS) + name.withColor(THEME_PRIMARY),
+    static public func printApproval(): Unit {
+        if (CURRENT_INDENT > 0) {
+            print(" " * CURRENT_INDENT)
+        }
+        println("└─ 🔧 Approved to run...".withColor(THEME_MUTED))
+    }
+
+    static public func printCancellation(): Unit {
+        if (CURRENT_INDENT > 0) {
+            print(" " * CURRENT_INDENT)
+        }
+        println("└─ ✖ Cancelled...".withColor(THEME_MUTED))
+    }
+
+    static public func printTool(name: String, message: String, needConfirm!: Bool = false) {
+        // Whether to confirm decides the mark
+        let mark = if (needConfirm) {
+            " ? ".withColor(THEME_WARNING)
+        } else {
+            " ✔ ".withColor(THEME_SUCCESS)
+        }
+        let boxContent = wrapBox(
+            mark + name.withColor(THEME_PRIMARY),
             content: message.withColor(THEME_INFO)
         )
-        println(toolMessage)
+        if (CURRENT_INDENT == 0) {
+            println(boxContent)
+        } else {
+            for ((idx, line) in enumerate(boxContent.split("\n"))) {
+
+                let prefix = if (idx == 1) {
+                    "${' ' * (CURRENT_INDENT - 2)}○ "
+                } else {
+                    " " * CURRENT_INDENT
+                }
+                println("${prefix}${line}")
+            }
+        }
     }
+
+    //----------------------------------------------------------------------------------
 
     static public func printAgentResponse(response: AgentResponse) {
         println(
