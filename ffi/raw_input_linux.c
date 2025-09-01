@@ -2,6 +2,7 @@
 #include <unistd.h>
 #include <stdio.h>
 #include <errno.h>
+#include <poll.h>
 
 // Static storage for original terminal settings
 static struct termios orig_termios;
@@ -167,7 +168,7 @@ int getRawUtf8(unsigned char *bytes) {
     return -1; // Invalid start byte
 }
 
-int listenEsc(uint32_t dwTimeoutMs) {
+int check(uint32_t timeout, uint16_t* keyCode) {
     struct pollfd fds;
     int ret;
     unsigned char c;

@@ -285,30 +285,38 @@ public class Readline {
     }
 }
 
-public class AsciiListener {
-    private static let VK_BACK:Byte = 0x08
-    private static let VK_TAB:Byte = 0x09
-    private static let VK_ENTER:Byte = 0x0D
-    private static let VK_ESCAPE:Byte = 0x1B
-    private static let VK_DELETE:Byte = 0x2E
-    private static let VK_UP:Byte = 0x26
-    private static let VK_DOWN:Byte = 0x28
-    private static let VK_LEFT:Byte = 0x25
-    private static let VK_RIGHT:Byte = 0x27
+public class ByteChecker {
+    private static let VK_BACK: Byte = 0x08
+    private static let VK_TAB: Byte = 0x09
+    private static let VK_ENTER: Byte = 0x0D
+    private static let VK_ESCAPE: Byte = 0x1B
+    private static let VK_DELETE: Byte = 0x2E
+    private static let VK_UP: Byte = 0x26
+    private static let VK_DOWN: Byte = 0x28
+    private static let VK_LEFT: Byte = 0x25
+    private static let VK_RIGHT: Byte = 0x27
 
-    public static func listenEsc(infinite!: Bool = false): Bool {
+    public static func checkEsc(infinite!: Bool = false): ?String {
         try {
             RawInputUtils.rawEnter()
-            return RawInputUtils.listen(VK_ESCAPE, infinite:infinite)
+            if (RawInputUtils.checkByte(VK_ESCAPE, infinite: infinite)) {
+                '\u{1B}'
+            } else {
+                None
+            }
         } finally {
             RawInputUtils.rawExit()
         }
     }
 
-    public static func listenEnter(infinite!: Bool = false): Bool {
+    public static func checkEnter(infinite!: Bool = false): ?String {
         try {
             RawInputUtils.rawEnter()
-            return RawInputUtils.listen(VK_ENTER, infinite:infinite)
+            if (RawInputUtils.checkByte(VK_ENTER, infinite: infinite)) {
+                '\n'
+            } else {
+                None
+            }
         } finally {
             RawInputUtils.rawExit()
         }

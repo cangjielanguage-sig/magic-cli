@@ -25,6 +25,8 @@ foreign {
 
     func getRawUtf8(bytes: CPointer<Byte>): IntNative
 
+    func check(timeout: UInt32, keyCode:CPointer<UInt16>): Int64
+
     func exitRaw(): Unit
 }
 
@@ -100,20 +102,8 @@ class RawInputUtils {
         }
         return r
     }
-
-    static func listen(): ?Byte {
-        var keyCode: UInt16 = 0
-        let len = unsafe { listenAscii(50u32, inout keyCode) }
-        if (len == -1) { // NO INPUT in 50ms
-            return None
-        }
-        if (len == 2) { // Not ASCII
-            return 128u8
-        }
-        return UInt8(keyCode)
-    }
-
-    static func listen(byte: Byte, infinite!: Bool = false): Bool {
+    
+    static func checkByte(byte: Byte, infinite!: Bool = false): Bool {
         var keyCode: UInt16 = 0
         let waitTimeMs: UInt32
         if (infinite) {
@@ -121,7 +111,7 @@ class RawInputUtils {
         } else {
             waitTimeMs = 50
         }
-        let len = unsafe { listenAscii(waitTimeMs, inout keyCode) }
+        let len = unsafe { check(waitTimeMs, inout keyCode) }
         if (len == 1 && UInt8(keyCode) == byte) { // ASCII
             return true
         }

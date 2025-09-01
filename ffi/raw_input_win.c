@@ -32,9 +32,9 @@ const BYTE VK_TAB_UTF8[]   = {0x09};              // Tab
 const BYTE VK_ENTER_UTF8[] = {0x0A};              // LF
 
 typedef struct {
-    WORD           vk_code; 
+    WORD           vk_code;
     const BYTE*    utf8_buf;
-    size_t         buf_len;  
+    size_t         buf_len;
 } VkToUtf8Map;
 
 
@@ -86,7 +86,7 @@ int enterRaw() {
     if (h_console == INVALID_HANDLE_VALUE) {
         return FALSE;
     }
-    
+
     // Only modify terminal if not already in raw mode
     if (!flag) {
         if (!GetConsoleMode(h_console, &origin_mode)) {
@@ -178,7 +178,7 @@ uint32_t merge_surrogate_pair(WORD high, WORD low) {
  */
 int get_codepoint(WORD wchar, DWORD* out_codepoint, WORD* high_surrogate) {
     if (out_codepoint == NULL || high_surrogate == NULL) return -1;
-    
+
     if (is_high_surrogate(wchar)) {
         *high_surrogate = wchar;
         return 1;
@@ -203,7 +203,7 @@ int get_codepoint(WORD wchar, DWORD* out_codepoint, WORD* high_surrogate) {
 
 
 int codepoint_to_utf8(DWORD codepoint, BYTE* out_buf) {
-    if (out_buf == NULL) return -1; 
+    if (out_buf == NULL) return -1;
 
     // ILLEAGAL CHECKPOIT：USING RELACE BYTES U+FFFD（UTF-8: 0xEF 0xBF 0xBD）
     if (codepoint > 0x10FFFF || (codepoint >= 0xD800 && codepoint <= 0xDFFF)) {
@@ -313,7 +313,7 @@ int getRawUtf8(BYTE *bytes) {
     }
 
     BYTE c = bytes[0];
-    
+
     // --- 0. Escape Sequence (Special Keys) ---
     if (c == 0x1b) {  // ESC
         if (size == 1) { //Just ESC
@@ -322,7 +322,7 @@ int getRawUtf8(BYTE *bytes) {
         c = bytes[1];
         if (c != 0x5b) {
             return 1;  //Just ESC
-        } 
+        }
         c = bytes[2];
         switch (c) {
             case 'A': // Up Arrow → U+2191 ↑
@@ -364,7 +364,7 @@ int getRawUtf8(BYTE *bytes) {
  *   1  = ASCII
  *   2  = CHECKPOINT (half, illegal)
  */
-int listenAscii(DWORD dwTimeoutMs, WORD* keyCode) {
+int check(DWORD dwTimeoutMs, WORD* keyCode) {
     DWORD waitTime = (dwTimeoutMs == 0) ? INFINITE : dwTimeoutMs;
     DWORD waitResult = WaitForSingleObject(h_console, waitTime);
     switch (waitResult) {

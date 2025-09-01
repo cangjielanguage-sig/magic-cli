@@ -96,7 +96,7 @@ private func setConfig(): Unit {
     Config.logFile = CliConfig.logFile.toString()
     Config.logLevel = "INFO"
     Config.modelRequestDir = CliConfig.dotDir.join("model-requests").toString()
-    Config.enableFunctionCall = true
+    Config.enableModelToolCall = true
     let magicPath = Path(Config.env['MAGIC_PATH'].getOrThrow({=> Exception("MAGIC_PATH not set")}))
     Config.resourceDir = magicPath.join("resource").toString()
     // Set your API key in the .env file
@@ -159,7 +159,7 @@ private func agenticProcess(input: String, context: CliContext) {
             }
         case "/init" | "init" =>
             initMagicFile()
-        case "!" | "！" => 
+        case "!" | "！" =>
             context.changeMode(CliMode.TERMINAL)
         case _ =>
             if (input.startsWith("/cmd")) {
@@ -216,13 +216,13 @@ private func terminalProcess(command: String, context: CliContext) {
 private func initMagicFile(): Unit {
     let agent = CodeAnalyzer()
     let magicFilePath = CliConfig.uerRuleFile
-    
+
     if (exists(magicFilePath)) {
         if(let Deny(userInput) <- InputUtils.confirm("MAGIC.md already exists.", "Overwrite?")){
             return
         }
     }
-    
+
     let prompt = """
 Please analyze the current project directory and generate practical MAGIC.md configuration file content.
 
@@ -241,14 +241,14 @@ Output format requirements:
 - DO NOT create or write any files, only return the content
 
 Please start analyzing the project and return the MAGIC.md content:"""
-    
+
     PrintUtils.printTool("MAGIC.md Init", "🔍 Analyzing project structure and generating MAGIC.md...")
     let response = agent.chat(AgentRequest(prompt))
-    
+
     try {
         File.writeTo(magicFilePath, response.content.toArray())
         PrintUtils.printTool("MAGIC.md Init", "✅ MAGIC.md initialized successfully!")
-        
+
         let preview = if (response.content.size > 300) {
             response.content[0..300] + "..."
         } else {

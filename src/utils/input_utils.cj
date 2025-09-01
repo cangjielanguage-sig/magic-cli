@@ -18,28 +18,27 @@ protected class InputUtils {
 
     public static func getUserInput(withBox!: Bool = true, mode!: CliMode = AGENTIC): String {
         match (mode) {
-            case AGENTIC => 
-                READLINE.readline(buildPrompt('🧠'), withBox: withBox) ?? "exit"
-            case TERMINAL => 
+            case AGENTIC =>
+                READLINE.readline(buildPrompt('🍭'), withBox: withBox) ?? "exit"
+            case TERMINAL =>
                 READLINE.readline(buildPrompt('💻'), withBox: withBox) ?? "exit"
-            case CHATTING => 
-                if (AsciiListener.listenEsc()) {
-                    '\u{1B}'
-                } else {
-                    ""
-                }
-            case _ => // CONFIRM MODE
-                let context = getContext()
-                let thread = Thread.currentThread
-                if (thread.id != context.workingThread) {
-                    return ""
-                }
-                if (AsciiListener.listenEnter(infinite:true)) {
-                    '\n'
-                } else {
-                    ""
-                }
+            case CHATTING => checkEsc()
+            case _ => checkEnter() // CONFIRM MODE
+                
         }
+    }
+    
+    private static func checkEsc(): String {
+        ByteChecker.checkEsc() ?? ""
+    }
+
+    private static func checkEnter(): String {
+        let context = getContext()
+        let thread = Thread.currentThread
+        if (thread.id != context.workingThread) {
+            return ""
+        }
+        ByteChecker.checkEnter(infinite:true) ?? ""
     }
 
     public static func confirm(title: String, content: String): Confirmation {
@@ -64,8 +63,7 @@ protected class InputUtils {
             return Confirmation.Approve
         } else {
             print("└─ ✖ Cancelled...\n".withColor(THEME_MUTED), flush: true)
-            let input = InputUtils.getUserInput()
-            return Confirmation.Deny(input)
+            return Confirmation.Deny("Cancel current operation")
         }
     }
 
