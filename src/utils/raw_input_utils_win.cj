@@ -11,7 +11,7 @@ foreign {
 
     func exitRaw(): Unit
 
-    func listenEsc(timeout: UInt32): Int64
+    func checkEsc(timeout: UInt32): Int64
 }
 
 @When[os == "Windows"]
@@ -40,7 +40,7 @@ class RawInputUtils {
         return r
     }
 
-    static func listenEscRune(): Bool {
-        return unsafe { listenEsc(50u32) } == 1
+    static func checkEsc(): Bool {
+        return unsafe { checkEsc(50u32) } == 1
     }
 }

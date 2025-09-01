@@ -285,18 +285,3 @@ public class Readline {
         }
     }
 }
-
-public class ListenEsc {
-    public static func listen(): ?String {
-        try {
-            RawInputUtils.rawEnter()
-            if (RawInputUtils.listenEscRune()) {
-                return '\u{1B}'
-            } else {
-                return None
-            }
-        } finally {
-            RawInputUtils.rawExit()
-        }
-    }
-}
