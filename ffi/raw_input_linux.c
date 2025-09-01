@@ -176,20 +176,22 @@ int listenEsc(uint32_t dwTimeoutMs) {
     fds.events = POLLIN;
     fds.revents = 0;
 
-    ret = poll(&fds, 1, dwTimeoutMs);
+    int timeout = (dwTimeoutMs == 0) ? -1 : (int)dwTimeoutMs;
+    ret = poll(&fds, 1, timeout);
 
-    if (ret == -1) {
-        return 0;
-    } else if (ret == 0) {
+    if (ret == -1 || ret == 0) {
         return 0;
     }
     if (fds.revents & POLLIN) {
         if (read(STDIN_FILENO, &c, 1) == 1) {
-            if (c == 0x1b) {
+            if (c <= 0x7F) {
+                *keyCode = (uint16_t)c;
                 return 1;
+            } else {
+                return 2;
             }
         }
     }
 
-    return 0;
+    return -1;
 }
