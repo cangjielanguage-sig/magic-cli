@@ -51,7 +51,7 @@ magic-cli/
 
 1. **克隆项目**
    ```bash
-   git clone https://gitcode.com/ice_chester/magic-cli.git
+   git clone https://gitcode.com/Cangjie-SIG/magic-cli
    cd magic-cli
    ```
 
