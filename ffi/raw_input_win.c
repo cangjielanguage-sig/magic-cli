@@ -359,12 +359,12 @@ int getRawUtf8(BYTE *bytes) {
 
 /**
  * listen ESC Button, make sure in `raw mode` before calling this function
- * @return: keyCode len: 
+ * @return: keyCode len:
  *   -1 = no input in  dwTimeoutMs ms
  *   1  = ASCII
  *   2  = CHECKPOINT (half, illegal)
  */
-int check(DWORD dwTimeoutMs, WORD* keyCode) {
+int getByte(DWORD dwTimeoutMs, WORD* keyCode) {
     DWORD waitTime = (dwTimeoutMs == 0) ? INFINITE : dwTimeoutMs;
     DWORD waitResult = WaitForSingleObject(h_console, waitTime);
     switch (waitResult) {

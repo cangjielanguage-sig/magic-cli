@@ -100,8 +100,13 @@ Use analyzeCode as a targeted assistance mechanism, not a default response strat
     }
 ]
 func analyzeCode(query: String): String {
-    PrintUtils.printTool("Code Analyze", "query: ${query}")
+    try {
+        PrintUtils.printTool("Code Analyze", "query: ${query}")
+        PrintUtils.beginSubAgent()
 
-    let analyzer = CodeAnalyzer()
-    return analyzer.chat(query)
+        let analyzer = CodeAnalyzer()
+        return analyzer.chat(query)
+    } finally {
+        PrintUtils.endSubAgent()
+    }
 }

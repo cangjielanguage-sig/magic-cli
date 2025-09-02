@@ -1,8 +1,10 @@
 #include <termios.h>
 #include <unistd.h>
 #include <stdio.h>
+#include <stdint.h>
 #include <errno.h>
 #include <poll.h>
+
 
 // Static storage for original terminal settings
 static struct termios orig_termios;
@@ -168,7 +170,7 @@ int getRawUtf8(unsigned char *bytes) {
     return -1; // Invalid start byte
 }
 
-int check(uint32_t timeout, uint16_t* keyCode) {
+int getByte(uint32_t timeout, uint16_t* keyCode) {
     struct pollfd fds;
     int ret;
     unsigned char c;
@@ -177,8 +179,7 @@ int check(uint32_t timeout, uint16_t* keyCode) {
     fds.events = POLLIN;
     fds.revents = 0;
 
-    int timeout = (dwTimeoutMs == 0) ? -1 : (int)dwTimeoutMs;
-    ret = poll(&fds, 1, timeout);
+    ret = poll(&fds, 1, (timeout == 0) ? -1 : (int)timeout);
 
     if (ret == -1 || ret == 0) {
         return 0;

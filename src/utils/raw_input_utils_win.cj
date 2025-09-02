@@ -11,7 +11,7 @@ foreign {
 
     func exitRaw(): Unit
 
-    func check(timeout: UInt32, keyCode:CPointer<UInt16>): IntNative
+    func getByte(timeout: UInt32, keyCode:CPointer<UInt16>): IntNative
 }
 
 @When[os == "Windows"]
@@ -40,7 +40,7 @@ class RawInputUtils {
         return r
     }
 
-    static func checkByte(byte: Byte, infinite!: Bool = false): Bool {
+    static func checkReadByte(bytes: Array<Byte>, infinite!: Bool = false): Bool {
         var keyCode: UInt16 = 0
         let waitTimeMs: UInt32
         if (infinite) {
@@ -48,8 +48,8 @@ class RawInputUtils {
         } else {
             waitTimeMs = 50
         }
-        let len = unsafe { check(waitTimeMs, inout keyCode) }
-        if (len == 1 && UInt8(keyCode) == byte) { // ASCII
+        let len = unsafe { getByte(waitTimeMs, inout keyCode) }
+        if (len == 1 && bytes.contains(UInt8(keyCode))) { // ASCII
             return true
         }
         return false

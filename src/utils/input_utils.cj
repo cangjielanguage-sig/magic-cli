@@ -24,10 +24,10 @@ protected class InputUtils {
                 READLINE.readline(buildPrompt('💻'), withBox: withBox) ?? "exit"
             case CHATTING => checkEsc()
             case _ => checkEnter() // CONFIRM MODE
-                
+
         }
     }
-    
+
     private static func checkEsc(): String {
         ByteChecker.checkEsc() ?? ""
     }
@@ -42,27 +42,16 @@ protected class InputUtils {
     }
 
     public static func confirm(title: String, content: String): Confirmation {
-        // Print the confirm message
-        let mark = if (CliConfig.auto) {
-            "✔ ".withColor(THEME_SUCCESS)
-        } else {
-            "? ".withColor(THEME_WARNING)
-        }
-        println(
-            wrapBox(
-                mark + title.withColor(THEME_PRIMARY),
-                content: content
-            )
-        )
+        PrintUtils.printTool(title, content, needConfirm: !CliConfig.auto)
         if (CliConfig.auto) {
             return Confirmation.Approve
         }
         // If user deny the confirmation, we let her/him input one more message
         if (InputUtils.getConfirmation()) {
-            println("└─ 🔧 Approved to run...".withColor(THEME_MUTED))
+            PrintUtils.printApproval()
             return Confirmation.Approve
         } else {
-            print("└─ ✖ Cancelled...\n".withColor(THEME_MUTED), flush: true)
+            PrintUtils.printCancellation()
             return Confirmation.Deny("Cancel current operation")
         }
     }
@@ -80,6 +69,6 @@ protected class InputUtils {
         } finally {
             context.changeMode(CHATTING)
         }
-       
+
     }
 }

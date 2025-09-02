@@ -11,7 +11,9 @@ import magic.dsl.*
 import magic.prelude.*
 import magic.jsonable.*
 
+import cli.core.config.CliConfig
 import cli.utils.*
+import cli.core.tools.cjpm_utils.*
 
 @agent[
     executor: "naive"
@@ -74,9 +76,12 @@ public class CangjieToolset {
 
     @tool[
         description: "Retrieve Cangjie programming language development documentation with AI-powered semantic search and summarization",
-        parameters: { query: "Development requirements or documentation content to query", nums_docs_to_retrive: "Expected number of documents to retrieve" }
+        parameters: {
+            query: "Development requirements or documentation content to query",
+            numToRetrieve: "Expected number of documents to retrieve. If omitted, default value 5."
+        }
     ]
-    public func retrieveCangjieDocuments(query: String, nums_docs_to_retrive: Int64): String {
+    public func retrieveCangjieDocuments(query: String, numToRetrieve: Option<Int64>): String {
         let message = query
         PrintUtils.printTool("Retrieve Cangjie Documents", message)
 
@@ -86,7 +91,7 @@ public class CangjieToolset {
         ])
         let requestMap = HashMap<String, JsonValue>()
         requestMap.add("query",JsonString(query))
-        requestMap.add("nums_docs_to_retrive",nums_docs_to_retrive.toJsonValue())
+        requestMap.add("nums_docs_to_retrive", (numToRetrieve ?? 5).toJsonValue())
         let requestBody = JsonObject(requestMap)
         let rawResponseOpt = ApiClient.post(url, header, requestBody)
         let rawResponse = match (rawResponseOpt) {
@@ -145,161 +150,71 @@ public class CangjieToolset {
     }
 
     @tool[
-        description: "Initialize a new Cangjie module in the specified directory.",
-        parameters: { path: "Path to the Cangjie module, must be an absolute path" }
+        description: "Initialize a new Cangjie project in the specified directory.",
+        parameters: { path: "Path to the Cangjie module, must be an absolute path. If omitted, the current working directory will be used to initialized." }
     ]
-    public func cjpmInitModule(path: String): String {
-        PrintUtils.printTool("CJPM Init Module", path)
+    public func initCangjieProject(path: Option<String>): String {
+        let projectDir = path.map { p => Path(p) } ?? CliConfig.cwd
+        // Since Cangjie project name must be of camel case, we convert directory name to camel case
+        let packageName = CangjieToolset.toCamelCase(projectDir.fileName)
+        let args: Array<String> = ["init", "--name", packageName]
 
-        try {
-            let cmd = "cjpm"
-            let args: Array<String> = ["init"]
-
-            let (exitCode, stdOutData, stdErrData) = executeWithOutput(cmd, args, workingDirectory: Path(path))
-
-            if (exitCode == 0) {
-                let outputString = String.fromUtf8(stdOutData)
-                if (outputString.trimAscii().size == 0) {
-                    return "Project initialization successful."
-                } else {
-                    return outputString
-                }
-            } else {
-                let errorString = String.fromUtf8(stdErrData)
-                return "Error: " + errorString
-            }
-        } catch (e: ProcessException) {
-            return "Process execution error: ${e}"
-        } catch (e: Exception) {
-            return "Unknown error occurred: ${e}"
-        }
+        PrintUtils.printTool("cjpm init", projectDir.toString())
+        return cjpmRun(args, projectDir)
     }
 
     @tool[
         description: "Compile a single Cangjie file in the specified directory, generating an executable file main",
         parameters: {
-            path: "Directory path corresponding to the Cangjie file, must be an absolute path",
-            name: "Name of the Cangjie file to compile, e.g., test.cj"
+            path: "Path to the Cangjie file to be compile, must be an absolute path"
         }
     ]
-    public func cjCompiler(path: String, name: String): String {
-        PrintUtils.printTool("CJ Compiler", path + "/" + name)
+    public func compileCangjieFile(path: String): String {
+        let filePath = Path(path)
 
-        try {
-            let (exitCode, stdOutData, stdErrData) = executeWithOutput("cjc", [name], workingDirectory: Path(path))
-
-            if (exitCode == 0) {
-                let outputString = String.fromUtf8(stdOutData)
-                if (outputString.trimAscii().size == 0) {
-                    return "Compilation successful."
-                } else {
-                    return outputString
-                }
-            } else {
-                let errorString = String.fromUtf8(stdErrData)
-                return "Error: " + errorString
-            }
-        } catch (e: ProcessException) {
-            return "Process execution error: ${e}"
-        } catch (e: Exception) {
-            return "Unknown error occurred: ${e}"
-        }
+        PrintUtils.printTool("cjc compile", path)
+        return cjcRun([filePath.fileName], filePath.parent)
     }
 
     @tool[
         description: "Compile the Cangjie module at the specified path. Option to choose incremental compilation for faster speed.",
-        parameters: { incremental: "If true, perform incremental compilation; otherwise, perform regular full compilation.", path: "Path to the Cangjie module, must be an absolute path" }
-    ]
-    public func cjpmBuildModule(incremental: Bool, path: String): String {
-        PrintUtils.printTool("CJPM Build Module", path)
-
-        try {
-            let cmd = "cjpm"
-            var args: Array<String> = ["build"]
-            if (incremental == true) {
-                args = ["build", "-i"]
-            }
-
-            let (exitCode, stdOutData, stdErrData) = executeWithOutput(cmd, args, workingDirectory: Path(path))
-
-            if (exitCode == 0) {
-                let outputString = String.fromUtf8(stdOutData)
-                if (outputString.trimAscii().size == 0) {
-                    return "Compilation successful."
-                } else {
-                    return outputString
-                }
-            } else {
-                let errorString = String.fromUtf8(stdErrData)
-                return "Error: " + errorString
-            }
-        } catch (e: ProcessException) {
-            return "Process execution error: ${e}"
-        } catch (e: Exception) {
-            return "Unknown error occurred: ${e}"
+        parameters: {
+            path: "Path to the Cangjie module, must be an absolute path. If omitted, the current working directory will be used."
         }
+    ]
+    public func buildCangjieProject(path: Option<String>): String {
+        let projectDir = path.map { p => Path(p) } ?? CliConfig.cwd
+
+        PrintUtils.printTool("cjpm build", projectDir.toString())
+        return cjpmRun(["build", "-i"], projectDir)
     }
 
     @tool[
         description: "Compile and run an executable artifact with the specified name.",
-        parameters: { name: "Name of the executable artifact to run.", path: "Path to the Cangjie module, must be an absolute path" }
-    ]
-    public func cjpmRun(name: String, path: String): String {
-        PrintUtils.printTool("CJPM Run", path + "  --name " + name)
-
-        try {
-            let cmd = "cjpm"
-            let args: Array<String> = ["run", "--name", name]
-
-            let (exitCode, stdOutData, stdErrData) = executeWithOutput(cmd, args, workingDirectory: Path(path))
-
-            if (exitCode == 0) {
-                let outputString = String.fromUtf8(stdOutData)
-                if (outputString.trimAscii().size == 0) {
-                    return "Program execution completed."
-                } else {
-                    return outputString
-                }
-            } else {
-                let errorString = String.fromUtf8(stdErrData)
-                return "Error: " + errorString
-            }
-        } catch (e: ProcessException) {
-            return "Process execution error: ${e}"
-        } catch (e: Exception) {
-            return "Unknown error occurred: ${e}"
+        parameters: {
+            path: "Path to the Cangjie project, must be an absolute path. If omitted, the current working directory will be used.",
+            name: "Name of the executable artifact to run. If omitted, the default `main.exe` will be run."
         }
+    ]
+    public func runCangjieProject(path: Option<String>, name: Option<String>): String {
+        let projectDir = path.map { p => Path(p) } ?? CliConfig.cwd
+        let execName = name ?? "main"
+
+        let args: Array<String> = ["run", "--name", execName]
+        PrintUtils.printTool("cjpm run", projectDir.toString() + "  --name ${execName}")
+        return cjpmRun(args, projectDir)
     }
 
     @tool[
         description: "Clean the target directory, removing all previously built artifacts.",
-        parameters: {  path: "Path to the Cangjie module, must be an absolute path" }
-    ]
-    public func cjpmCleanTarget(path: String): String {
-        PrintUtils.printTool("CJPM Clean Target", path)
-
-        try {
-            let cmd = "cjpm"
-            let args: Array<String> = ["clean"]
-
-            let (exitCode, stdOutData, stdErrData) = executeWithOutput(cmd, args, workingDirectory: Path(path))
-
-            if (exitCode == 0) {
-                let outputString = String.fromUtf8(stdOutData)
-                if (outputString.trimAscii().size == 0) {
-                    return "Cleanup completed."
-                } else {
-                    return outputString
-                }
-            } else {
-                let errorString = String.fromUtf8(stdErrData)
-                return "Error: " + errorString
-            }
-        } catch (e: ProcessException) {
-            return "Process execution error: ${e}"
-        } catch (e: Exception) {
-            return "Unknown error occurred: ${e}"
+        parameters: {
+            path: "Path to the Cangjie project, must be an absolute path. If omitted, the current working directory will be used."
         }
+    ]
+    public func cleanCangjieProject(path: Option<String>): String {
+        let projectDir = path.map { p => Path(p) } ?? CliConfig.cwd
+        PrintUtils.printTool("cjpm clean", projectDir.toString())
+        return cjpmRun(["clean"], projectDir)
     }
 
     static func extractLastSseData(stream: String): String {
@@ -312,5 +227,23 @@ public class CangjieToolset {
             }
         }
         return lastJsonData
+    }
+
+    private static func toCamelCase(dirName: String): String {
+        let normalized = dirName.replace("-", " ").replace("_", " ")
+        let words = normalized.split(' ')
+        let result = StringBuilder()
+
+        for (i in 0..words.size) {
+            let word = words[i].trimAscii()
+            if (!word.isEmpty()) {
+                if (result.size == 0) { // The first word
+                    result.append(word.toAsciiLower())
+                } else { // other words
+                    result.append(word.toAsciiTitle())
+                }
+            }
+        }
+        return result.toString()
     }
 }
