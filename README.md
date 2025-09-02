@@ -51,23 +51,82 @@ magic-cli/
 
 1. **克隆项目**
    ```bash
-   git clone <repository-url>
+   git clone https://gitcode.com/ice_chester/magic-cli.git
    cd magic-cli
    ```
 
 2. **配置环境变量**
-   创建 `.env` 文件设置必需的环境变量：
+
+- 需要先手动设置`MAGIC_PATH`的环境变量，指向 Cangjie Magic 项目根目录：
+   
+   **Windows (PowerShell):**
+   ```powershell
+   # 临时设置（仅当前会话）
+   $env:MAGIC_PATH = "C:\path\to\CangjieMagic"
+   
+   # 永久设置（推荐）
+   [Environment]::SetEnvironmentVariable("MAGIC_PATH", "C:\path\to\CangjieMagic", "User")
+   ```
+   
+   **Windows (CMD):**
+   ```cmd
+   # 临时设置（仅当前会话）
+   set MAGIC_PATH=C:\path\to\CangjieMagic
+   
+   # 永久设置（需要管理员权限）
+   setx MAGIC_PATH "C:\path\to\CangjieMagic"
+   ```
+   
+   **macOS/Linux:**
+   ```bash
+   # 临时设置（仅当前会话）
+   export MAGIC_PATH="/path/to/CangjieMagic"
+   
+   # 永久设置 - 添加到 ~/.bashrc 或 ~/.zshrc
+   echo 'export MAGIC_PATH="/path/to/CangjieMagic"' >> ~/.bashrc
+   source ~/.bashrc
+   ```
+
+- 参考项目根目录下 `.env.example` 创建 `.env` 文件设置必需的环境变量：
    ```env
-   MAGIC_PATH=/path/to/CangjieMagic
-   # 其他 API 密钥配置...
+   # LLM API 密钥配置...
+   # Web Search API 密钥配置...
    ```
 
 3. **启动应用**
+- 直接在`magic-cli`目录下运行程序：
    ```bash
    cjpm run --name cli
    ```
+- 使用`magic-cli`辅助开发其他项目工程：
+  - macOS / Linux 使用下面脚本启动`magic-cli`:
+   ```bash
+   <path/to/magic-cli>/scripts/magic-cli.sh
+   ```
+  - Windows 启动`magic-cli`:
+   ```bash
+   cjpm run --target-dir <path/to/magic-cli>/target
+   ```
 
-4. **首次使用提示**
+4. **运行参数配置**
+   Magic-CLI 支持通过 `--run-args` 传递运行参数来定制 Agent 行为：
+   
+   - **自动执行模式** - 无需用户授权即可执行工具命令：
+     ```bash
+     cjpm run --name cli --run-args "--auto"
+     ```
+   
+   - **指定生成 Cangjie 代码** - 默认 Agent 生成通用语言代码，如需生成 Cangjie 代码需特别指定：
+     ```bash
+     cjpm run --name cli --run-args "--language cangjie"
+     ```
+   
+   - **组合使用参数**：
+     ```bash
+     cjpm run --name cli --run-args "--auto --language cangjie"
+     ```
+
+5. **首次使用提示**
    - 程序启动后会自动创建 `.magic-cli/` 目录存储配置和历史
    - 输入 `/help` 查看所有可用命令
    - 可创建`.magic-cli/`目录下的 `MAGIC.md` 文件来自定义 AI 行为规则
@@ -116,51 +175,13 @@ chmod +x scripts/install-ripgrep.sh && ./scripts/install-ripgrep.sh
 
 > 即使不安装 ripgrep，Magic-CLI 也能正常工作 - 会自动回退到系统的 grep 工具。   
 
-## 🎯 使用示例
-
-### 基本对话
-```
-🤖 Magic-CLI > 帮我创建一个 Cangjie 项目，实现一个贪吃蛇游戏
-✨ 正在为您创建项目...
-📁 已创建新项目：cj_snake_game
-```
-
-### 代码生成
-```
-🤖 Magic-CLI > 生成一个快速排序算法
-✨ 生成代码：
-```cangjie
-func quickSort(arr: Array<Int64>): Array<Int64> {
-    // 快速排序实现...
-}
-```
-
-### 文档查询
-```
-🤖 Magic-CLI > 如何定义泛型函数？
-📚 查询文档：
-泛型函数使用 `func<T>` 语法，例如：
-```cangjie
-func identity<T>(x: T): T {
-    return x
-}
-```
-
-### MCP 集成
-```bash
-🔮 Agent > /mcp add filesystem npx -y @modelcontextprotocol/server-filesystem ~/Documents
-✅ Added stdio MCP server: filesystem
-
-🔮 Agent > /mcp
-📡 filesystem (Stdio) - 3 tools:
-  • read_file
-  • write_file  
-  • list_directory
-```
-
-## 📋 命令参考
+## 📋 命令系统
 
 Magic-CLI 提供了丰富的内置命令来管理对话、配置和系统功能：
+目前支持三种命令模式：
+- `@` 命令，可以通过 `@` 单个或者多个文件，将该文件加入对话上下文，进行对话
+- `!` 命令，可以通过输入`！` 命令将当前模式变为终端模式，可以直接在终端执行`shell`命令
+- `/` 命令，具体功能介绍见下方
 
 ### 基础命令
 - **`/help`** - 显示帮助信息和所有可用命令
@@ -190,8 +211,39 @@ Magic-CLI 支持保存和恢复对话会话：
   • my-project-work
   • last-conversation (auto-saved conversation)
 ```
+### MCP 工具管理
+- **`/mcp`** - 显示当前加载的所有 MCP 服务器和工具
+- **`/mcp add <name> <command> [args...]`** - 添加新的 stdio MCP 服务器
+- **`/mcp add-sse <name> <url>`** - 添加新的 SSE MCP 服务器  
+- **`/mcp remove <name>`** - 移除指定的 MCP 服务器
+- **支持环境变量配置：**
+  ```bash
+  /mcp add myserver uvx server-name --env API_KEY=your_key ENV_VAR=value
+  ```
+- 支持手动编辑`.magic-cli\settings.json`来直接添加MCP Servers，例如：
+  ```json
+  {
+    "mcpServers": {
+      "zhipu-web-search-sse": {
+          "url": "https://open.bigmodel.cn/api/mcp/web_search/sse?Authorization=<API KEY>"
+      },
+      "MiniMax": {
+          "command": "uvx",
+          "args": [
+              "minimax-mcp"
+          ],
+          "env": {
+              "MINIMAX_API_KEY": "<MINIMAX_API_KEY>",
+              "MINIMAX_MCP_BASE_PATH": "<MINIMAX_MCP_BASE_PATH>",
+              "MINIMAX_API_HOST": "https://api.minimaxi.com",
+              "MINIMAX_API_RESOURCE_MODE": "local"
+          }
+      }
+    }
+  }
+  ```
 
-### 用户记忆管理
+### 记忆管理
 - **`/memory`** - 查看当前目录下 MAGIC.md 文件的内容
 
 MAGIC.md 是用户自定义规则文件，可以包含项目相关的上下文、编码规范或特殊指令。AI 会在处理请求时参考这些规则。
@@ -206,7 +258,7 @@ MAGIC.md 是用户自定义规则文件，可以包含项目相关的上下文�
 - 注释使用中文
 ```
 
-### 自定义命令
+### 自定义 /cmd 命令
 Magic-CLI 支持用户自定义 prompt 模板命令，实现常用工作流程的快速执行：
 
 - **`/cmd`** 或 **`/cmd list`** - 列出所有可用的自定义命令
@@ -241,32 +293,56 @@ Usage: /cmd:commit [your arguments]
 Prompt template: 请基于当前的代码改动生成一个规范的 commit message。要求：$ARGS
 ```
 
-### MCP 工具管理
-- **`/mcp`** - 显示当前加载的所有 MCP 服务器和工具
-- **`/mcp add <name> <command> [args...]`** - 添加新的 stdio MCP 服务器
-- **`/mcp add-sse <name> <url>`** - 添加新的 SSE MCP 服务器  
-- **`/mcp remove <name>`** - 移除指定的 MCP 服务器
+## 配置文件说明
 
-**环境变量配置：**
-```bash
-/mcp add myserver uvx server-name --env API_KEY=your_key ENV_VAR=value
+| 文件 | 位置 | 说明 |
+|------|------|------|
+| `.env` | 项目根目录 | 环境变量配置（API 密钥等）|
+| `MAGIC.md` | `.magic-cli/` | 用户自定义规则和上下文|
+| `settings.json` | `.magic-cli/` | MCP 服务器配置 |
+| `*.history` | `.magic-cli/conversation-history/` | 保存的对话记录 |
+
+## 🎯 使用示例
+
+### 基本对话
+```
+🤖 > 帮我创建一个 Cangjie 项目，实现一个贪吃蛇游戏
+✨ 正在为您创建项目...
+📁 已创建新项目：cj_snake_game
 ```
 
-## 🔧 开发命令
+### 代码生成
+```
+🤖 > 生成一个快速排序算法
+✨ 生成代码：
+```cangjie
+func quickSort(arr: Array<Int64>): Array<Int64> {
+    // 快速排序实现...
+}
+```
 
-| 命令 | 说明 |
-|------|------|
-| `cjpm build` | 构建项目 |
-| `cjpm run --name cli` | 运行应用 |
-| `cjpm test` | 运行测试 |
-| `cjpm clean` | 清理构建产物 |
+### 文档查询
+```
+🤖 > 如何定义泛型函数？
+📚 查询文档：
+泛型函数使用 `func<T>` 语法，例如：
+```cangjie
+func identity<T>(x: T): T {
+    return x
+}
+```
 
-## 📦 依赖管理
+### MCP 集成
+```bash
+🔮 Agent > /mcp add filesystem npx -y @modelcontextprotocol/server-filesystem ~/Documents
+✅ Added stdio MCP server: filesystem
 
-项目使用 `cjpm.toml` 管理依赖，支持多平台构建：
-- 🐧 Linux (x86_64, aarch64)
-- 🪟 Windows (x86_64)
-- 🍎 macOS (aarch64)
+🔮 Agent > /mcp
+📡 filesystem (Stdio) - 3 tools:
+  • read_file
+  • write_file  
+  • list_directory
+```
 
 ## 🤝 贡献指南
 
@@ -286,29 +362,8 @@ Prompt template: 请基于当前的代码改动生成一个规范的 commit mess
 
 - 📖 [项目文档](docs/)
 - 🔌 [MCP 配置文档](docs/mcp.md)
-- 🐛 [问题反馈](https://github.com/your-repo/issues)
-- 💬 [讨论区](https://github.com/your-repo/discussions)
-
-### 配置文件说明
-
-| 文件 | 位置 | 说明 |
-|------|------|------|
-| `.env` | 项目根目录 | 环境变量配置（API 密钥等）|
-| `MAGIC.md` | 项目根目录 | 用户自定义规则和上下文 |
-| `settings.json` | `.magic-cli/` | MCP 服务器配置 |
-| `*.history` | `.magic-cli/conversation-history/` | 保存的对话记录 |
-
-### 常见问题
-
-**Q: MCP 服务器加载失败怎么办？**
-A: 程序会显示警告但继续运行。检查 `.magic-cli/settings.json` 配置和网络连接。
-
-**Q: 对话历史丢失了？**
-A: 程序会在退出时自动保存为 `last-conversation`，可通过 `/conversation resume last-conversation` 恢复。
-
-**Q: 如何自定义 AI 行为？**
-A: 在项目`.magic-cli/`目录创建 `MAGIC.md` 文件，写入项目相关的规则和上下文。
-
+- 🐛 [问题反馈](https://gitcode.com/ice_chester/magic-cli/issues)
+- 💬 [讨论区](https://gitcode.com/ice_chester/magic-cli/discussions)
 ---
 
 <div align="center">
