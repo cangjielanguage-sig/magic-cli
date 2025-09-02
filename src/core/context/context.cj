@@ -65,7 +65,8 @@ protected class CliContext <: Context {
                 evt: PromptValidateEvent =>
                 // There may be other agents during the execution.
                 // Only show the indicator of the main agent
-                if (evt.agent.name == agent.name) {
+                let thread = Thread.currentThread
+                if (evt.agent.name == agent.name && !interrupted(thread.id)) {
                     indicator.store(PrintUtils.printWorkingIndicator(message: "💭 Thinking"))
                 }
                 EventResponse.Continue
@@ -75,17 +76,14 @@ protected class CliContext <: Context {
             .global
             .addHandler {
                 evt: ToolCallEvent =>
-                let evtAgent = evt.agent
-                if (evtAgent.name != this.agent.name) {
-                    return EventResponse.Continue(ToolResponse(""))
-                }
-                if (let Some(i) <- indicator.load()) {
-                    i.stop()
-                }
-                let thread = Thread.currentThread
-                if (interrupted(thread.id)) {
-                    EventResponse.Terminate(ToolResponse("User Interrupt"))
-                } else {
+                synchronized(mtx) {
+                    let thread = Thread.currentThread
+                    if (interrupted(thread.id)) {
+                        return EventResponse.Terminate(ToolResponse("User Interrupt"))
+                    }
+                    if (evt.agent.name == this.agent.name && let Some(i) <- indicator.load()) {
+                        i.stop()
+                    }
                     EventResponse<ToolResponse>.Continue
                 }
             }
