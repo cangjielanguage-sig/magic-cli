@@ -47,6 +47,31 @@ magic-cli/
 1. **CangjieMagic 环境** - 参考 [CangjieMagic 安装指南](https://gitcode.com/Cangjie-TPC/CangjieMagic/blob/dev/docs/install.md#%E6%8E%A8%E8%8D%90recommended)
 2. **Cangjie 编译器** - 确保已安装 Cangjie 1.0.0+
 
+### 安装配置
+
+1. **克隆项目**
+   ```bash
+   git clone <repository-url>
+   cd magic-cli
+   ```
+
+2. **配置环境变量**
+   创建 `.env` 文件设置必需的环境变量：
+   ```env
+   MAGIC_PATH=/path/to/CangjieMagic
+   # 其他 API 密钥配置...
+   ```
+
+3. **启动应用**
+   ```bash
+   cjpm run --name cli
+   ```
+
+4. **首次使用提示**
+   - 程序启动后会自动创建 `.magic-cli/` 目录存储配置和历史
+   - 输入 `/help` 查看所有可用命令
+   - 可创建`.magic-cli/`目录下的 `MAGIC.md` 文件来自定义 AI 行为规则
+   
 ### 性能加速（可选推荐）
 
 Magic-CLI 自动使用 [ripgrep](https://github.com/BurntSushi/ripgrep) 来显著提升代码搜索性能，支持自动回退到系统默认工具。
@@ -89,32 +114,7 @@ sudo dnf install ripgrep
 chmod +x scripts/install-ripgrep.sh && ./scripts/install-ripgrep.sh
 ```
 
-> 即使不安装 ripgrep，Magic-CLI 也能正常工作 - 会自动回退到系统的 grep 工具。
-
-### 安装配置
-
-1. **克隆项目**
-   ```bash
-   git clone <repository-url>
-   cd magic-cli
-   ```
-
-2. **配置环境变量**
-   创建 `.env` 文件设置必需的环境变量：
-   ```env
-   MAGIC_PATH=/path/to/CangjieMagic
-   # 其他 API 密钥配置...
-   ```
-
-3. **启动应用**
-   ```bash
-   cjpm run --name cli
-   ```
-
-4. **首次使用提示**
-   - 程序启动后会自动创建 `.magic-cli/` 目录存储配置和历史
-   - 输入 `/help` 查看所有可用命令
-   - 可创建`.magic-cli/`目录下的 `MAGIC.md` 文件来自定义 AI 行为规则
+> 即使不安装 ripgrep，Magic-CLI 也能正常工作 - 会自动回退到系统的 grep 工具。   
 
 ## 🎯 使用示例
 
