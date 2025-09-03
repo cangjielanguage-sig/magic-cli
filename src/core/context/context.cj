@@ -20,6 +20,7 @@ import std.sync.*
 import std.env.atExit
 
 protected class CliContext <: Context {
+    private let _mainThreadId: Int64
     private let _chatAgent: Agent
     private var _agent: AtomicReference<ConversationAgent>
     private var _mode: CliMode = AGENTIC
@@ -31,7 +32,9 @@ protected class CliContext <: Context {
     protected let customCommandManager: CustomCommandManager
     protected let mcpManager: MCPConfigManager
 
+
     protected init() {
+        this._mainThreadId = Thread.currentThread.id
         this._chatAgent = if (CliConfig.language.toAsciiLower() == 'cangjie') {
             CangjieCodeAgent()
         } else {
@@ -45,13 +48,14 @@ protected class CliContext <: Context {
             agent.toolManager.addTools(mcpManager.loadMCPServers())
         } catch (e: Exception) {
             LogUtils.error("Failed to load MCP servers: ${e.message}")
-            PrintUtils.printTool("MCP Loading", "❗ Warning: Failed to load MCP servers, continuing without MCP tools")
+            PrintUtils.printTool("MCP Loading", "Warning: Failed to load MCP servers, continuing without MCP tools")
         }
 
         this.conversationManager = ConversationManager(agent, Compactor())
         this.customCommandManager = CustomCommandManager()
 
         this._workspace = CliConfig.cwd
+        this._workingThread.store(this._mainThreadId)
     }
 
     protected func registerHooks() {
@@ -139,6 +143,7 @@ protected class CliContext <: Context {
     public func endConversation(threadNum: Int64): Unit {
         synchronized(mtx) {
             if (!interrupted(threadNum)) {
+                this._workingThread.store(this._mainThreadId)
                 changeMode(CliMode.AGENTIC)
             }
         }
@@ -156,7 +161,7 @@ protected class CliContext <: Context {
                 case CHATTING =>
                     _agent.store(ConversationAgent(this._chatAgent, conversation: this.agent.conversation.clone()))
                     conversationManager.agent = agent
-                    this._workingThread.store(-1)
+                    this._workingThread.store(this._mainThreadId)
                     if (let Some(i) <- indicator.load()) {
                         i.stop()
                     }

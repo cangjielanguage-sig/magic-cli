@@ -157,33 +157,20 @@ private func agenticProcess(input: String, context: CliContext) {
                 PrintUtils.printTool("User Memory (MAGIC.md)", "📝 Current MAGIC.md content:")
                 println(userRules)
             }
-        case "/init" | "init" =>
-            initMagicFile()
-        case "!" | "！" =>
-            context.changeMode(CliMode.TERMINAL)
+        case "/init" | "init" => initMagicFile()
+        case "!" | "！" => context.changeMode(CliMode.TERMINAL)
         case _ =>
             if (input.startsWith("/cmd")) {
-                customCommandManager.handleCommand(input, agent)
+                executeAgentTask(context) {
+                    => customCommandManager.handleCommand(input, agent) ?? AgentResponse("")
+                }
             } else if (input.startsWith("/mcp") || input.startsWith("mcp")) {
                 mcpManager.handleCommand(input.split(" "), agent)
             } else if (input.startsWith("/conversation") || input.startsWith("conversation")) {
                 conversationManager.handleCommand(input.split(" "))
             } else {
-                context.changeMode(CHATTING)
-                spawn {
-                    let thread = Thread.currentThread
-                    try {
-                        if (!context.startConversation(thread.id)) {
-                            return
-                        }
-                        let response = agent.chat(AgentRequest(input))
-                        if (!context.interrupted(thread.id)) {
-                            PrintUtils.printAgentResponse(response)
-                            conversationManager.compact()
-                        }
-                    } finally {
-                        context.endConversation(thread.id)
-                    }
+                executeAgentTask(context) {
+                    => agent.chat(AgentRequest(input))
                 }
             }
     }
@@ -218,7 +205,7 @@ private func initMagicFile(): Unit {
     let magicFilePath = CliConfig.uerRuleFile
 
     if (exists(magicFilePath)) {
-        if(let Deny(userInput) <- InputUtils.confirm("MAGIC.md already exists.", "Overwrite?")){
+        if (let Deny(userInput) <- InputUtils.confirm("MAGIC.md already exists.", "Overwrite?")) {
             return
         }
     }
@@ -262,3 +249,23 @@ Please start analyzing the project and return the MAGIC.md content:"""
     }
 }
 
+private func executeAgentTask(context: CliContext, task: () -> AgentResponse) {
+    context.changeMode(CHATTING)
+    spawn {
+        let thread = Thread.currentThread
+        try {
+            if (!context.startConversation(thread.id)) {
+                return
+            }
+            let response = task()
+            if (!context.interrupted(thread.id)) {
+                if (!response.content.isEmpty()) {
+                    PrintUtils.printAgentResponse(response)
+                }
+                context.conversationManager.compact()
+            }
+        } finally {
+            context.endConversation(thread.id)
+        }
+    }
+}
