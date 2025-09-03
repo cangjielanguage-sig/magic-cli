@@ -23,7 +23,7 @@ func displayWidthOf(rune: Rune): Int64 {
     if (r'\u{4e00}' <= rune && rune <= r'\u{9fff}' || // Common Chinese
         r'\u{3000}' <= rune && rune <= r'\u{303f}' || // Chinese punctuation
         r'\u{ff00}' <= rune && rune <= r'\u{ffef}' || // Full-width symbols
-            r'\u{3400}' <= rune && rune <= r'\u{4dbf}' || // Rare characters (Extension A)
+        r'\u{3400}' <= rune && rune <= r'\u{4dbf}' || // Rare characters (Extension A)
         r'\u{1f300}' <= rune && rune <= r'\u{1faff}') { // Emoji
         return 2
     } else {

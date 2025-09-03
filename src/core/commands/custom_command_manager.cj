@@ -5,10 +5,8 @@ import magic.prelude.*
 import magic.jsonable.*
 import magic.agent.ConversationAgent
 import magic.log.LogUtils
-
 import cli.core.config.CliConfig
 import cli.utils.PrintUtils
-
 import std.fs.{exists, Directory, Path, File}
 import std.collection.{HashMap, ArrayList}
 import stdx.encoding.json.*
@@ -33,7 +31,7 @@ protected class CustomCommandManager {
      */
     private func loadCommands(): Unit {
         this.commands.clear()
-        
+
         if (!exists(commandsDir)) {
             LogUtils.info("Commands directory does not exist: ${commandsDir}")
             return
@@ -62,12 +60,12 @@ protected class CustomCommandManager {
             let content = String.fromUtf8(File.readFrom(filePath))
             let jsonValue = JsonValue.fromStr(content)
             let command = CustomCommand.fromJsonValue(jsonValue)
-            
+
             if (command.description.isEmpty() || command.prompt.isEmpty()) {
                 LogUtils.error("Command ${filePath}: description and prompt cannot be empty")
                 return None
             }
-            
+
             return Some(command)
         } catch (e: Exception) {
             LogUtils.error("Failed to load command from ${filePath}: ${e.message}")
@@ -78,13 +76,13 @@ protected class CustomCommandManager {
     /**
      * Execute a custom command
      */
-    private func executeCommand(name: String, args: String, agent: ConversationAgent): Unit {
+    private func executeCommand(name: String, args: String, agent: ConversationAgent): ?AgentResponse {
         if (let Some(command) <- commands.get(name)) {
             let finalPrompt = command.prompt.replace("$ARGS", args)
             let response = agent.chat(AgentRequest(finalPrompt))
-            PrintUtils.printAgentResponse(response)
+            return response
         } else {
-            println("❌ Custom command '${name}' not found. Use '/cmd list' to see available commands.")
+            return AgentResponse("❌ Custom command '${name}' not found. Use '/cmd list' to see available commands.")
         }
     }
 
@@ -133,9 +131,27 @@ protected class CustomCommandManager {
     /**
      * Handle custom command input parsing and execution
      */
-    public func handleCommand(input: String, agent: ConversationAgent): Unit {
+    public func handleCommand(input: String, agent: ConversationAgent): ?AgentResponse {
+        // Check for /cmd:command format
+        if (input.contains(":")) {
+            // /cmd:name args...
+            if (let Some(colonIndex) <- input.indexOf(":")) {
+                let remaining = input[colonIndex + 1..]
+                let cmdParts = remaining.split(" ")
+                if (!cmdParts.isEmpty()) {
+                    let cmdName = cmdParts[0]
+                    let args = if (cmdParts.size > 1) {
+                        remaining[cmdName.size..].trimAscii()
+                    } else {
+                        ""
+                    }
+                    return executeCommand(cmdName, args, agent)
+                }
+            }
+        }
+
         let parts = input.split(" ")
-        
+
         if (parts.size == 1 || (parts.size == 2 && parts[1] == "list")) {
             // /cmd or /cmd list
             listCommands()
@@ -149,21 +165,6 @@ protected class CustomCommandManager {
         } else if (parts.size >= 2 && parts[1] == "reload") {
             // /cmd reload
             reloadCommands()
-        } else if (input.contains(":")) {
-            // /cmd:name args...
-            if (let Some(colonIndex) <- input.indexOf(":")) {
-                let remaining = input[colonIndex + 1..]
-                let cmdParts = remaining.split(" ")
-                if (!cmdParts.isEmpty()) {
-                    let cmdName = cmdParts[0]
-                    let args = if (cmdParts.size > 1) {
-                        remaining[cmdName.size..].trimAscii()
-                    } else {
-                        ""
-                    }
-                    executeCommand(cmdName, args, agent)
-                }
-            }
         } else {
             println("Unknown command. Available options:")
             println("  /cmd list          - List all commands")
@@ -171,5 +172,6 @@ protected class CustomCommandManager {
             println("  /cmd reload        - Reload commands")
             println("  /cmd:<name> [args] - Execute command")
         }
+        return None
     }
 }
