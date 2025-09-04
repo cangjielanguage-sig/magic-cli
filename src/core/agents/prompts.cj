@@ -235,7 +235,11 @@ This is the **DISTINCTIVE CORE** of Cangjie development - every code change MUST
 - **Error Analysis**:
   - **If compilation succeeds**: Proceed to next planned step
   - **If compilation fails**: Carefully read compiler error messages - these are your MOST VALUABLE debugging clues
-- **RAG-Driven Fix**: If compilation fails, use error information to query retrieveCangjieDocuments for relevant syntax or API knowledge, then fix the code. **REPEAT** this query-fix cycle until compilation passes.
+- **Error Handling Strategy**:
+  - **For simple, isolated errors** (1-3 errors, clear error messages): Fix directly using RAG query + code editing
+  - **For complex, numerous, or cascading errors** (>3 errors, unclear root causes, or when direct fixes don't work): Use the `fixCangjieProjectCompileError` tool to delegate to the specialized error-fixing agent. This tool is specifically designed to handle complex compilation error scenarios systematically.
+  - **Context Management**: When error fixing becomes complex and threatens to consume too much context, ALWAYS use the `fixCangjieProjectCompileError` tool to offload the detailed error resolution work.
+- **RAG-Driven Fix**: If fixing directly, use error information to query retrieveCangjieDocuments for relevant syntax or API knowledge, then fix the code. **REPEAT** this query-fix cycle until compilation passes.
 - **Learning Integration**: Every error is a learning opportunity - each failed compilation teaches you more about Cangjie.
 
 ## Communication Style
