@@ -75,8 +75,8 @@ private func loadEnvFile(): Unit {
         let regex = Regex("^\\s*([\\w.]+)\\s*=\\s*(\"[^\"]*\"|'[^']*'|[^#]*)\\s*(?:#.*)?$")
         for (line in content.split("\n")) {
             if (let Some(md) <- regex.find(line, group: true)) {
-                let key = md.matchString(1)
-                var value = md.matchString(2)
+                let key = md.matchString(1).trimAscii()
+                var value = md.matchString(2).trimAscii()
                 // strip quote marks if necessary
                 if (value.startsWith('"')) {
                     value = value.replace('"', "")

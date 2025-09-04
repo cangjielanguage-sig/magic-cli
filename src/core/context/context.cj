@@ -6,7 +6,7 @@ import magic.log.LogUtils
 import magic.core.message.Conversation
 import magic.agent.{ConversationAgent}
 import magic.core.interaction.EventResponse
-import magic.interaction.{EventHandlerManager, PromptValidateEvent, ToolCallEvent}
+import magic.interaction.{EventHandlerManager, ChatModelStartEvent, ChatModelEndEvent}
 import cli.context.*
 import cli.core.mcp.MCPConfigManager
 import cli.core.conversation.ConversationManager
@@ -27,7 +27,7 @@ protected class CliContext <: Context {
     private let _workspace: Path
     private let mtx: Mutex = Mutex()
     private let _workingThread: AtomicInt64 = AtomicInt64(-1)
-    private let indicator = AtomicOptionReference<WorkingIndicator>()
+    private let thinkIndicator = AtomicOptionReference<WorkingIndicator>()
     protected let conversationManager: ConversationManager
     protected let customCommandManager: CustomCommandManager
     protected let mcpManager: MCPConfigManager
@@ -59,38 +59,21 @@ protected class CliContext <: Context {
     }
 
     protected func registerHooks() {
-        // Although we cannot precisely insert instrumentation before and after using the model,
-        // since the agent operates in a tool-loop mode (i.e., "model-tool" cycle),
-        // we can implement event handling as follows:
-        // The PromptValidateEvent happens before using the model
-        EventHandlerManager
-            .global
-            .addHandler {
-                evt: PromptValidateEvent =>
-                // There may be other agents during the execution.
-                // Only show the indicator of the main agent
-                let thread = Thread.currentThread
-                if (evt.agent.name == agent.name && !interrupted(thread.id)) {
-                    indicator.store(PrintUtils.printWorkingIndicator(message: "💭 Thinking"))
-                }
-                EventResponse.Continue
+        EventHandlerManager.global.addHandler { evt: ChatModelStartEvent =>
+            // There may be other agents during the execution.
+            // Only show the indicator of the main agent
+            let thread = Thread.currentThread
+            if (evt.agent.name == agent.name && !interrupted(thread.id)) {
+                this.thinkIndicator.store(PrintUtils.printWorkingIndicator(message: "💭 Thinking"))
             }
+            EventResponse.Continue
+        }
         // The ToolCallEvent happens after the model giving its reply
-        EventHandlerManager
-            .global
-            .addHandler {
-                evt: ToolCallEvent =>
-                synchronized(mtx) {
-                    let thread = Thread.currentThread
-                    if (interrupted(thread.id)) {
-                        return EventResponse.Terminate(ToolResponse("User Interrupt"))
-                    }
-                    if (evt.agent.name == this.agent.name && let Some(i) <- indicator.load()) {
-                        i.stop()
-                    }
-                    EventResponse<ToolResponse>.Continue
-                }
+        EventHandlerManager.global.addHandler { evt: ChatModelEndEvent =>
+            if (evt.agent.name == this.agent.name && let Some(i) <- this.thinkIndicator.load()) {
+                i.stop()
             }
+        }
         // Register the callback to auto-save conversation
         atExit({
             => conversationManager.autoSave()
@@ -108,7 +91,7 @@ protected class CliContext <: Context {
             this._workingThread.load()
         }
     }
-    
+
     public prop mode: CliMode {
         get() {
             this._mode
@@ -162,7 +145,7 @@ protected class CliContext <: Context {
                     _agent.store(ConversationAgent(this._chatAgent, conversation: this.agent.conversation.clone()))
                     conversationManager.agent = agent
                     this._workingThread.store(this._mainThreadId)
-                    if (let Some(i) <- indicator.load()) {
+                    if (let Some(i) <- this.thinkIndicator.load()) {
                         i.stop()
                     }
                     moveCursor(col: 0)
