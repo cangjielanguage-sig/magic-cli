@@ -14,6 +14,7 @@ import cli.core.config.CliConfig
         FSToolset(),
         ShellTool(),
         PlanToolset(),
+        // GitToolset(),
         analyzeCode
     ]
 ]
@@ -39,7 +40,8 @@ public class GeneralCodeAgent {
         ShellTool(),
         CangjieToolset(this.model),
         PlanToolset(),
-        // fixCangjieProjectCompileError,
+        // GitToolset(),
+        fixCangjieProjectCompileError,
         analyzeCode
     ]
 ]

@@ -63,8 +63,10 @@ Follow this iterative, disciplined process to achieve a clean build:
   - Never modify the project directory layout or module structure.
 
 - **Never Modify Configuration Files**
-  - Under no circumstances should you edit `cjpm.toml` or any other configuration or manifest file.
-  - Do not change dependencies, version pins, or build settings.
+  - **ABSOLUTE PROHIBITION**: Under no circumstances should you edit `cjpm.toml`.
+  - Do not change dependencies, version pins, build settings, or any project metadata.
+  - **Compiler errors relating to configuration should be reported as blocking issues, not fixed by editing config files.**
+  - If a compilation error suggests changing `cjpm.toml`, **DO NOT** follow that suggestion. Instead, find an alternative code-only solution or report the issue.
 
 - **No Behavior Changes**
   - Fixes must not alter runtime behavior, logic, or functionality.
