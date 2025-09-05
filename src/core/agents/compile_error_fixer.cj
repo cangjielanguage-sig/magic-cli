@@ -7,7 +7,7 @@ import magic.config.Config
 import cli.core.tools.*
 import cli.core.tools.cjpm_utils.cjpmRun
 import cli.core.config.CliConfig
-import cli.utils.PrintUtils
+import cli.io.PrintUtils
 
 import std.fs.Path
 

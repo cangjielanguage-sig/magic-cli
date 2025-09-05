@@ -3,7 +3,7 @@ package cli.core.mcp
 import magic.core.tool.*
 import magic.jsonable.TypeSchema
 
-import cli.utils.PrintUtils
+import cli.io.PrintUtils
 
 import std.collection.{HashMap, map, collectArray}
 import stdx.encoding.json.JsonValue

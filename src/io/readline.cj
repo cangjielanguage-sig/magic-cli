@@ -1,4 +1,4 @@
-package cli.utils
+package cli.io
 
 import magic.log.LogUtils
 import std.collection.{ArrayList, LinkedList, collectArray, filter, map}
@@ -225,7 +225,7 @@ private func buildCompletionList(input: String, cursor: Int64, isShellMode!: Boo
     // Check for @path completion based on cursor position (disabled in shell mode)
     if (!isShellMode) {
         if (let Some((atIndex, pathStart, pathEnd, pathPrefix)) <- extractPathContext(text, cursor)) {
-            let pathCompletions = listFiles(prefix: pathPrefix)
+            let pathCompletions = getPathCompletionList(prefix: pathPrefix)
             if (pathCompletions.size > 0) {
                 // For empty prefix (just "@"), show all files
                 // For non-empty prefix, show paths that start with prefix but are different
@@ -298,9 +298,9 @@ private func renderCompletionList(completions: Array<String>, selectedIndex: Int
  */
 private func clearPreviousRender(lines: Int64) {
     if (lines > 0) {
-        moveCursor(lines, UP)
+        moveCursor(lines, direction: Direction.Up)
         moveCursor(col: 0)
-        clearScreen(AfterCursorScreen)
+        clearScreen(mode: ClearMode.AfterCursorScreen)
     }
 }
 
@@ -553,13 +553,13 @@ public class Readline {
         // Clear previous render (similar to original redraw logic)
         if (!isFirst && displayContext.lastRenderedLines > 0) {
             // Move up based on previous cursor position + 1, like original implementation
-            moveCursor(displayContext.lastRenderedLines, UP)
+            moveCursor(displayContext.lastRenderedLines, direction: Direction.Up)
             moveCursor(col: 0)
-            clearScreen(AfterCursorScreen)
+            clearScreen(mode: ClearMode.AfterCursorScreen)
         }
 
         // Print the wrapped content
-        print(wrappedContent, flush: true)
+        PrintUtils.printString(wrappedContent)
 
         // Handle completion list (similar to extendLine in original)
         if (completionState.isActive) {
@@ -569,10 +569,10 @@ public class Readline {
             )
             if (!completionText.isEmpty()) {
                 let completionLines = completionText.lines().count() - 1
-                print(completionText, flush: true)
+                PrintUtils.printString(completionText)
                 // Move cursor up by completion lines (like original colomShift)
                 if (completionLines > 0) {
-                    moveCursor(completionLines, UP)
+                    moveCursor(completionLines, direction: Direction.Up)
                 }
             }
         }
@@ -581,7 +581,7 @@ public class Readline {
         let totalLines = wrappedContent.lines().count()
         let linesToMoveUp = totalLines - cursorRow - 2  // -2 like in original
         if (linesToMoveUp > 0) {
-            moveCursor(linesToMoveUp, UP)
+            moveCursor(linesToMoveUp, direction: Direction.Up)
         }
         moveCursor(col: cursorCol)
 
@@ -619,16 +619,16 @@ public class Readline {
 
         // Clear previous render
         if (displayContext.lastRenderedLines > 0) {
-            moveCursor(displayContext.lastRenderedLines, UP)
+            moveCursor(displayContext.lastRenderedLines, direction: Direction.Up)
             moveCursor(col: 0)
-            clearScreen(AfterCursorScreen)
+            clearScreen(mode: ClearMode.AfterCursorScreen)
         }
 
         // Print the final content
-        print(wrappedContent, flush: true)
+        PrintUtils.printString(wrappedContent)
 
         // Print newline and position cursor at bottom (like DrawPhase.Last)
-        print("\n", flush: true)
+        PrintUtils.printLine("")
     }
 
     /**
@@ -675,7 +675,7 @@ public class Readline {
      * Simple blocking readline without fancy UI
      */
     public func simpleReadLine(prompt: String): Option<String> {
-        print(prompt, flush: true)
+        PrintUtils.printString(prompt)
         return readln()
     }
 

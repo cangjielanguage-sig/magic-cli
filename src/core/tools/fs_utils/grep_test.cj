@@ -11,7 +11,7 @@ import std.unittest.testmacro.{Test, PowerAssert}
  */
 @Test
 private func testBasicPatterns(): Unit {
-    println("\n--- Testing basic patterns ---")
+    PrintUtils.printLine("\n--- Testing basic patterns ---")
     let currentDir = CliConfig.cwd.toString()
 
     // Test simple word search
@@ -21,7 +21,7 @@ private func testBasicPatterns(): Unit {
     testGrepPattern("import.*std", "./src", None, "Find std library imports")
 
     // Test case-sensitive search
-    testGrepPattern("println", "./src", None, "Find println statements")
+    testGrepPattern("PrintUtils.printLine", "./src", None, "Find PrintUtils.printLine statements")
 
     // Test pattern with special regex characters
     testGrepPattern("\\*\\*", "./src", None, "Find double asterisk patterns")
@@ -32,7 +32,7 @@ private func testBasicPatterns(): Unit {
  */
 @Test
 private func testFileTypeFiltering(): Unit {
-    println("\n--- Testing file type filtering ---")
+    PrintUtils.printLine("\n--- Testing file type filtering ---")
 
     // Test .cj files only
     testGrepPattern("func", "./src", Some("*.cj"), "Search only in .cj files")
@@ -49,7 +49,7 @@ private func testFileTypeFiltering(): Unit {
  */
 @Test
 private func testPathFiltering(): Unit {
-    println("\n--- Testing path filtering ---")
+    PrintUtils.printLine("\n--- Testing path filtering ---")
     let currentDir = CliConfig.cwd.toString()
 
     // Test searching in src directory if it exists
@@ -68,7 +68,7 @@ private func testPathFiltering(): Unit {
  */
 @Test
 private func testEdgeCases(): Unit {
-    println("\n--- Testing edge cases ---")
+    PrintUtils.printLine("\n--- Testing edge cases ---")
 
     // Test pattern that should return no matches
     testGrepPattern("zzzzNeverMatchThis", "./src", None, "Pattern with no matches")
@@ -87,19 +87,19 @@ private func testEdgeCases(): Unit {
  * Helper function to test a single grep pattern and validate results
  */
 private func testGrepPattern(pattern: String, path: Option<String>, include: Option<String>, description: String): Unit {
-    println("\nTesting: ${description}")
-    println("Pattern: '${pattern}'")
+    PrintUtils.printLine("\nTesting: ${description}")
+    PrintUtils.printLine("Pattern: '${pattern}'")
 
     let pathStr = path.map { p => p } ?? "current directory"
     let includeStr = include.map { i => i } ?? "all files"
-    println("Path: ${pathStr}")
-    println("Include: ${includeStr}")
+    PrintUtils.printLine("Path: ${pathStr}")
+    PrintUtils.printLine("Include: ${includeStr}")
 
     let result = grep(pattern, path, include)
     let lines = result.split("\n")
     let matchCount = lines.size
 
-    println("Result: ${matchCount} lines of output")
+    PrintUtils.printLine("Result: ${matchCount} lines of output")
 
     // Basic validation - result should be a string
     @PowerAssert(result.size >= 0)
@@ -112,33 +112,33 @@ private func testGrepPattern(pattern: String, path: Option<String>, include: Opt
             parts.size >= 3 && parts[0].contains("/")  // Should have path:line:content format
         }
         if (hasValidFormat) {
-            println("✓ Valid grep output format detected")
+            PrintUtils.printLine("✓ Valid grep output format detected")
         } else {
-            println("! Unusual output format (might be expected for this pattern)")
+            PrintUtils.printLine("! Unusual output format (might be expected for this pattern)")
         }
     } else if (pattern == "zzzzNeverMatchThis") {
         // This pattern should return no matches or error - both are acceptable
-        println("✓ No matches found for non-existent pattern (as expected)")
+        PrintUtils.printLine("✓ No matches found for non-existent pattern (as expected)")
     } else if (pattern.isEmpty()) {
         // Empty pattern behavior varies by grep implementation
-        println("✓ Empty pattern handled")
+        PrintUtils.printLine("✓ Empty pattern handled")
     } else if (result.contains("No such file") || result.contains("Failed")) {
         // Error cases
-        println("✓ Error case handled appropriately")
+        PrintUtils.printLine("✓ Error case handled appropriately")
     }
 
     // Show sample of results (first 3 lines) for debugging
     if (matchCount > 0 && matchCount <= 3) {
-        println("Sample results:")
+        PrintUtils.printLine("Sample results:")
         for (line in lines) {
-            println("  ${line}")
+            PrintUtils.printLine("  ${line}")
         }
     } else if (matchCount > 3) {
-        println("Sample results (first 3 lines):")
+        PrintUtils.printLine("Sample results (first 3 lines):")
         for (i in 0..3) {
-            println("  ${lines[i]}")
+            PrintUtils.printLine("  ${lines[i]}")
         }
-        println("  ... and ${matchCount - 3} more lines")
+        PrintUtils.printLine("  ... and ${matchCount - 3} more lines")
     }
 }
 
@@ -147,7 +147,7 @@ private func testGrepPattern(pattern: String, path: Option<String>, include: Opt
  */
 @Test
 public func testGrepUnits(): Unit {
-    println("\n=== Unit Tests for Grep Helpers ===")
+    PrintUtils.printLine("\n=== Unit Tests for Grep Helpers ===")
 
     // Test path resolution logic
     testPathResolution()
@@ -155,14 +155,14 @@ public func testGrepUnits(): Unit {
     // Test output parsing validation
     testOutputParsing()
 
-    println("=== Grep Unit Tests Completed ===")
+    PrintUtils.printLine("=== Grep Unit Tests Completed ===")
 }
 
 /**
  * Tests path resolution functionality
  */
 private func testPathResolution(): Unit {
-    println("\n--- Testing path resolution ---")
+    PrintUtils.printLine("\n--- Testing path resolution ---")
 
     let currentDir = CliConfig.cwd.toString()
 
@@ -174,14 +174,14 @@ private func testPathResolution(): Unit {
     let resolvedPath = Path(currentDir).join(testRelPath)
     @PowerAssert(resolvedPath.isAbsolute())
 
-    println("✓ Path resolution tests passed")
+    PrintUtils.printLine("✓ Path resolution tests passed")
 }
 
 /**
  * Tests output parsing validation
  */
 private func testOutputParsing(): Unit {
-    println("\n--- Testing output parsing logic ---")
+    PrintUtils.printLine("\n--- Testing output parsing logic ---")
 
     // Test typical grep output line format
     let sampleLine = "/path/to/file.cj:42:some code here"
@@ -198,7 +198,7 @@ private func testOutputParsing(): Unit {
     @PowerAssert(complexParts.size, 3)
     @PowerAssert(complexParts[2], "let obj = { key: value }")
 
-    println("✓ Output parsing tests passed")
+    PrintUtils.printLine("✓ Output parsing tests passed")
 }
 
 /**
@@ -206,7 +206,7 @@ private func testOutputParsing(): Unit {
  */
 @Test
 public func benchmarkGrep(): Unit {
-    println("\n=== Grep Performance Benchmark ===")
+    PrintUtils.printLine("\n=== Grep Performance Benchmark ===")
     let currentDir = CliConfig.cwd.toString()
 
     let testCases: Array<(String, ?String, ?String, String)> = [
@@ -221,17 +221,17 @@ public func benchmarkGrep(): Unit {
         let include = testCase[2]
         let description = testCase[3]
 
-        println("\nBenchmarking: ${description}")
-        println("Pattern: '${pattern}'")
+        PrintUtils.printLine("\nBenchmarking: ${description}")
+        PrintUtils.printLine("Pattern: '${pattern}'")
 
         // Simple timing (Cangjie may not have precise timing APIs)
         let result = grep(pattern, path, include)
         let lineCount = result.split("\n").size
-        println("Found ${lineCount} lines")
+        PrintUtils.printLine("Found ${lineCount} lines")
 
         // Assert reasonable performance (non-negative results)
         @PowerAssert(lineCount >= 0)
     }
 
-    println("\n=== Benchmark Completed ===")
+    PrintUtils.printLine("\n=== Benchmark Completed ===")
 }

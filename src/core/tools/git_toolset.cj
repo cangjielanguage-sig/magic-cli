@@ -1,14 +1,14 @@
 package cli.core.tools
 
+import magic.dsl.*
+import magic.prelude.*
+
+import cli.io.PrintUtils
+
 import std.env.*
 import std.process.*
 import std.io.*
 import std.fs.*
-
-import magic.dsl.*
-import magic.prelude.*
-
-import cli.utils.*
 
 @toolset
 public class GitToolset {

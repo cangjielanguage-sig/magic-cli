@@ -1,4 +1,4 @@
-package cli.utils
+package cli.io
 
 import std.collection.{ArrayList, HashMap}
 import magic.log.LogUtils

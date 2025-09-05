@@ -1,16 +1,17 @@
 package cli
 
 import cli.core.config.CliConfig
+import cli.io.PrintUtils
 
 import std.collection.ArrayList
 import std.argopt.{parseArguments, ArgumentSpec, ArgumentMode, ArgumentParseException}
 
 func printHelp(): Unit {
-    println("Magic Cli")
-    println("  --auto            The agent runs autonomously")
-    println("  --language, -l    Specify languages in [Cangjie, General(Default)]")
-    println("  --model <model>   Set the chat model")
-    println("  --help, -h        Print this help message")
+    PrintUtils.printLine("Magic Cli")
+    PrintUtils.printLine("  --auto            The agent runs autonomously")
+    PrintUtils.printLine("  --language, -l    Specify languages in [Cangjie, General(Default)]")
+    PrintUtils.printLine("  --model <model>   Set the chat model")
+    PrintUtils.printLine("  --help, -h        Print this help message")
 }
 
 /**
@@ -26,7 +27,7 @@ func parseArgs(args: Array<String>): Bool {
     let result = try {
         parseArguments(args, argSpecs)
     } catch (ex: ArgumentParseException) {
-        println(ex.message)
+        PrintUtils.printLine(ex.message)
         return false
     }
     if (result.options.contains("help") || result.options.contains("h")) {

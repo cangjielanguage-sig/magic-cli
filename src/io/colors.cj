@@ -1,4 +1,4 @@
-package cli.utils
+package cli.io
 
 protected struct AnsiColor <: ToString {
     public AnsiColor(

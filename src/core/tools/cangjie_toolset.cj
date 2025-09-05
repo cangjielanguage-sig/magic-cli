@@ -11,9 +11,10 @@ import magic.dsl.*
 import magic.prelude.*
 import magic.jsonable.*
 
-import cli.core.config.CliConfig
-import cli.utils.*
 import cli.core.tools.cjpm_utils.*
+import cli.core.config.CliConfig
+import cli.io.PrintUtils
+import cli.utils.*
 
 @agent[
     executor: "naive"

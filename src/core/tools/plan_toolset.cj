@@ -1,11 +1,12 @@
 package cli.core.tools
 
-import cli.utils.*
-import cli.core.config.CliConfig
-
 import magic.dsl.*
 import magic.prelude.*
 import magic.log.LogUtils
+
+import cli.core.config.CliConfig
+import cli.io.{InputUtils, PrintUtils}
+import cli.utils.*
 
 import std.collection.*
 import std.fs.*

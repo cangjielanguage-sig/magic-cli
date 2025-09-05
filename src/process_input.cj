@@ -8,12 +8,14 @@ import cli.core.mcp.MCPConfigManager
 import cli.core.conversation.ConversationManager
 import cli.core.context.CliContext
 import cli.core.agents.CodeAnalyzer
-import cli.utils.*
+import cli.io.{InputUtils, PrintUtils}
+import cli.io.WithColor
+import cli.utils.TerminalUtils
 
 import std.collection.ArrayList
 import std.fs.{exists, File, FSException, Path}
 import std.sync.{AtomicOptionReference, AtomicBool}
-import std.console.*
+import std.process.executeWithOutput
 
 /**
  * Check if input is a built-in command
@@ -30,12 +32,20 @@ private func isBuiltinCommand(input: String): Bool {
  * Execute shell command (input starting with !)
  */
 private func executeShellCommand(command: String, context: CliContext): Unit {
-    let (exitCode, stdOutData, stdErrData) = TerminalUtils.execute(command, CliConfig.cwd)
+    LogUtils.info("Executing shell command: ${command}")
+    if (command.trimAscii().isEmpty()) {
+        PrintUtils.printLine("Shell Command: No command provided after '!'.")
+        return
+    }
+    let items = command.split(" ")  // Simple split by space, does not handle quotes
+    let args = if (items.size > 1) { items[1..] } else { Array<String>() }
+    let (exitCode, stdOutData, stdErrData) = executeWithOutput(items[0], args, workingDirectory: CliConfig.cwd)
     let output = if (exitCode == 0) {
         String.fromUtf8(stdOutData).trimAscii()
     } else {
         String.fromUtf8(stdErrData).trimAscii()
     }
+    LogUtils.info("Shell command exited with code ${exitCode}, output: ${output}")
     PrintUtils.printShellResult(output)
 }
 
@@ -62,10 +72,10 @@ private func executeBuiltinCommand(input: String, context: CliContext): Bool {
             let userRules = CliConfig.userRules
             if (userRules.isEmpty()) {
                 PrintUtils.printTool("User Memory (MAGIC.md)", "📝 No MAGIC.md file found in current directory")
-                println("Create a MAGIC.md file in your project to set custom rules and context for Magic-cli to use.")
+                PrintUtils.printLine("Create a MAGIC.md file in your project to set custom rules and context for Magic-cli to use.")
             } else {
                 PrintUtils.printTool("User Memory (MAGIC.md)", "📝 Current MAGIC.md content:")
-                println(userRules)
+                PrintUtils.printLine(userRules)
             }
             return true
         case "/init" | "init" =>
@@ -129,11 +139,11 @@ private func initMagicFile(): Unit {
         } else {
             response.content
         }
-        println("📝 Content preview:")
-        println(preview)
-        println("\n💡 Use '/memory' to view the full content anytime!")
+        PrintUtils.printLine("📝 Content preview:")
+        PrintUtils.printLine(preview)
+        PrintUtils.printLine("\n💡 Use '/memory' to view the full content anytime!")
     } catch (e: Exception) {
-        println("❌ Failed to write MAGIC.md: ${e.message}")
+        PrintUtils.printLine("❌ Failed to write MAGIC.md: ${e.message}")
     }
 }
 

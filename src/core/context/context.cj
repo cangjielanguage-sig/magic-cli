@@ -13,7 +13,7 @@ import cli.core.conversation.ConversationManager
 import cli.core.commands.CustomCommandManager
 import cli.core.config.CliConfig
 import cli.core.agents.*
-import cli.utils.{PrintUtils, WorkingIndicator, moveCursor, clearScreen, ClearMode}
+import cli.io.{PrintUtils, WorkingIndicator, moveCursor, clearScreen, ClearMode}
 
 import std.fs.Path
 import std.collection.HashMap

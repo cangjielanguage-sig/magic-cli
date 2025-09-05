@@ -1,9 +1,10 @@
 package cli.core.tools
 
-import cli.utils.*
-
 import magic.dsl.*
 import magic.prelude.*
+
+import cli.io.{InputUtils, PrintUtils}
+import cli.utils.*
 
 import std.fs.*
 import std.io.*

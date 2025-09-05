@@ -8,7 +8,8 @@ import magic.agent.ConversationAgent
 import magic.jsonable.*
 
 import cli.core.config.CliConfig
-import cli.utils.*
+import cli.io.{InputUtils, PrintUtils}
+import cli.utils.InfoUtils
 
 import std.fs.{exists, File, Path}
 import std.collection.{HashMap, ArrayList, filter, collectArray}
@@ -159,7 +160,7 @@ public class MCPConfigManager {
         PrintUtils.printTool("MCP Servers and Tools", "🔌Total MCP tools loaded: ")
 
         if (this.mcpClients.isEmpty()) {
-            println("No MCP servers currently loaded")
+            PrintUtils.printLine("No MCP servers currently loaded")
             return
         }
 
@@ -174,15 +175,15 @@ public class MCPConfigManager {
             }
 
             let tools = client.tools
-            println("📡 ${serverName} (${serverType}) - ${tools.size} tools:")
+            PrintUtils.printLine("📡 ${serverName} (${serverType}) - ${tools.size} tools:")
             for (tool in tools) {
-                println("  • ${tool.name}")
+                PrintUtils.printLine("  • ${tool.name}")
             }
             totalMcpTools += tools.size
-            println("")
+            PrintUtils.printLine("")
         }
 
-        println("Total MCP tools: ${totalMcpTools}")
+        PrintUtils.printLine("Total MCP tools: ${totalMcpTools}")
     }
 
     private func parseArgsAndEnv(parts: Array<String>, startIndex!: Int64): (Array<String>, Array<(String, String)>) {
@@ -224,9 +225,9 @@ public class MCPConfigManager {
         match (parts[1]) {
             case "add" =>
                 if (parts.size < 4) {
-                    println("Usage: /mcp add <name> <command> [args...] [--env KEY=VALUE ...]")
-                    println("Example: /mcp add myserver npx @some/mcp-server")
-                    println("Example: /mcp add myserver uvx myserver-mcp --env ENV_API_KEY=your_key")
+                    PrintUtils.printLine("Usage: /mcp add <name> <command> [args...] [--env KEY=VALUE ...]")
+                    PrintUtils.printLine("Example: /mcp add myserver npx @some/mcp-server")
+                    PrintUtils.printLine("Example: /mcp add myserver uvx myserver-mcp --env ENV_API_KEY=your_key")
                     return
                 }
                 let (args, envVars) = this.parseArgsAndEnv(parts, startIndex: 4)
@@ -234,26 +235,26 @@ public class MCPConfigManager {
                 addStdioServer(parts[2], parts[3], args, envVars)
             case "add-sse" =>
                 if (parts.size != 4) {
-                    println("Usage: /mcp add-sse <name> <url>")
-                    println("Example: /mcp add-sse myserver http://localhost:3000/sse")
+                    PrintUtils.printLine("Usage: /mcp add-sse <name> <url>")
+                    PrintUtils.printLine("Example: /mcp add-sse myserver http://localhost:3000/sse")
                     return
                 }
                 // parts[2] is server name, parts[3] is url
                 addSseServer(parts[2], parts[3])
             case "remove" =>
                 if (parts.size != 3) {
-                    println("Usage: /mcp remove <name>")
-                    println("Example: /mcp remove myserver")
+                    PrintUtils.printLine("Usage: /mcp remove <name>")
+                    PrintUtils.printLine("Example: /mcp remove myserver")
                     return
                 }
                 // parts[2] is server name
                 removeServer(parts[2])
             case _ =>
-                println("Unknown MCP command: ${parts[1]}")
-                println("Available commands:")
-                println("  add      - Add a new stdio MCP server")
-                println("  add-sse  - Add a new SSE MCP server")
-                println("  remove   - Remove an existing MCP server")
+                PrintUtils.printLine("Unknown MCP command: ${parts[1]}")
+                PrintUtils.printLine("Available commands:")
+                PrintUtils.printLine("  add      - Add a new stdio MCP server")
+                PrintUtils.printLine("  add-sse  - Add a new SSE MCP server")
+                PrintUtils.printLine("  remove   - Remove an existing MCP server")
         }
     }
 
@@ -262,12 +263,12 @@ public class MCPConfigManager {
      */
     public func addSseServer(name: String, url: String): Bool {
         try {
-            println("🔧 Adding SSE MCP server '${name}' with URL '${url}'")
+            PrintUtils.printLine("🔧 Adding SSE MCP server '${name}' with URL '${url}'")
 
             let (config, mcpServers) = loadMcpServersConfig()
 
             if (serverExists(mcpServers, name)) {
-                println("❌ MCP server '${name}' already exists. Use '/mcp remove ${name}' first to replace it.")
+                PrintUtils.printLine("❌ MCP server '${name}' already exists. Use '/mcp remove ${name}' first to replace it.")
                 return false
             }
 
@@ -280,15 +281,15 @@ public class MCPConfigManager {
 
             // Save configuration
             if (saveConfig(config)) {
-                println("✅ Added SSE MCP server: ${name}")
-                println("   URL: ${url}")
-                println("Note: Restart the CLI to load the new SSE MCP server")
+                PrintUtils.printLine("✅ Added SSE MCP server: ${name}")
+                PrintUtils.printLine("   URL: ${url}")
+                PrintUtils.printLine("Note: Restart the CLI to load the new SSE MCP server")
                 return true
             }
             return false
         } catch (ex: Exception) {
             LogUtils.error("Failed to add SSE MCP server '${name}': ${ex}")
-            println("❌ Failed to add SSE MCP server: ${ex.message}")
+            PrintUtils.printLine("❌ Failed to add SSE MCP server: ${ex.message}")
             return false
         }
     }
@@ -298,12 +299,12 @@ public class MCPConfigManager {
      */
     public func addStdioServer(name: String, command: String, args: Array<String>, env: Array<(String, String)>): Bool {
         try {
-            println("🔧 Adding stdio MCP server '${name}' with command '${command}'")
+            PrintUtils.printLine("🔧 Adding stdio MCP server '${name}' with command '${command}'")
 
             let (config, mcpServers) = loadMcpServersConfig()
 
             if (serverExists(mcpServers, name)) {
-                println("❌ MCP server '${name}' already exists. Use '/mcp remove ${name}' first to replace it.")
+                PrintUtils.printLine("❌ MCP server '${name}' already exists. Use '/mcp remove ${name}' first to replace it.")
                 return false
             }
 
@@ -332,24 +333,24 @@ public class MCPConfigManager {
             mcpServers.put(name, serverConfig)
 
             if (saveConfig(config)) {
-                println("✅ Added stdio MCP server: ${name}")
-                println("   Command: ${command}")
+                PrintUtils.printLine("✅ Added stdio MCP server: ${name}")
+                PrintUtils.printLine("   Command: ${command}")
                 if (!args.isEmpty()) {
-                    println("   Args: ${String.join(args, delimiter: " ")}")
+                    PrintUtils.printLine("   Args: ${String.join(args, delimiter: " ")}")
                 }
                 if (!env.isEmpty()) {
-                    println("   Env vars: ${env.size} variables")
+                    PrintUtils.printLine("   Env vars: ${env.size} variables")
                     for ((key, value) in env) {
-                        println("     ${key}=${value}")
+                        PrintUtils.printLine("     ${key}=${value}")
                     }
                 }
-                println("Note: Restart the CLI to load the new MCP server")
+                PrintUtils.printLine("Note: Restart the CLI to load the new MCP server")
                 return true
             }
             return false
         } catch (ex: Exception) {
             LogUtils.error("Failed to add stdio MCP server '${name}': ${ex}")
-            println("❌ Failed to add stdio MCP server: ${ex.message}")
+            PrintUtils.printLine("❌ Failed to add stdio MCP server: ${ex.message}")
             return false
         }
     }
@@ -359,10 +360,10 @@ public class MCPConfigManager {
      */
     public func removeServer(name: String): Bool {
         try {
-            println("🔧 Removing MCP server '${name}'")
+            PrintUtils.printLine("🔧 Removing MCP server '${name}'")
 
             if (!exists(configPath)) {
-                println("❌ No MCP servers configured")
+                PrintUtils.printLine("❌ No MCP servers configured")
                 return false
             }
 
@@ -370,7 +371,7 @@ public class MCPConfigManager {
 
             // Check if server exists
             if (!serverExists(mcpServers, name)) {
-                println("❌ MCP server '${name}' not found")
+                PrintUtils.printLine("❌ MCP server '${name}' not found")
                 return false
             }
 
@@ -386,14 +387,14 @@ public class MCPConfigManager {
             config.put("mcpServers", newMcpServers)
 
             if (saveConfig(config)) {
-                println("✅ Removed MCP server: ${name}")
-                println("Note: Restart the CLI to unload the removed MCP server")
+                PrintUtils.printLine("✅ Removed MCP server: ${name}")
+                PrintUtils.printLine("Note: Restart the CLI to unload the removed MCP server")
                 return true
             }
             return false
         } catch (ex: Exception) {
             LogUtils.error("Failed to remove MCP server '${name}': ${ex}")
-            println("❌ Failed to remove MCP server: ${ex.message}")
+            PrintUtils.printLine("❌ Failed to remove MCP server: ${ex.message}")
             return false
         }
     }

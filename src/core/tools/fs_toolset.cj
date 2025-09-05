@@ -14,6 +14,7 @@ import magic.prelude.*
 import magic.log.LogUtils
 
 import cli.utils.*
+import cli.io.{InputUtils, PrintUtils}
 import cli.core.tools.fs_utils.*
 import cli.core.config.CliConfig
 

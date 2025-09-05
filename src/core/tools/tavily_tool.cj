@@ -1,24 +1,24 @@
 package cli.core.tools
 
+import magic.dsl.*
+import magic.prelude.*
+import magic.jsonable.*
+import magic.log.LogUtils
+
+import cli.io.PrintUtils
+
 import std.env.getVariable
 import std.collection.*
 import stdx.encoding.json.*
 import std.io.*
 import std.core.StringBuilder
 
-import magic.dsl.*
-import magic.prelude.*
-import magic.jsonable.*
-import magic.log.LogUtils
-
-import cli.utils.*
-
 public struct TavilySearchResult {
     public let title: String
-    public let url: String 
+    public let url: String
     public let content: String
     public let score: Float64
-    
+
     public TavilySearchResult(title: String, url: String, content: String, score: Float64) {
         this.title = title
         this.url = url
@@ -32,7 +32,7 @@ public struct TavilySearchResponse {
     public let answer: Option<String>
     public let results: Array<TavilySearchResult>
     public let responseTime: Float64
-    
+
     public TavilySearchResponse(query: String, answer: Option<String>, results: Array<TavilySearchResult>, responseTime: Float64) {
         this.query = query
         this.answer = answer
@@ -43,30 +43,30 @@ public struct TavilySearchResponse {
 
 public class TavilyTool {
     private let apiKey: String
-    
+
     public TavilyTool() {
         this.apiKey = getVariable("TAVILY_API_KEY") ?? ""
         if (this.apiKey.isEmpty()) {
             throw Exception("TAVILY_API_KEY environment variable not set")
         }
     }
-    
+
     public func search(query: String): String {
         PrintUtils.printTool("Tavily Search", query)
-        
+
         if (query.trimAscii().isEmpty()) {
             return "Search query cannot be empty"
         }
-        
+
         // Use default parameter values
         let maxResults: Int64 = 5
-        let includeAnswer = true  
+        let includeAnswer = true
         let searchDepth = "basic"
-        
+
         // Validate parameters
         let validatedMaxResults = if (maxResults > 20) { 20 } else if (maxResults < 1) { 5 } else { maxResults }
         let validatedSearchDepth = if (searchDepth == "advanced") { "advanced" } else { "basic" }
-        
+
         try {
             let response = performSearch(query, validatedMaxResults, includeAnswer, validatedSearchDepth)
             return formatSearchResponse(response)
@@ -75,7 +75,7 @@ public class TavilyTool {
             return "Search failed: ${e.message}"
         }
     }
-    
+
     private func performSearch(
         query: String,
         maxResults: Int64,
@@ -87,22 +87,22 @@ public class TavilyTool {
             ("Content-Type", "application/json"),
             ("Authorization", "Bearer ${this.apiKey}")
         ])
-        
+
         let requestMap = HashMap<String, JsonValue>()
         requestMap.add("query", JsonString(query))
         requestMap.add("max_results", maxResults.toJsonValue())
         requestMap.add("include_answer", includeAnswer.toJsonValue())
         requestMap.add("search_depth", JsonString(searchDepth))
         requestMap.add("include_raw_content", false.toJsonValue())
-        
+
         let requestBody = JsonObject(requestMap)
-        
+
         let rawResponseOpt = ApiClient.post(url, header, requestBody)
         let rawResponse = match (rawResponseOpt) {
             case Some(resp) => resp
             case None => throw Exception("No response received from server")
         }
-        
+
         // Parse response
         let responseData: JsonValue
         try {
@@ -110,17 +110,17 @@ public class TavilyTool {
         } catch (e: Exception) {
             throw Exception("JSON parsing failed: ${e.message}")
         }
-        
+
         return parseSearchResponse(responseData)
     }
-    
+
     private func parseSearchResponse(responseData: JsonValue): TavilySearchResponse {
         match (responseData) {
             case jsonObj: JsonObject =>
                 let query = extractString(jsonObj, "query") ?? ""
                 let answer = extractOptionalString(jsonObj, "answer")
                 let responseTime = extractFloat(jsonObj, "response_time") ?? 0.0
-                
+
                 let results = ArrayList<TavilySearchResult>()
                 if (let Some(resultsValue) <- jsonObj.get("results")) {
                     let resultsArray = resultsValue as JsonArray
@@ -133,18 +133,18 @@ public class TavilyTool {
                                 let url = extractString(objData, "url") ?? ""
                                 let content = extractString(objData, "content") ?? ""
                                 let score = extractFloat(objData, "score") ?? 0.0
-                                
+
                                 results.add(TavilySearchResult(title, url, content, score))
                             }
                         }
                     }
                 }
-                
+
                 return TavilySearchResponse(query, answer, results.toArray(), responseTime)
             case _ => throw Exception("Invalid response format")
         }
     }
-    
+
     private func extractString(obj: JsonObject, key: String): Option<String> {
         if (let Some(value) <- obj.get(key)) {
             let jsonStr = value as JsonString
@@ -154,7 +154,7 @@ public class TavilyTool {
         }
         return None
     }
-    
+
     private func extractOptionalString(obj: JsonObject, key: String): Option<String> {
         if (let Some(value) <- obj.get(key)) {
             match (value) {
@@ -166,7 +166,7 @@ public class TavilyTool {
             None
         }
     }
-    
+
     private func extractFloat(obj: JsonObject, key: String): Option<Float64> {
         if (let Some(value) <- obj.get(key)) {
             match (value) {
@@ -178,19 +178,19 @@ public class TavilyTool {
             None
         }
     }
-    
+
     private func formatSearchResponse(response: TavilySearchResponse): String {
         var results = ArrayList<String>()
         results.add("=== Tavily Search Results ===\n")
         results.add("Query: ${response.query}\n")
         results.add("Response time: ${response.responseTime}s\n\n")
-        
+
         // Show AI-generated answer first if available
         if (let Some(answer) <- response.answer) {
             results.add("[AI Summary Answer]\n")
             results.add("${answer}\n\n")
         }
-        
+
         // Display search results
         results.add("[Search Results]\n")
         for (i in 0..response.results.size) {
@@ -200,7 +200,7 @@ public class TavilyTool {
             results.add("   Relevance: ${searchResult.score}\n")
             results.add("   Content: ${searchResult.content}\n\n")
         }
-        
+
         return String.join(results.toArray(), delimiter: "")
     }
 }
