@@ -1,4 +1,4 @@
-package cli.utils
+package cli.io
 
 import cli.core.config.CliConfig
 
@@ -41,14 +41,17 @@ protected class InputUtils {
      * Check if user pressed ESC key
      */
     public static func checkEsc(): Bool {
-        ByteChecker.checkEsc().isSome()
-    }
-
-    /**
-     * Check if user pressed ENTER key
-     */
-    private static func checkEnter(): Bool {
-        ByteChecker.checkEnter(infinite: true).isSome()
+        let VK_ESCAPE: Byte = 0x1B
+        try {
+            RawInputUtils.rawEnter()
+            if (RawInputUtils.checkReadByte([VK_ESCAPE], infinite: false)) {
+                return true
+            } else {
+                return false
+            }
+        } finally {
+            RawInputUtils.rawExit()
+        }
     }
 
     public static func confirm(title: String, content: String): Confirmation {
@@ -70,8 +73,8 @@ protected class InputUtils {
         PrintUtils.printUserConfirm()
         let input = getUserInput(prompt: "", withBox: false)
         // Clear the confirmation prompt line
-        moveCursor(1, Direction.UP)
-        clearScreen(ClearMode.EntireLine)
+        moveCursor(1, direction: Direction.Up)
+        clearScreen(mode: ClearMode.EntireLine)
         return input.isEmpty() || input == '\n'
     }
 }

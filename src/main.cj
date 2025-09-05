@@ -5,7 +5,7 @@ import magic.log.LogUtils
 
 import cli.core.config.CliConfig
 import cli.core.context.CliContext
-import cli.utils.*
+import cli.io.{InputUtils, PrintUtils}
 
 import std.fs.{exists, File, FSException, Path}
 import std.regex.Regex

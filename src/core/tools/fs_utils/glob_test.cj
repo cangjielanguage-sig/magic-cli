@@ -11,7 +11,7 @@ import std.unittest.testmacro.{Test, PowerAssert}
  */
 @Test
 public func testGlob(): Unit {
-    println("=== Testing Glob Functionality ===")
+    PrintUtils.printLine("=== Testing Glob Functionality ===")
 
     // Test globToRegex conversion first
     testGlobToRegex()
@@ -19,7 +19,7 @@ public func testGlob(): Unit {
     // Test with current project structure
     testWithRealFiles()
 
-    println("=== Glob Tests Completed ===")
+    PrintUtils.printLine("=== Glob Tests Completed ===")
 }
 
 /**
@@ -27,7 +27,7 @@ public func testGlob(): Unit {
  */
 @Test
 private func testGlobToRegex(): Unit {
-    println("\n--- Testing globToRegex conversion ---")
+    PrintUtils.printLine("\n--- Testing globToRegex conversion ---")
 
     // Test cases: (input pattern, expected regex)
     let testCases = [
@@ -44,7 +44,7 @@ private func testGlobToRegex(): Unit {
         let expected = testCase[1]
         let actual = globToRegex(input)
 
-        println("Testing '${input}' -> '${actual}'")
+        PrintUtils.printLine("Testing '${input}' -> '${actual}'")
         @PowerAssert(actual, expected)
     }
 }
@@ -53,7 +53,7 @@ private func testGlobToRegex(): Unit {
  * Tests glob function with real files in the current project
  */
 private func testWithRealFiles(): Unit {
-    println("\n--- Testing with real files ---")
+    PrintUtils.printLine("\n--- Testing with real files ---")
     let currentDir = CliConfig.cwd.toString()
 
     // Test simple wildcard patterns
@@ -78,8 +78,8 @@ private func testWithRealFiles(): Unit {
  * Helper function to test a single glob pattern
  */
 private func testPattern(pattern: String, rootPath: String, description: String): Unit {
-    println("\nTesting: ${description}")
-    println("Pattern: '${pattern}'")
+    PrintUtils.printLine("\nTesting: ${description}")
+    PrintUtils.printLine("Pattern: '${pattern}'")
 
     let results = glob(pattern, rootPath)
     let count = results.size
@@ -90,18 +90,18 @@ private func testPattern(pattern: String, rootPath: String, description: String)
     }
 
     if (count == 0) {
-        println("Result: No matches found")
+        PrintUtils.printLine("Result: No matches found")
     } else if (count <= 5) {
-        println("Result: ${count} matches:")
+        PrintUtils.printLine("Result: ${count} matches:")
         for (path in results) {
-            println("  - ${path}")
+            PrintUtils.printLine("  - ${path}")
         }
     } else {
-        println("Result: ${count} matches (showing first 5):")
+        PrintUtils.printLine("Result: ${count} matches (showing first 5):")
         for (i in 0..5) {
-            println("  - ${results[i]}")
+            PrintUtils.printLine("  - ${results[i]}")
         }
-        println("  ... and ${count - 5} more")
+        PrintUtils.printLine("  ... and ${count - 5} more")
     }
 }
 
@@ -110,7 +110,7 @@ private func testPattern(pattern: String, rootPath: String, description: String)
  */
 @Test
 public func testGlobUnits(): Unit {
-    println("\n=== Unit Tests ===")
+    PrintUtils.printLine("\n=== Unit Tests ===")
 
     // Test string slicing functionality used in globWithDoubleAsterisk
     testStringSlicing()
@@ -118,23 +118,23 @@ public func testGlobUnits(): Unit {
     // Test pattern splitting
     testPatternSplitting()
 
-    println("=== Unit Tests Completed ===")
+    PrintUtils.printLine("=== Unit Tests Completed ===")
 }
 
 /**
  * Tests string slicing operations
  */
 private func testStringSlicing(): Unit {
-    println("\n--- Testing string slicing ---")
+    PrintUtils.printLine("\n--- Testing string slicing ---")
 
     let testStr = "src/test/"
     let withoutTrailing = testStr[0..testStr.size - 1]
-    println("Remove trailing slash: '${testStr}' -> '${withoutTrailing}'")
+    PrintUtils.printLine("Remove trailing slash: '${testStr}' -> '${withoutTrailing}'")
     @PowerAssert(withoutTrailing, "src/test")
 
     let testStr2 = "/test/file"
     let withoutLeading = testStr2[1..]
-    println("Remove leading slash: '${testStr2}' -> '${withoutLeading}'")
+    PrintUtils.printLine("Remove leading slash: '${testStr2}' -> '${withoutLeading}'")
     @PowerAssert(withoutLeading, "test/file")
 }
 
@@ -142,7 +142,7 @@ private func testStringSlicing(): Unit {
  * Tests pattern splitting functionality
  */
 private func testPatternSplitting(): Unit {
-    println("\n--- Testing pattern splitting ---")
+    PrintUtils.printLine("\n--- Testing pattern splitting ---")
 
     let patterns = ["src/**/*.cj", "**/test.cj", "build/**", "**"]
     let expectedSizes = [2, 2, 2, 2]
@@ -151,12 +151,12 @@ private func testPatternSplitting(): Unit {
         let pattern = patterns[i]
         let expectedSize = expectedSizes[i]
         let parts = pattern.split("**")
-        println("Split '${pattern}': ${parts.size} parts")
+        PrintUtils.printLine("Split '${pattern}': ${parts.size} parts")
 
         @PowerAssert(parts.size, expectedSize)
 
         for (j in 0..parts.size) {
-            println("  [${j}]: '${parts[j]}'")
+            PrintUtils.printLine("  [${j}]: '${parts[j]}'")
         }
     }
 }
@@ -166,7 +166,7 @@ private func testPatternSplitting(): Unit {
  */
 @Test
 public func benchmarkGlob(): Unit {
-    println("\n=== Glob Performance Benchmark ===")
+    PrintUtils.printLine("\n=== Glob Performance Benchmark ===")
     let currentDir = CliConfig.cwd.toString()
 
     let patterns = [
@@ -177,11 +177,11 @@ public func benchmarkGlob(): Unit {
     ]
 
     for (pattern in patterns) {
-        println("\nBenchmarking pattern: '${pattern}'")
+        PrintUtils.printLine("\nBenchmarking pattern: '${pattern}'")
 
         // Simple timing (note: Cangjie may not have precise timing APIs)
         let results = glob(pattern, currentDir)
-        println("Found ${results.size} matches")
+        PrintUtils.printLine("Found ${results.size} matches")
 
         // Assert that we get reasonable results
         @PowerAssert(results.size >= 0)
@@ -189,5 +189,5 @@ public func benchmarkGlob(): Unit {
         // Could add more sophisticated timing here if available
     }
 
-    println("\n=== Benchmark Completed ===")
+    PrintUtils.printLine("\n=== Benchmark Completed ===")
 }

@@ -6,7 +6,7 @@ import magic.config.Config
 
 import cli.core.tools.*
 import cli.core.config.CliConfig
-import cli.utils.PrintUtils
+import cli.io.PrintUtils
 
 private let ANALYZER_PROMPT = """
 You are an expert software engineer and code investigator. Your task is to help users understand a codebase by answering their questions through systematic analysis. You have access to a set of command-line tools to explore the project files. Always proceed step by step, using tools when needed, and explain your reasoning clearly.

@@ -1,11 +1,14 @@
-package cli.utils
+package cli.io
 
 import magic.core.agent.{AsyncAgentResponse, AgentResponse}
+
+import cli.utils.InfoUtils
 
 import std.collection.{map, enumerate, collectArray}
 import std.time.DateTime
 import std.process.executeWithOutput
 import std.env.getVariable
+
 
 /**
  * The working indicator is printed by another thread
@@ -23,7 +26,18 @@ protected class WorkingIndicator {
 }
 
 protected class PrintUtils {
-    static public func clearScreen() {
+    //---------------------------------------------------
+    // Two fundamental print methods
+    static public func printLine(line: String): Unit {
+        println(line)
+    }
+
+    static public func printString(str: String): Unit {
+        print(str, flush: true)
+    }
+    //---------------------------------------------------
+
+    static public func clearScreen(): Unit {
         let (exitCode, stdOutData, stdErrData) = if (InfoUtils.os == "windows") {
             executeWithOutput("powershell", ["-Command", "clear"])
         } else {
@@ -32,14 +46,13 @@ protected class PrintUtils {
     }
 
     static public func printWelcome() {
-        clearScreen()
+        // Clear the screen first
         printLogo()
         let currentTime = DateTime.now()
         let formattedTime = currentTime.format("yyyy-MM-dd HH:mm:ss")
 
-        print(
-            "🚦 ${THEME_MUTED}Input '${THEME_YELLOW}/help${THEME_MUTED}' to check the manual and '${THEME_YELLOW}/exit${THEME_MUTED}' to exit the program.${RESET}\n\n",
-            flush: true
+        PrintUtils.printLine(
+            "🚦 ${THEME_MUTED}Input '${THEME_YELLOW}/help${THEME_MUTED}' to check the manual and '${THEME_YELLOW}/exit${THEME_MUTED}' to exit the program.${RESET}\n"
         )
     }
 
@@ -48,7 +61,7 @@ protected class PrintUtils {
     }
 
     static public func printExitMessage() {
-        println("\n👋 Goodbye ✨!\n".withColor(THEME_SECONDARY))
+        PrintUtils.printLine("\n👋 Goodbye ✨!\n".withColor(THEME_SECONDARY))
     }
 
     static let HELP_INFO = [
@@ -77,7 +90,7 @@ protected class PrintUtils {
             width: 60,
             centerTitle: true
         )
-        println(helpMessage)
+        PrintUtils.printLine(helpMessage)
     }
 
     //----------------------------------------------------------------------------------
@@ -96,31 +109,32 @@ protected class PrintUtils {
 
     static public func printInterrupt() {
         if (CURRENT_INDENT > 0) {
-            print(" " * CURRENT_INDENT)
+            PrintUtils.printString(" " * CURRENT_INDENT)
         }
-        println (" ❗ Interrupted ...")
+        PrintUtils.printLine(" ❗ Interrupted ...")
     }
 
     static public func printUserConfirm() {
         if (CURRENT_INDENT > 0) {
-            print(" " * CURRENT_INDENT)
+            PrintUtils.printString(" " * CURRENT_INDENT)
         }
-        println("(Enter to confirm, any other key to cancel): ".withColor(THEME_PRIMARY))
+        PrintUtils.printLine("(Enter to confirm, any other key to cancel): ".withColor(THEME_PRIMARY))
     }
 
     static public func printApproval(): Unit {
         if (CURRENT_INDENT > 0) {
-            print(" " * CURRENT_INDENT)
+            PrintUtils.printString(" " * CURRENT_INDENT)
         }
-        println("└─ 🔧 Approved to run...".withColor(THEME_MUTED))
+        PrintUtils.printLine("└─ 🔧 Approved to run...".withColor(THEME_MUTED))
     }
 
     static public func printCancellation(): Unit {
         if (CURRENT_INDENT > 0) {
-            print(" " * CURRENT_INDENT)
+            PrintUtils.printString(" " * CURRENT_INDENT)
         }
-        println("└─ ✖ Cancelled...".withColor(THEME_MUTED))
+        PrintUtils.printLine("└─ ✖ Cancelled...".withColor(THEME_MUTED))
     }
+
 
     static public func printTool(name: String, message: String, needConfirm!: Bool = false) {
         // Whether to confirm decides the mark
@@ -134,7 +148,7 @@ protected class PrintUtils {
             content: message.withColor(THEME_INFO)
         )
         if (CURRENT_INDENT == 0) {
-            println(boxContent)
+            PrintUtils.printLine(boxContent)
         } else {
             for ((idx, line) in enumerate(boxContent.split("\n"))) {
 
@@ -143,7 +157,7 @@ protected class PrintUtils {
                 } else {
                     " " * CURRENT_INDENT
                 }
-                println("${prefix}${line}")
+                PrintUtils.printLine("${prefix}${line}")
             }
         }
     }
@@ -151,34 +165,34 @@ protected class PrintUtils {
     //----------------------------------------------------------------------------------
 
     static public func printAgentResponse(response: AgentResponse) {
-        println(
+        PrintUtils.printLine(
             wrapBox("${InputUtils.buildPrompt("🔮")}${response.content}")
         )
     }
 
     static public func printAgentResponse(response: AsyncAgentResponse) {
-        println(
+        PrintUtils.printLine(
             wrapBox("${InputUtils.buildPrompt("🔮")}${response.content}")
         )
     }
 
     static public func printShellResult(output: String) {
-        print(output + '\r')
+        printLine(output)
     }
 
     static let INDICATORS = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"]
 
     static public func printWorkingIndicator(message!: String = "Working"): WorkingIndicator {
-        clearScreen(EntireLine)
+        clearScreen(mode: ClearMode.EntireLine)
         let future = spawn {
             var idx = 0
             while (!Thread.currentThread.hasPendingCancellation) {
                 let spinner = INDICATORS[idx % INDICATORS.size]
-                print("\r${spinner} ${message}...".withColor(THEME_MUTED), flush: true)
+                PrintUtils.printString("\r${spinner} ${message}...".withColor(THEME_MUTED))
                 sleep(Duration.millisecond * 100)
                 idx = (idx + 1) % INDICATORS.size
             }
-            clearScreen(EntireLine)
+            clearScreen(mode: ClearMode.EntireLine)
         }
         return WorkingIndicator(future)
     }

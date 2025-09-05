@@ -12,7 +12,7 @@ import std.unittest.testmacro.{Test, PowerAssert}
  */
 @Test
 public func testHead(): Unit {
-    println("=== Testing Head Functionality ===")
+    PrintUtils.printLine("=== Testing Head Functionality ===")
 
     // Test basic head operations
     testBasicHead()
@@ -26,7 +26,7 @@ public func testHead(): Unit {
     // Test error conditions
     testHeadErrors()
 
-    println("=== Head Tests Completed ===")
+    PrintUtils.printLine("=== Head Tests Completed ===")
 }
 
 /**
@@ -34,7 +34,7 @@ public func testHead(): Unit {
  */
 @Test
 private func testBasicHead(): Unit {
-    println("\n--- Testing basic head functionality ---")
+    PrintUtils.printLine("\n--- Testing basic head functionality ---")
     let currentDir = CliConfig.cwd.toString()
 
     // Test head on existing .cj files if they exist
@@ -65,7 +65,7 @@ private func testBasicHead(): Unit {
  */
 @Test
 private func testLineCounts(): Unit {
-    println("\n--- Testing different line counts ---")
+    PrintUtils.printLine("\n--- Testing different line counts ---")
 
     // Create a temporary test file with known content
     let testContent = createTestFileContent(20)
@@ -97,7 +97,7 @@ private func testLineCounts(): Unit {
  */
 @Test
 private func testHeadEdgeCases(): Unit {
-    println("\n--- Testing head edge cases ---")
+    PrintUtils.printLine("\n--- Testing head edge cases ---")
 
     // Test with empty file
     let emptyFilePath = createTempFile("")
@@ -127,7 +127,7 @@ private func testHeadEdgeCases(): Unit {
  */
 @Test
 private func testHeadErrors(): Unit {
-    println("\n--- Testing head error conditions ---")
+    PrintUtils.printLine("\n--- Testing head error conditions ---")
 
     // Test non-existent file
     testHeadError("/nonexistent/file.txt", 5, "Non-existent file")
@@ -153,15 +153,15 @@ private func testHeadErrors(): Unit {
  * Helper function to test head on a specific file
  */
 private func testHeadOnFile(filePath: String, lines: Int64, description: String): Unit {
-    println("\nTesting: ${description}")
-    println("File: ${filePath}")
-    println("Lines: ${lines}")
+    PrintUtils.printLine("\nTesting: ${description}")
+    PrintUtils.printLine("File: ${filePath}")
+    PrintUtils.printLine("Lines: ${lines}")
 
     let result = head(filePath, lines: lines)
     let resultLines = result.split("\n")
     let actualLineCount = resultLines.size
 
-    println("Result: ${actualLineCount} lines returned")
+    PrintUtils.printLine("Result: ${actualLineCount} lines returned")
 
     // Basic validation
     @PowerAssert(result.size >= 0)
@@ -172,13 +172,13 @@ private func testHeadOnFile(filePath: String, lines: Int64, description: String)
         !result.startsWith("File path must be absolute")) {
 
         if (result == "File is empty: ${filePath}") {
-            println("✓ Empty file handled correctly")
+            PrintUtils.printLine("✓ Empty file handled correctly")
         } else {
             // Verify line count is reasonable (should be <= requested lines)
             if (actualLineCount <= lines + 1) {  // +1 for potential empty last line
-                println("✓ Line count constraint satisfied")
+                PrintUtils.printLine("✓ Line count constraint satisfied")
             } else {
-                println("! Line count higher than expected")
+                PrintUtils.printLine("! Line count higher than expected")
             }
 
             // Check for line number format in output
@@ -186,25 +186,25 @@ private func testHeadOnFile(filePath: String, lines: Int64, description: String)
                 line.contains("\t") && line.split("\t").size >= 2
             }
             if (hasLineNumbers) {
-                println("✓ Line numbers detected in output")
+                PrintUtils.printLine("✓ Line numbers detected in output")
             }
 
             // Show sample output
             if (actualLineCount > 0 && actualLineCount <= 3) {
-                println("Sample output:")
+                PrintUtils.printLine("Sample output:")
                 for (line in resultLines) {
                     if (!line.isEmpty()) {
-                        println("  ${line}")
+                        PrintUtils.printLine("  ${line}")
                     }
                 }
             } else if (actualLineCount > 3) {
-                println("Sample output (first 2 lines):")
+                PrintUtils.printLine("Sample output (first 2 lines):")
                 for (i in 0..2) {
                     if (i < resultLines.size && !resultLines[i].isEmpty()) {
-                        println("  ${resultLines[i]}")
+                        PrintUtils.printLine("  ${resultLines[i]}")
                     }
                 }
-                println("  ... (${actualLineCount - 2} more lines)")
+                PrintUtils.printLine("  ... (${actualLineCount - 2} more lines)")
             }
         }
     }
@@ -214,9 +214,9 @@ private func testHeadOnFile(filePath: String, lines: Int64, description: String)
  * Helper function to test head error conditions
  */
 private func testHeadError(filePath: String, lines: Int64, description: String): Unit {
-    println("\nTesting error: ${description}")
-    println("File: ${filePath}")
-    println("Lines: ${lines}")
+    PrintUtils.printLine("\nTesting error: ${description}")
+    PrintUtils.printLine("File: ${filePath}")
+    PrintUtils.printLine("Lines: ${lines}")
 
     let result = head(filePath, lines: lines)
 
@@ -229,9 +229,9 @@ private func testHeadError(filePath: String, lines: Int64, description: String):
                   result.startsWith("Error reading file")
 
     if (isError) {
-        println("✓ Error handled correctly: ${result}")
+        PrintUtils.printLine("✓ Error handled correctly: ${result}")
     } else {
-        println("! Unexpected result for error case: ${result}")
+        PrintUtils.printLine("! Unexpected result for error case: ${result}")
     }
 
     @PowerAssert(result.size > 0)  // Should always return some message
@@ -257,7 +257,7 @@ private func findAndTestFile(searchPath: Path, pattern: String, lines: Int64, de
  */
 @Test
 public func testHeadUnits(): Unit {
-    println("\n=== Unit Tests for Head Functions ===")
+    PrintUtils.printLine("\n=== Unit Tests for Head Functions ===")
 
     // Test headSimple function
     testHeadSimpleFunction()
@@ -265,14 +265,14 @@ public func testHeadUnits(): Unit {
     // Test parameter validation
     testParameterValidation()
 
-    println("=== Head Unit Tests Completed ===")
+    PrintUtils.printLine("=== Head Unit Tests Completed ===")
 }
 
 /**
  * Tests the headSimple function
  */
 private func testHeadSimpleFunction(): Unit {
-    println("\n--- Testing headSimple function ---")
+    PrintUtils.printLine("\n--- Testing headSimple function ---")
 
     let testContent = createTestFileContent(8)
     let tempFile = createTempFile(testContent)
@@ -281,15 +281,15 @@ private func testHeadSimpleFunction(): Unit {
         let simpleResult = headSimple(tempFile, lines: 3)
         let normalResult = head(tempFile, lines: 3)
 
-        println("Simple head result length: ${simpleResult.size}")
-        println("Normal head result length: ${normalResult.size}")
+        PrintUtils.printLine("Simple head result length: ${simpleResult.size}")
+        PrintUtils.printLine("Normal head result length: ${normalResult.size}")
 
         // Simple version should be shorter (no line numbers)
         @PowerAssert(simpleResult.size > 0)
         @PowerAssert(simpleResult.size < normalResult.size)  // Should be shorter without line numbers
 
         cleanupTempFile(tempFile)
-        println("✓ headSimple function test passed")
+        PrintUtils.printLine("✓ headSimple function test passed")
     }
 }
 
@@ -297,7 +297,7 @@ private func testHeadSimpleFunction(): Unit {
  * Tests parameter validation logic
  */
 private func testParameterValidation(): Unit {
-    println("\n--- Testing parameter validation ---")
+    PrintUtils.printLine("\n--- Testing parameter validation ---")
 
     let currentDir = CliConfig.cwd.toString()
 
@@ -317,5 +317,5 @@ private func testParameterValidation(): Unit {
         cleanupTempFile(tempFile)
     }
 
-    println("✓ Parameter validation tests passed")
+    PrintUtils.printLine("✓ Parameter validation tests passed")
 }

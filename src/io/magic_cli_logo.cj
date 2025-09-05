@@ -1,4 +1,4 @@
-package cli.utils
+package cli.io
 
 import std.collection.*
 
@@ -184,9 +184,9 @@ public func printMagicCliLogo() {
     let violet = COLORS["violet"]
     let reset = COLORS["reset"]
 
-    println("\n${purple}${headerLine}${reset}")
-    println("${' ' * 40}✨ ${lavender}MAGIC CLI${lightPurple} ✨${reset}")
-    println("${purple}${headerLine}${reset}\n")
+    PrintUtils.printLine("\n${purple}${headerLine}${reset}")
+    PrintUtils.printLine("${' ' * 40}✨ ${lavender}MAGIC CLI${lightPurple} ✨${reset}")
+    PrintUtils.printLine("${purple}${headerLine}${reset}\n")
 
     // Print each row of the logo
     for (row in 0..7) {
@@ -194,12 +194,12 @@ public func printMagicCliLogo() {
         for (pattern in charPatterns) {
             line = line + pattern[row] + "  "  // Add spacing between characters
         }
-        println("  ${line}")
+        PrintUtils.printLine("  ${line}")
     }
 
     // Print elegant footer with purple theme
-    println("\n${purple}${headerLine}${reset}")
-    println("${' ' * 28} 🌟 ${lightPurple}Welcome to the Magic Experience!${lavender} 🌟${reset}")
-    println("${' ' * 33} ${violet}✨ Powered by Cangjie Magic ✨${reset}")
-    println("${purple}${headerLine}${reset}\n")
+    PrintUtils.printLine("\n${purple}${headerLine}${reset}")
+    PrintUtils.printLine("${' ' * 28} 🌟 ${lightPurple}Welcome to the Magic Experience!${lavender} 🌟${reset}")
+    PrintUtils.printLine("${' ' * 33} ${violet}✨ Powered by Cangjie Magic ✨${reset}")
+    PrintUtils.printLine("${purple}${headerLine}${reset}\n")
 }

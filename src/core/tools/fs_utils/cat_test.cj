@@ -12,7 +12,7 @@ import std.collection.*
  */
 @Test
 public func testCat(): Unit {
-    println("=== Testing Cat Functionality ===")
+    PrintUtils.printLine("=== Testing Cat Functionality ===")
 
     // Test basic cat operations
     testBasicCat()
@@ -26,7 +26,7 @@ public func testCat(): Unit {
     // Test error conditions
     testCatErrors()
 
-    println("=== Cat Tests Completed ===")
+    PrintUtils.printLine("=== Cat Tests Completed ===")
 }
 
 /**
@@ -34,7 +34,7 @@ public func testCat(): Unit {
  */
 @Test
 private func testBasicCat(): Unit {
-    println("\n--- Testing basic cat functionality ---")
+    PrintUtils.printLine("\n--- Testing basic cat functionality ---")
     let currentDir = CliConfig.cwd.toString()
 
     // Test cat on existing .cj files if they exist
@@ -67,7 +67,7 @@ private func testBasicCat(): Unit {
  */
 @Test
 private func testCatRange(): Unit {
-    println("\n--- Testing cat range functionality ---")
+    PrintUtils.printLine("\n--- Testing cat range functionality ---")
 
     // Create a test file with known content
     let testContent = createTestFileContent(15)
@@ -101,7 +101,7 @@ private func testCatRange(): Unit {
  */
 @Test
 private func testCatEdgeCases(): Unit {
-    println("\n--- Testing cat edge cases ---")
+    PrintUtils.printLine("\n--- Testing cat edge cases ---")
 
     // Test with empty file
     let emptyFile = createTempFile("")
@@ -137,7 +137,7 @@ private func testCatEdgeCases(): Unit {
  */
 @Test
 private func testCatErrors(): Unit {
-    println("\n--- Testing cat error conditions ---")
+    PrintUtils.printLine("\n--- Testing cat error conditions ---")
 
     // Test non-existent file
     testCatError("/nonexistent/file.txt", "Non-existent file")
@@ -165,14 +165,14 @@ private func testCatErrors(): Unit {
  * Helper function to test cat on a specific file
  */
 private func testCatOnFile(filePath: String, description: String): Unit {
-    println("\nTesting: ${description}")
-    println("File: ${filePath}")
+    PrintUtils.printLine("\nTesting: ${description}")
+    PrintUtils.printLine("File: ${filePath}")
 
     let result = cat(filePath)
     let resultLines = result.split("\n")
     let lineCount = resultLines.size
 
-    println("Result: ${lineCount} lines, ${result.size} characters")
+    PrintUtils.printLine("Result: ${lineCount} lines, ${result.size} characters")
 
     // Basic validation
     @PowerAssert(result.size >= 0)
@@ -183,14 +183,14 @@ private func testCatOnFile(filePath: String, description: String): Unit {
         !result.startsWith("File path must be absolute")) {
 
         if (result == "File is empty: ${filePath}") {
-            println("✓ Empty file handled correctly")
+            PrintUtils.printLine("✓ Empty file handled correctly")
         } else {
             // Check for line number format in output
             let hasLineNumbers = resultLines |> any { line: String =>
                 line.contains("\t") && line.split("\t").size >= 2
             }
             if (hasLineNumbers) {
-                println("✓ Line numbers detected in output")
+                PrintUtils.printLine("✓ Line numbers detected in output")
             }
 
             // Verify line number sequence
@@ -210,25 +210,25 @@ private func testCatOnFile(filePath: String, description: String): Unit {
             }
 
             if (lineNumbersValid) {
-                println("✓ Line numbers appear sequential")
+                PrintUtils.printLine("✓ Line numbers appear sequential")
             }
 
             // Show sample output (limited)
             if (lineCount > 0 && lineCount <= 5) {
-                println("Sample output:")
+                PrintUtils.printLine("Sample output:")
                 for (line in resultLines) {
                     if (!line.isEmpty()) {
-                        println("  ${line}")
+                        PrintUtils.printLine("  ${line}")
                     }
                 }
             } else if (lineCount > 5) {
-                println("Sample output (first 3 lines):")
+                PrintUtils.printLine("Sample output (first 3 lines):")
                 for (i in 0..3) {
                     if (i < resultLines.size && !resultLines[i].isEmpty()) {
-                        println("  ${resultLines[i]}")
+                        PrintUtils.printLine("  ${resultLines[i]}")
                     }
                 }
-                println("  ... (${lineCount - 3} more lines)")
+                PrintUtils.printLine("  ... (${lineCount - 3} more lines)")
             }
         }
     }
@@ -238,15 +238,15 @@ private func testCatOnFile(filePath: String, description: String): Unit {
  * Helper function to test cat range on a specific file
  */
 private func testCatRangeOnFile(filePath: String, startLine: Int64, endLine: Int64, description: String): Unit {
-    println("\nTesting range: ${description}")
-    println("File: ${filePath}")
-    println("Range: ${startLine} to ${endLine}")
+    PrintUtils.printLine("\nTesting range: ${description}")
+    PrintUtils.printLine("File: ${filePath}")
+    PrintUtils.printLine("Range: ${startLine} to ${endLine}")
 
     let result = catRange(filePath, startLine, endLine: endLine)
     let resultLines = result.split("\n")
     let actualLines = resultLines.size
 
-    println("Result: ${actualLines} lines returned")
+    PrintUtils.printLine("Result: ${actualLines} lines returned")
 
     // Basic validation
     @PowerAssert(result.size >= 0)
@@ -257,7 +257,7 @@ private func testCatRangeOnFile(filePath: String, startLine: Int64, endLine: Int
         !result.startsWith("File does not exist")) {
 
         if (result == "No lines found in specified range") {
-            println("✓ Empty range handled correctly")
+            PrintUtils.printLine("✓ Empty range handled correctly")
         } else {
             // Verify line count is within expected range
             let expectedMaxLines = if (endLine == 0) {
@@ -267,15 +267,15 @@ private func testCatRangeOnFile(filePath: String, startLine: Int64, endLine: Int
             }
 
             if (actualLines <= expectedMaxLines + 1) {  // +1 for potential empty last line
-                println("✓ Line count within expected range")
+                PrintUtils.printLine("✓ Line count within expected range")
             }
 
             // Show sample of range output
             if (actualLines <= 3) {
-                println("Range output:")
+                PrintUtils.printLine("Range output:")
                 for (line in resultLines) {
                     if (!line.isEmpty()) {
-                        println("  ${line}")
+                        PrintUtils.printLine("  ${line}")
                     }
                 }
             }
@@ -287,8 +287,8 @@ private func testCatRangeOnFile(filePath: String, startLine: Int64, endLine: Int
  * Helper function to test cat error conditions
  */
 private func testCatError(filePath: String, description: String): Unit {
-    println("\nTesting error: ${description}")
-    println("File: ${filePath}")
+    PrintUtils.printLine("\nTesting error: ${description}")
+    PrintUtils.printLine("File: ${filePath}")
 
     let result = cat(filePath)
 
@@ -300,9 +300,9 @@ private func testCatError(filePath: String, description: String): Unit {
                   result.startsWith("Error reading file")
 
     if (isError) {
-        println("✓ Error handled correctly: ${result}")
+        PrintUtils.printLine("✓ Error handled correctly: ${result}")
     } else {
-        println("! Unexpected result for error case: ${result}")
+        PrintUtils.printLine("! Unexpected result for error case: ${result}")
     }
 
     @PowerAssert(result.size > 0)
@@ -312,8 +312,8 @@ private func testCatError(filePath: String, description: String): Unit {
  * Helper function to test cat range error conditions
  */
 private func testCatRangeError(filePath: String, startLine: Int64, endLine: Int64, description: String): Unit {
-    println("\nTesting range error: ${description}")
-    println("Range: ${startLine} to ${endLine}")
+    PrintUtils.printLine("\nTesting range error: ${description}")
+    PrintUtils.printLine("Range: ${startLine} to ${endLine}")
 
     let result = catRange(filePath, startLine, endLine: endLine)
 
@@ -324,9 +324,9 @@ private func testCatRangeError(filePath: String, startLine: Int64, endLine: Int6
                   result.contains("exceeds file length")
 
     if (isError) {
-        println("✓ Range error handled correctly: ${result}")
+        PrintUtils.printLine("✓ Range error handled correctly: ${result}")
     } else {
-        println("! Unexpected result for range error: ${result}")
+        PrintUtils.printLine("! Unexpected result for range error: ${result}")
     }
 
     @PowerAssert(result.size > 0)
@@ -378,7 +378,7 @@ func createTempFile(content: String): String {
         file.close()
         return tempPath.toString()
     } catch (e: Exception) {
-        println("Failed to create temp file: ${e}")
+        PrintUtils.printLine("Failed to create temp file: ${e}")
         return ""
     }
 }
@@ -396,7 +396,7 @@ func createTempFileRaw(content: String): String {
         file.close()
         return tempPath.toString()
     } catch (e: Exception) {
-        println("Failed to create temp file: ${e}")
+        PrintUtils.printLine("Failed to create temp file: ${e}")
         return ""
     }
 }
@@ -407,11 +407,11 @@ func createTempFileRaw(content: String): String {
 func cleanupTempFile(filePath: String): Unit {
     try {
         if (exists(filePath)) {
-            println("Cleaning up temp file: ${filePath}")
+            PrintUtils.printLine("Cleaning up temp file: ${filePath}")
             // Note: File removal implementation depends on available APIs
         }
     } catch (e: Exception) {
-        println("Failed to cleanup temp file: ${e}")
+        PrintUtils.printLine("Failed to cleanup temp file: ${e}")
     }
 }
 
@@ -420,7 +420,7 @@ func cleanupTempFile(filePath: String): Unit {
  */
 @Test
 public func testCatUnits(): Unit {
-    println("\n=== Unit Tests for Cat Functions ===")
+    PrintUtils.printLine("\n=== Unit Tests for Cat Functions ===")
 
     // Test parameter validation
     testCatParameterValidation()
@@ -428,14 +428,14 @@ public func testCatUnits(): Unit {
     // Test different cat function variants
     testCatVariants()
 
-    println("=== Cat Unit Tests Completed ===")
+    PrintUtils.printLine("=== Cat Unit Tests Completed ===")
 }
 
 /**
  * Tests parameter validation for cat functions
  */
 private func testCatParameterValidation(): Unit {
-    println("\n--- Testing cat parameter validation ---")
+    PrintUtils.printLine("\n--- Testing cat parameter validation ---")
 
     // Test absolute path requirement
     let relativeResult = cat("relative/path")
@@ -459,14 +459,14 @@ private func testCatParameterValidation(): Unit {
         cleanupTempFile(tempFile)
     }
 
-    println("✓ Parameter validation tests passed")
+    PrintUtils.printLine("✓ Parameter validation tests passed")
 }
 
 /**
  * Tests different cat function variants
  */
 private func testCatVariants(): Unit {
-    println("\n--- Testing cat function variants ---")
+    PrintUtils.printLine("\n--- Testing cat function variants ---")
 
     let testContent = createTestFileContent(5)
     let tempFile = createTempFile(testContent)
@@ -483,6 +483,6 @@ private func testCatVariants(): Unit {
         @PowerAssert(catRangeResult.size < catResult.size)
 
         cleanupTempFile(tempFile)
-        println("✓ Cat variants test passed")
+        PrintUtils.printLine("✓ Cat variants test passed")
     }
 }

@@ -6,7 +6,7 @@ import magic.jsonable.*
 import magic.agent.ConversationAgent
 import magic.log.LogUtils
 import cli.core.config.CliConfig
-import cli.utils.PrintUtils
+import cli.io.PrintUtils
 import std.fs.{exists, Directory, Path, File}
 import std.collection.{HashMap, ArrayList}
 import stdx.encoding.json.*
@@ -80,7 +80,7 @@ protected class CustomCommandManager {
         if (let Some(command) <- commands.get(name)) {
             return command.prompt.replace("$ARGS", args)
         } else {
-            println("❌ Custom command '${name}' not found. Use '/cmd list' to see available commands.")
+            PrintUtils.printLine("❌ Custom command '${name}' not found. Use '/cmd list' to see available commands.")
             return None
         }
     }
@@ -90,16 +90,16 @@ protected class CustomCommandManager {
      */
     private func listCommands(): Unit {
         if (commands.isEmpty()) {
-            println("No custom commands found. Create JSON files in ${commandsDir} to add commands.")
+            PrintUtils.printLine("No custom commands found. Create JSON files in ${commandsDir} to add commands.")
             return
         }
 
         PrintUtils.printTool("Custom Commands", "📋 Available custom commands:")
         for ((name, command) in commands) {
-            println("  • ${name} - ${command.description}")
+            PrintUtils.printLine("  • ${name} - ${command.description}")
         }
-        println("")
-        println("Usage: /cmd:<name> [arguments]")
+        PrintUtils.printLine("")
+        PrintUtils.printLine("Usage: /cmd:<name> [arguments]")
     }
 
     /**
@@ -108,12 +108,12 @@ protected class CustomCommandManager {
     private func showHelp(name: String): Unit {
         if (let Some(command) <- commands.get(name)) {
             PrintUtils.printTool("Command Help", "📖 ${name}")
-            println("Description: ${command.description}")
-            println("Usage: /cmd:${name} [your arguments]")
-            println("Prompt template:")
-            println("  ${command.prompt}")
+            PrintUtils.printLine("Description: ${command.description}")
+            PrintUtils.printLine("Usage: /cmd:${name} [your arguments]")
+            PrintUtils.printLine("Prompt template:")
+            PrintUtils.printLine("  ${command.prompt}")
         } else {
-            println("❌ Command '${name}' not found.")
+            PrintUtils.printLine("❌ Command '${name}' not found.")
         }
     }
 
@@ -159,17 +159,17 @@ protected class CustomCommandManager {
             if (parts.size >= 3) {
                 showHelp(parts[2])
             } else {
-                println("Usage: /cmd help <command-name>")
+                PrintUtils.printLine("Usage: /cmd help <command-name>")
             }
         } else if (parts.size >= 2 && parts[1] == "reload") {
             // /cmd reload
             reloadCommands()
         } else {
-            println("Unknown command. Available options:")
-            println("  /cmd list          - List all commands")
-            println("  /cmd help <name>   - Show command help")
-            println("  /cmd reload        - Reload commands")
-            println("  /cmd:<name> [args] - Execute command")
+            PrintUtils.printLine("Unknown command. Available options:")
+            PrintUtils.printLine("  /cmd list          - List all commands")
+            PrintUtils.printLine("  /cmd help <name>   - Show command help")
+            PrintUtils.printLine("  /cmd reload        - Reload commands")
+            PrintUtils.printLine("  /cmd:<name> [args] - Execute command")
         }
         return None
     }

@@ -12,7 +12,7 @@ When creating a Cangjie project with `cjpm init`, the standard structure is:
 - `src/` - Source code directory (this is where all .cj files should go)
 - `src/main.cj` - Main entry point file (NOT in project root)
 
-**IMPORTANT**: All Cangjie source files (.cj) should be placed in the `src/` directory, 
+**IMPORTANT**: All Cangjie source files (.cj) should be placed in the `src/` directory,
 NOT in the project root. The main entry file is `src/main.cj`, not `main.cj` in root.
 
 ### Package Declaration Rules
