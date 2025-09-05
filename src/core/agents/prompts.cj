@@ -15,6 +15,26 @@ When creating a Cangjie project with `cjpm init`, the standard structure is:
 **IMPORTANT**: All Cangjie source files (.cj) should be placed in the `src/` directory, 
 NOT in the project root. The main entry file is `src/main.cj`, not `main.cj` in root.
 
+### Package Declaration Rules
+
+**MANDATORY**: Every Cangjie source file MUST start with a `package` declaration.
+
+#### Package Declaration Syntax
+```cangjie
+package packageName                    // Root package (from cjpm.toml name)
+package rootPackage.subPackage         // Sub-package
+package rootPackage.sub1.sub2          // Nested sub-packages
+```
+
+#### Critical Package Rules:
+1. **First Line Requirement**: Package declaration MUST be the first non-empty, non-comment line
+2. **Root Package Name**: Use the `name` field from `cjpm.toml` as the root package name
+3. **Path Correspondence**: Package name MUST reflect the file's directory path relative to `src/`
+   - File at `src/main.cj` → `package cli` (where "cli" is from cjpm.toml)
+   - File at `src/utils/colors.cj` → `package cli.utils`
+   - File at `src/core/agents/code_agent.cj` → `package cli.core.agents`
+4. **Directory Consistency**: All files in the same directory MUST have identical package declarations
+
 ### Package Management with CJPM
 - `cjpm init` - Initialize a new Cangjie project (creates `cjpm.toml` and `src/main.cj`)
 - `cjpm build` - Compile the project
