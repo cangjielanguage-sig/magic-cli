@@ -5,72 +5,119 @@ import std.fs.*
 import cli.core.config.CliConfig
 import std.sort.sort
 
-protected func toUnixStyle(pathStr: String, appendSuffix!: Bool = false) {
+/**
+ * Convert a file path to Unix-style format with forward slashes
+ * Optionally adds a trailing slash for directory paths
+ * 
+ * @param pathStr The input path string to convert
+ * @param appendSuffix Whether to ensure the path ends with "/" (default: false)
+ * @return The path converted to Unix-style format
+ */
+protected func toUnixStyle(pathStr: String, appendSuffix!: Bool = false): String {
     if (appendSuffix) {
-        var res = pathStr.replace("\\", "/")
-        if (!res.endsWith("/")) {
-            res = res + "/"
+        var unixPath = pathStr.replace("\\", "/")
+        if (!unixPath.endsWith("/")) {
+            unixPath = unixPath + "/"
         }
-        res
+        return unixPath
     } else {
-        pathStr.replace("\\", "/")
+        return pathStr.replace("\\", "/")
     }
 }
 
+/**
+ * List files and directories matching a given prefix for path completion
+ * This function is used in readline_2 for @path completion functionality
+ * 
+ * The function handles:
+ * - Incomplete path inputs by looking at the parent directory
+ * - Unix-style path normalization for cross-platform compatibility
+ * - Directory vs file differentiation (directories get "/" suffix)
+ * - Sorted output with directories appearing first
+ * - Filtering out hidden files (starting with '.')
+ * 
+ * @param workDir The base working directory to search in (default: current working directory)
+ * @param prefix The path prefix to filter results by (default: empty string)
+ * @return Array of matching file/directory paths, sorted with directories first
+ */
 protected func listFiles(workDir!: Path = CliConfig.cwd, prefix!: String = ""): Array<String> {
-    var workSpace = try {
+    // Try to construct the target path from workDir + prefix
+    var targetPath = try {
         workDir.join(prefix)
-    } catch (e: FSException) { // Illegal path
+    } catch (e: FSException) { // Invalid path combination
         return []
     }
-    let basePath = toUnixStyle(workDir.normalize().toString(), appendSuffix: true)
-    let fi = if(exists(workSpace)) {
-        FileInfo(workSpace)
-    } else if (exists(workSpace.parent)) { // Incomplete path input 
-        FileInfo(workSpace.parent)
+    
+    // Get normalized base path with trailing slash for string replacement
+    let normalizedBasePath = toUnixStyle(workDir.normalize().toString(), appendSuffix: true)
+    
+    // Determine which directory to scan based on path existence
+    let searchDirectory = if (exists(targetPath)) {
+        FileInfo(targetPath)
+    } else if (exists(targetPath.parent)) { // Handle incomplete path input
+        FileInfo(targetPath.parent)
     } else {
+        return [] // Neither target nor parent exists
+    }
+    
+    // Only scan directories
+    if (!searchDirectory.isDirectory()) {
         return []
     }
-    if (!fi.isDirectory()) {
-        return []
-    }
-    let fileLst = ArrayList<String>()
-    Directory.walk(fi.path) {
-        fileInfo: FileInfo =>
-        var path = fileInfo.path.normalize().toString()
-        path = toUnixStyle(path).replace(basePath, "")
-        if (!path.startsWith(prefix) || path.startsWith('.')) {
-            return true
+    
+    let matchingFiles = ArrayList<String>()
+    
+    // Walk through all files in the search directory
+    Directory.walk(searchDirectory.path) {
+        currentFile: FileInfo =>
+        // Normalize and convert to Unix-style relative path
+        var relativePath = currentFile.path.normalize().toString()
+        relativePath = toUnixStyle(relativePath).replace(normalizedBasePath, "")
+        
+        // Filter: must start with prefix and not be hidden
+        if (!relativePath.startsWith(prefix) || relativePath.startsWith('.')) {
+            return true // Continue walking
         }
-        if (fileInfo.isDirectory()) {
-            fileLst.add(path + "/")
+        
+        // Add appropriate suffix based on file type
+        if (currentFile.isDirectory()) {
+            matchingFiles.add(relativePath + "/")
         } else {
-            fileLst.add(path)
+            matchingFiles.add(relativePath)
         }
-        true
+        true // Continue walking
     }
-    let arr = fileLst.toArray()
+    
+    let resultArray = matchingFiles.toArray()
+    
+    // Sort results with directories appearing first
+    // This is achieved by prepending '\0' to directory paths during comparison
     sort(
-        arr,
+        resultArray,
         by: {
-            path1: String, path2: String =>
-            var p1 = path1
-            var p2 = path2
-            if (p1.endsWith('/')) {
-                p1 = '\0' + p1
+            firstPath: String, secondPath: String =>
+            var sortKey1 = firstPath
+            var sortKey2 = secondPath
+            
+            // Directories get '\0' prefix to sort first (since '\0' < any printable char)
+            if (sortKey1.endsWith('/')) {
+                sortKey1 = '\0' + sortKey1
             }
-            if (p2.endsWith('/')) {
-                p2 = '\0' + p2
+            if (sortKey2.endsWith('/')) {
+                sortKey2 = '\0' + sortKey2
             }
-            if (p1 > p2) {
+            
+            // Standard string comparison
+            if (sortKey1 > sortKey2) {
                 return Ordering.GT
-            } else if (p1 == p2) {
+            } else if (sortKey1 == sortKey2) {
                 return Ordering.EQ
             } else {
                 return Ordering.LT
             }
         },
-        stable: true
+        stable: true // Preserve original order for equal elements
     )
-    arr
+    
+    return resultArray
 }

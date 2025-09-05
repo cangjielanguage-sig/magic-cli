@@ -124,7 +124,7 @@ int getRawUtf8(unsigned char *bytes) {
                     n = read(STDIN_FILENO, &c, 1);
                     if (n <= 0) return -1;
                     if (c != '~') return -1;
-                    bytes[0] = 0x7F;
+                    bytes[0] = 0x04;  // Send Ctrl+D (0x04) for Delete key to differentiate from Backspace
                     return 1;
                 default:
                     return -1; // Unknown CSI

@@ -1,44 +1,54 @@
 package cli.utils
 
 import cli.core.config.CliConfig
-import std.time.DateTime
-import cli.context.*
+
 import magic.log.LogUtils
+
+import std.time.DateTime
+import std.sync.AtomicBool
+
 protected enum Confirmation {
     | Approve
     | Deny(String)
 }
 
 protected class InputUtils {
+    // Global flag to coordinate between ESC checker and user input
+    private static var isRequestingUserInput: AtomicBool = AtomicBool(false)
+
     public static func buildPrompt(prompt: String): String {
         return " ${prompt} > ".withColor(THEME_MUTED)
     }
 
     private static let READLINE = Readline(CliConfig.readlineFile)
 
-    public static func getUserInput(withBox!: Bool = true, mode!: CliMode = AGENTIC): String {
-        match (mode) {
-            case AGENTIC =>
-                READLINE.readline(buildPrompt('🍭'), withBox: withBox) ?? "exit"
-            case TERMINAL =>
-                READLINE.readline(buildPrompt('💻'), withBox: withBox) ?? "exit"
-            case CHATTING => checkEsc()
-            case _ => checkEnter() // CONFIRM MODE
-
+    public static func getUserInput(prompt!: Option<String> = None, withBox!: Bool = true): String {
+        // Signal that we're requesting user input
+        isRequestingUserInput.store(true)
+        try {
+            return READLINE.readline(prompt ?? buildPrompt('🍭'), withBox: withBox) ?? "exit"
+        } finally {
+            // Clear the flag when done
+            isRequestingUserInput.store(false)
         }
     }
 
-    private static func checkEsc(): String {
-        ByteChecker.checkEsc() ?? ""
+    public static func isRequestingInput(): Bool {
+        return isRequestingUserInput.load()
     }
 
-    private static func checkEnter(): String {
-        let context = getContext()
-        let thread = Thread.currentThread
-        if (thread.id != context.workingThread) {
-            return ""
-        }
-        ByteChecker.checkEnter(infinite:true) ?? ""
+    /**
+     * Check if user pressed ESC key
+     */
+    public static func checkEsc(): Bool {
+        ByteChecker.checkEsc().isSome()
+    }
+
+    /**
+     * Check if user pressed ENTER key
+     */
+    private static func checkEnter(): Bool {
+        ByteChecker.checkEnter(infinite: true).isSome()
     }
 
     public static func confirm(title: String, content: String): Confirmation {
@@ -57,18 +67,11 @@ protected class InputUtils {
     }
 
     private static func getConfirmation(): Bool {
-        let context = getContext()
-        try {
-            context.changeMode(CONFIRM)
-            PrintUtils.printUserConfirm()
-            let input = getUserInput(mode: CONFIRM)
-            // Clear the confirmation prompt line
-            moveCursor(1, Direction.UP)
-            clearScreen(ClearMode.EntireLine)
-            return input == '\n'
-        } finally {
-            context.changeMode(CHATTING)
-        }
-
+        PrintUtils.printUserConfirm()
+        let input = getUserInput(prompt: "", withBox: false)
+        // Clear the confirmation prompt line
+        moveCursor(1, Direction.UP)
+        clearScreen(ClearMode.EntireLine)
+        return input.isEmpty() || input == '\n'
     }
 }

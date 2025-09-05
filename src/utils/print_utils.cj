@@ -1,6 +1,6 @@
 package cli.utils
 
-import magic.core.agent.AgentResponse
+import magic.core.agent.{AsyncAgentResponse, AgentResponse}
 
 import std.collection.{map, enumerate, collectArray}
 import std.time.DateTime
@@ -105,7 +105,7 @@ protected class PrintUtils {
         if (CURRENT_INDENT > 0) {
             print(" " * CURRENT_INDENT)
         }
-        println ("(Enter to confirm, any other key to cancel): ".withColor(THEME_PRIMARY))
+        println("(Enter to confirm, any other key to cancel): ".withColor(THEME_PRIMARY))
     }
 
     static public func printApproval(): Unit {
@@ -156,7 +156,13 @@ protected class PrintUtils {
         )
     }
 
-    static public func printTerminalResponse(output: String) {
+    static public func printAgentResponse(response: AsyncAgentResponse) {
+        println(
+            wrapBox("${InputUtils.buildPrompt("🔮")}${response.content}")
+        )
+    }
+
+    static public func printShellResult(output: String) {
         print(output + '\r')
     }
 
