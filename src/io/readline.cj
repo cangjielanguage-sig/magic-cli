@@ -408,20 +408,25 @@ public class Readline {
                         // Handle @path completion
                         if (let Some((atIndex, pathStart, pathEnd, pathPrefix)) <- extractPathContext(currentText, inputState.cursor)) {
                             // Replace the path part with selected path
-                            let beforePath = currentText[0..pathStart]
-                            let afterPath = currentText[pathEnd..]
-                            newText = beforePath + selected + afterPath
-                            // Set cursor to end of inserted path
-                            newCursor = beforePath.size + selected.size
+                            // Use rune-based operations to handle multi-byte characters correctly
+                            let runes = currentText.toRuneArray()
+                            let beforePathRunes = runes[0..pathStart]
+                            let afterPathRunes = runes[pathEnd..]
+                            let selectedRunes = selected.toRuneArray()
+                            
+                            // Reconstruct text using rune arrays
+                            newText = String(beforePathRunes) + selected + String(afterPathRunes)
+                            // Set cursor to end of inserted path (in rune/character count)
+                            newCursor = beforePathRunes.size + selectedRunes.size
                         }
                         // Handle /command completion
                         else if (currentText.startsWith("/")) {
                             newText = selected
-                            newCursor = selected.size
+                            newCursor = selected.toRuneArray().size
                         }
                         else {
                             newText = selected
-                            newCursor = selected.size
+                            newCursor = selected.toRuneArray().size
                         }
 
                         // Replace buffer with new text
