@@ -10,8 +10,6 @@ import cli.io.{InputUtils, PrintUtils}
 import std.fs.{exists, File, FSException, Path}
 import std.regex.Regex
 
-import cli.core.tools.FSToolset
-
 private func loadEnvFile(): Unit {
     let path = Path("./.env")
     if (!exists(path)) {
