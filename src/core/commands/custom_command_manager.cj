@@ -74,15 +74,14 @@ protected class CustomCommandManager {
     }
 
     /**
-     * Execute a custom command
+     * Build the full user query by replacing $ARGS in the command prompt template
      */
-    private func executeCommand(name: String, args: String, agent: ConversationAgent): ?AgentResponse {
+    private func buildUserRequest(name: String, args: String): Option<String> {
         if (let Some(command) <- commands.get(name)) {
-            let finalPrompt = command.prompt.replace("$ARGS", args)
-            let response = agent.chat(AgentRequest(finalPrompt))
-            return response
+            return command.prompt.replace("$ARGS", args)
         } else {
-            return AgentResponse("❌ Custom command '${name}' not found. Use '/cmd list' to see available commands.")
+            println("❌ Custom command '${name}' not found. Use '/cmd list' to see available commands.")
+            return None
         }
     }
 
@@ -131,7 +130,7 @@ protected class CustomCommandManager {
     /**
      * Handle custom command input parsing and execution
      */
-    public func handleCommand(input: String, agent: ConversationAgent): ?AgentResponse {
+    public func handleCommand(input: String): Option<String> {
         // Check for /cmd:command format
         if (input.contains(":")) {
             // /cmd:name args...
@@ -145,7 +144,7 @@ protected class CustomCommandManager {
                     } else {
                         ""
                     }
-                    return executeCommand(cmdName, args, agent)
+                    return buildUserRequest(cmdName, args)
                 }
             }
         }

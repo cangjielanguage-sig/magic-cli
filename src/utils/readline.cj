@@ -1,222 +1,312 @@
 package cli.utils
 
 import magic.log.LogUtils
-import std.collection.{ArrayList, LinkedList}
+import std.collection.{ArrayList, LinkedList, collectArray, filter, map}
 import std.regex.Regex
 import std.deriving.*
 import std.fs.{File, Path, exists}
 import cli.core.config.CliConfig
 
-@Derive[Equatable]
-private enum DrawPhase {
-    | First
-    | Last
-    | Mid
-}
-
-private class Page {
-    public Page(let prefix: String, let content: String, let cursor: Int64) {}
-}
-
-private class UnderList {
-    public UnderList(let selectIdx: Int64, let showList: Array<String>) {}
-}
-
-private class Draw {
-    public Draw(let page: Page, let underList: UnderList) {}
-}
 /**
- * Clear the line and redraw it
+ * Input state management
  */
-private func redraw(curDraw: Draw, preDraw: Draw, phase!: DrawPhase) {
-    let pPage = preDraw.page
-    let pWrapped = wrapBox("${pPage.prefix}${pPage.content}")
-    let (pRow, _) = calculateCursorPos(pWrapped, pPage.cursor, prefix: pPage.prefix)
-    // If it has draw the boxed content,
-    // move the cursor to the first line because the current line in at the second line
-    if (phase != DrawPhase.First) {
-        moveCursor(pRow + 1, UP)
+private class InputState {
+    public var buffer: LinkedList<Rune>
+    public var cursor: Int64
+    public var historyIndex: Int64
+
+    public init() {
+        this.buffer = LinkedList<Rune>()
+        this.cursor = 0
+        this.historyIndex = 0
+    }
+
+    /**
+     * Check if shell mode is active (input starts with !)
+     */
+    public func isShellMode(): Bool {
+        if (this.buffer.size == 0) {
+            return false
+        }
+        return (this.buffer.first ?? r' ') == r'!'
+    }
+
+    public func clear() {
+        this.buffer.clear()
+        this.cursor = 0
+    }
+
+    public func getText(): String {
+        return String(this.buffer)
+    }
+
+    public func insertChar(char: Rune) {
+        if (this.cursor == this.buffer.size) {
+            this.buffer.addLast(char)
+        } else {
+            let node = this.buffer.nodeAt(this.cursor).getOrThrow()
+            this.buffer.addBefore(node, char)
+        }
+        this.cursor += 1
+    }
+
+    public func deleteChar(): Bool {
+        if (this.buffer.size > 0 && this.cursor > 0) {
+            if (let Some(node) <- this.buffer.nodeAt(this.cursor - 1)) {
+                this.buffer.remove(node)
+                this.cursor -= 1
+                return true
+            }
+        }
+        return false
+    }
+
+    public func deleteCharAt(): Bool {
+        if (this.buffer.size > 0 && this.cursor < this.buffer.size) {
+            if (let Some(node) <- this.buffer.nodeAt(this.cursor)) {
+                this.buffer.remove(node)
+                // Cursor stays at same position (character after gets pulled back)
+                return true
+            }
+        }
+        return false
+    }
+
+    public func moveCursorLeft() {
+        this.cursor = max(0, this.cursor - 1)
+    }
+
+    public func moveCursorRight() {
+        this.cursor = min(this.buffer.size, this.cursor + 1)
+    }
+
+    public func setFromHistory(text: String) {
+        this.clear()
+        for (char in text.toRuneArray()) {
+            this.buffer.addLast(char)
+        }
+        this.cursor = this.buffer.size
+    }
+}
+
+/**
+ * Completion state management
+ */
+private class CompletionState {
+    public var completions: Array<String>
+    public var selectedIndex: Int64
+    public var isActive: Bool
+
+    public init() {
+        this.completions = []
+        this.selectedIndex = 0
+        this.isActive = false
+    }
+
+    public func setCompletions(completions: Array<String>) {
+        this.completions = completions
+        this.selectedIndex = 0
+        this.isActive = completions.size > 0
+    }
+
+    public func clear() {
+        this.completions = []
+        this.selectedIndex = 0
+        this.isActive = false
+    }
+
+    public func moveUp() {
+        if (this.isActive && this.completions.size > 0) {
+            this.selectedIndex = if (this.selectedIndex > 0) {
+                this.selectedIndex - 1
+            } else {
+                this.completions.size - 1
+            }
+        }
+    }
+
+    public func moveDown() {
+        if (this.isActive && this.completions.size > 0) {
+            this.selectedIndex = (this.selectedIndex + 1) % this.completions.size
+        }
+    }
+
+    public func getSelected(): Option<String> {
+        if (this.isActive && this.selectedIndex < this.completions.size) {
+            return this.completions[this.selectedIndex]
+        }
+        return None
+    }
+}
+
+/**
+ * Display context for rendering
+ */
+private class DisplayContext {
+    public let prompt: String
+    public var lastRenderedLines: Int64
+    public var terminalWidth: Int64
+
+    public init(prompt: String) {
+        this.prompt = prompt
+        this.lastRenderedLines = 0
+        this.terminalWidth = 80 // Default width, could be detected from terminal
+    }
+}
+
+/**
+ * Extract @path context based on cursor position
+ * Returns (atIndex, pathStart, pathEnd, pathPrefix) or None
+ */
+private func extractPathContext(text: String, cursor: Int64): Option<(Int64, Int64, Int64, String)> {
+    let runes = text.toRuneArray()
+
+    // Find the last @ symbol before the current cursor
+    var atIndex: Int64 = -1
+    let maxIndex = min(cursor, runes.size)
+    for (i in 0..maxIndex) {
+        let reverseIndex = maxIndex - 1 - i
+        if (reverseIndex >= 0 && runes[reverseIndex] == r'@') {
+            atIndex = reverseIndex
+            break
+        }
+    }
+
+    if (atIndex == -1) {
+        return None
+    }
+
+    // Find the first space after the @ symbol
+    let pathStart = atIndex + 1
+    var pathEnd = runes.size
+    for (i in pathStart..runes.size) {
+        if (runes[i] == r' ') {
+            pathEnd = i
+            break
+        }
+    }
+
+    // Check if the first space is before the current cursor
+    // If there's a space before cursor, the path has ended and no completion should show
+    if (pathEnd < cursor) {
+        return None // Path has ended before cursor
+    }
+
+    // Extract path prefix up to cursor position
+    let pathPrefix = String(runes[pathStart..cursor])
+
+    return Some((atIndex, pathStart, pathEnd, pathPrefix))
+}
+
+// Command definitions: (command_name, [subcommands])
+// Commands without subcommands have empty array
+private let COMMANDS: Array<(String, Array<String>)> = [
+    ("/help", []),
+    ("/clear", []),
+    ("/compact", []),
+    ("/memory", []),
+    ("/init", []),
+    ("/exit", []),
+    ("/mcp", ["add", "add-sse", "remove"]),
+    ("/conversation", ["list", "save", "load", "delete", "rename"]),
+    ("/cmd", ["list", "add", "remove", "edit"])
+]
+
+/**
+ * Build completion list based on current input and cursor position
+ * Supports both /commands and @paths (but @paths are disabled in shell mode)
+ */
+private func buildCompletionList(input: String, cursor: Int64, isShellMode!: Bool = false): Option<Array<String>> {
+    let text = input
+    if (text.isEmpty()) {
+        return None
+    }
+
+    // Check for @path completion based on cursor position (disabled in shell mode)
+    if (!isShellMode) {
+        if (let Some((atIndex, pathStart, pathEnd, pathPrefix)) <- extractPathContext(text, cursor)) {
+            let pathCompletions = listFiles(prefix: pathPrefix)
+            if (pathCompletions.size > 0) {
+                // For empty prefix (just "@"), show all files
+                // For non-empty prefix, show paths that start with prefix but are different
+                if (pathPrefix.isEmpty()) {
+                    return pathCompletions
+                } else {
+                    return pathCompletions |>
+                        filter { path => path.startsWith(pathPrefix) && path != pathPrefix } |>
+                        collectArray
+                }
+            }
+        }
+    }
+
+    // Check for /command completion (only at beginning and cursor at end)
+    if (!text.startsWith("/") || cursor != text.size) {
+        return None
+    }
+
+    let allCompletions = ArrayList<String>()
+
+    // Generate all possible completions from command definitions
+    for ((commandName, subcommands) in COMMANDS) {
+        // Add the base command if it matches
+        if (commandName.startsWith(text) && commandName != text) {
+            allCompletions.add(commandName)
+        }
+
+        // Add subcommands if they match
+        if (subcommands.size > 0) {
+            for (subcommand in subcommands) {
+                let fullSubcommand = commandName + " " + subcommand
+                if (fullSubcommand.startsWith(text) && fullSubcommand != text) {
+                    allCompletions.add(fullSubcommand)
+                }
+            }
+        }
+    }
+
+    let results = allCompletions.toArray()
+    if (results.size > 0) {
+        return results
+    }
+
+    return None
+}
+
+/**
+ * Calculate cursor position in wrapped boxed content
+ * Uses existing calculateCursorPos function to calculate cursor position
+ */
+private func calculateCursorPosition(text: String, cursor: Int64, prefix: String): (Int64, Int64) {
+    // Use wrapBox to wrap text, then use existing calculateCursorPos function
+    let wrappedContent = wrapBox(text)
+    return calculateCursorPos(wrappedContent, cursor, prefix: prefix)
+}
+
+// Removed wrapText function, use wrapBox instead
+
+/**
+ * Render completion list using existing wrapShowList function
+ */
+private func renderCompletionList(completions: Array<String>, selectedIndex: Int64): String {
+    return wrapShowList(completions, selectedIndex)
+}
+
+/**
+ * Clear previous render and move cursor to start
+ * Uses existing moveCursor and clearScreen functions
+ */
+private func clearPreviousRender(lines: Int64) {
+    if (lines > 0) {
+        moveCursor(lines, UP)
         moveCursor(col: 0)
         clearScreen(AfterCursorScreen)
     }
-
-    let page = curDraw.page
-    let wrapped = wrapBox("${page.prefix}${page.content}")
-    let totalLines = wrapped.lines().count()
-    let (cRow, cCol) = calculateCursorPos(wrapped, page.cursor, prefix: page.prefix)
-    print(wrapped, flush: true)
-    if (phase == DrawPhase.Last) {
-        print("\n", flush: true)
-        return
-    }
-
-    let extendLine = wrapShowList(curDraw.underList.showList, curDraw.underList.selectIdx)
-    if (extendLine != String.empty) {
-        let colomShift = extendLine.lines().count() - 1
-        print(extendLine, flush: true)
-        moveCursor(colomShift, UP)
-    }
-
-    moveCursor(totalLines - cRow - 2, UP)
-    moveCursor(col: cCol)
 }
 
-private func readlineImpl(buf: LinkedList<Rune>, rune: Rune, prompt: String, history: ArrayList<String>,
-    cursorBox: Box<Int64>, selectIdxBox: Box<Int64>): Option<String> {
-    var cursor = cursorBox.value
-    var idx = history.size
-    var selectIdx = selectIdxBox.value
-    var command = detectCommand(buf, rune)
-    var showList = listCmdsStr(command)
-    let orgDraw = Draw(Page(prompt, String(buf), cursor), UnderList(selectIdx, showList))
-    match (rune) {
-        case r'\r' | r'\n' => // Enter
-            let line = String(buf)
-            if (line.size > 0) {
-                history.add(line)
-            }
-            if (let Some(cmd) <- command && showList.size > 0) {
-                let showItem = cmd.toFull(showList[selectIdx])
-                let line = String(buf).removeSuffix(cmd.full) + showItem
-                buf.clear()
-                for (rr in line.toRuneArray()) {
-                    buf.addLast(rr)
-                }
-                selectIdx = 0
-                cursor = buf.size
-                command = Command(showItem, cmd.option)
-                showList = listCmdsStr(command)
-            } else {
-                redraw(orgDraw, orgDraw, phase: DrawPhase.Last)
-                return Some(line)
-            }
-        case r'\u{7F}' | r'\b' => // Delete or Backspace
-            if (buf.size > 0) {
-                if (let Some(node) <- buf.nodeAt(cursor - 1)) {
-                    let delRune = buf.remove(node)
-                    let width = displayWidthOf([delRune])
-                    print("\b \b" * width, flush: true)
-                    cursor -= 1
-                    selectIdx = 0
-                }
-                if (let Some(cmd) <- detectCommand(buf, None)) {
-                    showList = listCmdsStr(cmd)
-                }
-            }
-        case r'\t' => // TAB
-            if (let Some(cmd) <- command && showList.size > 0) {
-                let showItem = cmd.toFull(showList[selectIdx])
-                let line = String(buf).removeSuffix(cmd.full) + showItem
-                buf.clear()
-                for (rr in line.toRuneArray()) {
-                    buf.addLast(rr)
-                }
-                selectIdx = 0
-                cursor = buf.size
-                command = Command(showItem, cmd.option)
-                showList = listCmdsStr(command)
-            } else { // DO NOTHING
-                return None
-            }
-        case r'\u{2191}' => // Up ↑
-            if (let Some(cmd) <- command) {
-                var tempIdx = selectIdx - 1
-                selectIdx = if (tempIdx < 0) {
-                    showList.size - 1
-                } else {
-                    tempIdx
-                }
-            } else {
-                if (idx > 0) {
-                    idx -= 1
-                    buf.clear()
-                    for (rr in history[idx].toRuneArray()) {
-                        buf.addLast(rr)
-                    }
-                    cursor = buf.size
-                }
-            }
-        case r'\u{2193}' => // Down ↓
-            if (let Some(cmd) <- command) {
-                if (showList.size == 0) {
-                    selectIdx = 0
-                } else {
-                    selectIdx = (selectIdx + 1) % showList.size
-                }
-            } else {
-                if (idx + 1 < history.size) {
-                    idx += 1
-                    buf.clear()
-                    for (rr in history[idx].toRuneArray()) {
-                        buf.addLast(rr)
-                    }
-                    cursor = buf.size
-                } else if (idx + 1 == history.size) {
-                    idx = history.size
-                    buf.clear()
-                    cursor = buf.size
-                }
-            }
-        case r'\u{2190}' => // Left ←
-            cursor = max(0, cursor - 1)
-        case r'\u{2192}' => // Right →
-            cursor = min(buf.size, cursor + 1)
-        case r'\u{1B}' => // ESC
-            return None // TODO - Do Something
-        case r'!' | r'！' =>
-            if (let Some(cmd) <- command) { // MODE CHANGE COMMAND
-                moveCursor(1, UP)
-                moveCursor(col: 0)
-                clearScreen(AfterCursorScreen)
-                return Some('!')
-            } else {
-                // Add the current rune to the input buffer
-                if (cursor == buf.size) {
-                    buf.addLast(rune)
-                } else {
-                    let node = buf.nodeAt(cursor).getOrThrow()
-                    buf.addBefore(node, rune)
-                }
-                cursor += 1
-            }
-        case _ =>
-            // Add the current rune to the input buffer
-            if (cursor == buf.size) {
-                buf.addLast(rune)
-            } else {
-                let node = buf.nodeAt(cursor).getOrThrow()
-                buf.addBefore(node, rune)
-            }
-            cursor += 1
-    }
-    let curDraw = Draw(Page(prompt, String(buf), cursor), UnderList(selectIdx, showList))
-    redraw(curDraw, orgDraw, phase: DrawPhase.Mid)
-    cursorBox.value = cursor
-    selectIdxBox.value = selectIdx
-    return None
-}
-
-private func readlineImpl(prompt: String, history: ArrayList<String>): Option<String> {
-    var buf = LinkedList<Rune>()
-    let cursor = Box<Int64>(0)
-    let selectIdx = Box<Int64>(0)
-    let rawPage = Draw(Page(prompt, String(buf), cursor.value), UnderList(0, []))
-    redraw(rawPage, rawPage, phase: DrawPhase.First)
-
-    while (true) {
-        let rune = if (let Some(r) <- RawInputUtils.rawGetRune()) {
-            r
-        } else {
-            return None // EOF
-        }
-        let lnOp = readlineImpl(buf, rune, prompt, history, cursor, selectIdx)
-        if (let Some(ln) <- lnOp) {
-            return ln
-        }
-    }
-    return None
-}
-
+/**
+ * Enhanced Readline implementation with improved UI and completion
+ */
 public class Readline {
     private let history: ArrayList<String>
     private let historyFile: Option<Path>
@@ -257,69 +347,346 @@ public class Readline {
         }
     }
 
+    /**
+     * Handle key input and return result
+     */
+    private func handleInput(
+        rune: Rune,
+        inputState: InputState,
+        completionState: CompletionState,
+        displayContext: DisplayContext
+    ): Option<String> {
+        match (rune) {
+            case r'\r' | r'\n' => // Enter
+                let text = inputState.getText()
+
+                // Always finalize input on Enter, don't auto-complete
+                if (text.size > 0) {
+                    this.history.add(text)
+                    this.appendHistoryFile(text)
+                }
+                return text
+
+            case r'\u{7F}' | r'\b' => // Backspace - delete character before cursor
+                if (inputState.deleteChar()) {
+                    // Always clear completions when deleting characters
+                    completionState.clear()
+
+                    // Update completion list based on new text
+                    let newText = inputState.getText()
+                    if (!newText.isEmpty()) {
+                        if (let Some(completions) <- buildCompletionList(newText, inputState.cursor, isShellMode: inputState.isShellMode())) {
+                            completionState.setCompletions(completions)
+                        }
+                    }
+                }
+                return None
+
+            case r'\u{4}' => // Delete key - delete character at cursor (forward delete)
+                // This is mapped from ESC[3~ in the C FFI
+                if (inputState.deleteCharAt()) {
+                    // Always clear completions when deleting characters
+                    completionState.clear()
+
+                    // Update completion list based on new text
+                    let newText = inputState.getText()
+                    if (!newText.isEmpty()) {
+                        if (let Some(completions) <- buildCompletionList(newText, inputState.cursor, isShellMode: inputState.isShellMode())) {
+                            completionState.setCompletions(completions)
+                        }
+                    }
+                }
+                return None
+
+            case r'\t' => // Tab
+                if (completionState.isActive) {
+                    if (let Some(selected) <- completionState.getSelected()) {
+                        let currentText = inputState.getText()
+                        var newText = ""
+                        var newCursor: Int64 = inputState.cursor
+
+                        // Handle @path completion
+                        if (let Some((atIndex, pathStart, pathEnd, pathPrefix)) <- extractPathContext(currentText, inputState.cursor)) {
+                            // Replace the path part with selected path
+                            let beforePath = currentText[0..pathStart]
+                            let afterPath = currentText[pathEnd..]
+                            newText = beforePath + selected + afterPath
+                            // Set cursor to end of inserted path
+                            newCursor = beforePath.size + selected.size
+                        }
+                        // Handle /command completion
+                        else if (currentText.startsWith("/")) {
+                            newText = selected
+                            newCursor = selected.size
+                        }
+                        else {
+                            newText = selected
+                            newCursor = selected.size
+                        }
+
+                        // Replace buffer with new text
+                        inputState.clear()
+                        for (char in newText.toRuneArray()) {
+                            inputState.buffer.addLast(char)
+                        }
+                        inputState.cursor = newCursor
+                        completionState.clear()
+
+                        // Update completion list for further completions
+                        if (let Some(newCompletions) <- buildCompletionList(newText, inputState.cursor, isShellMode: inputState.isShellMode())) {
+                            completionState.setCompletions(newCompletions)
+                        }
+                    }
+                }
+                return None
+
+            case r'\u{2191}' => // Up ↑
+                if (completionState.isActive) {
+                    completionState.moveUp()
+                } else {
+                    // Navigate history
+                    if (inputState.historyIndex > 0) {
+                        inputState.historyIndex -= 1
+                        inputState.setFromHistory(this.history[inputState.historyIndex])
+                    }
+                }
+                return None
+
+            case r'\u{2193}' => // Down ↓
+                if (completionState.isActive) {
+                    completionState.moveDown()
+                } else {
+                    // Navigate history
+                    if (inputState.historyIndex + 1 < this.history.size) {
+                        inputState.historyIndex += 1
+                        inputState.setFromHistory(this.history[inputState.historyIndex])
+                    } else if (inputState.historyIndex + 1 == this.history.size) {
+                        inputState.historyIndex = this.history.size
+                        inputState.clear()
+                    }
+                }
+                return None
+
+            case r'\u{2190}' => // Left ←
+                inputState.moveCursorLeft()
+                // Update completion list after cursor movement
+                let newText = inputState.getText()
+                if (let Some(completions) <- buildCompletionList(newText, inputState.cursor, isShellMode: inputState.isShellMode())) {
+                    completionState.setCompletions(completions)
+                } else {
+                    completionState.clear()
+                }
+                return None
+
+            case r'\u{2192}' => // Right →
+                inputState.moveCursorRight()
+                // Update completion list after cursor movement
+                let newText = inputState.getText()
+                if (let Some(completions) <- buildCompletionList(newText, inputState.cursor, isShellMode: inputState.isShellMode())) {
+                    completionState.setCompletions(completions)
+                } else {
+                    completionState.clear()
+                }
+                return None
+
+            case r'\u{1B}' => // ESC
+                return None // Could be used to cancel completion or exit
+
+
+            case _ => // Regular character
+                inputState.insertChar(rune)
+
+                // Update completion list
+                let newText = inputState.getText()
+                if (let Some(completions) <- buildCompletionList(newText, inputState.cursor, isShellMode: inputState.isShellMode())) {
+                    completionState.setCompletions(completions)
+                } else {
+                    completionState.clear()
+                }
+                return None
+        }
+    }
+
+    /**
+     * Render the current state following the original redraw pattern
+     * Uses existing drawing functions and box style with proper positioning
+     * Different colors are used in shell mode
+     */
+    private func render(
+        inputState: InputState,
+        completionState: CompletionState,
+        displayContext: DisplayContext,
+        isFirst!: Bool = false
+    ) {
+        // Create current and previous drawing state
+        let currentText = inputState.getText()
+        let isShellMode = inputState.isShellMode()
+
+        // Use different colors for shell mode
+        let boxColor = if (isShellMode) { BRIGHT_YELLOW } else { BRIGHT_BLACK }
+        let textColor = if (isShellMode) { BRIGHT_GREEN } else { "" }
+
+        // Apply colors to both prompt and text in shell mode
+        let displayPrompt = if (isShellMode) {
+            "${textColor}${displayContext.prompt}${RESET}"
+        } else {
+            displayContext.prompt
+        }
+
+        let displayText = if (isShellMode) {
+            "${textColor}${currentText}${RESET}"
+        } else {
+            currentText
+        }
+
+        let wrappedContent = wrapBox("${displayPrompt}${displayText}", boxColor: boxColor)
+
+        // Calculate cursor position for current state
+        // Use original text for cursor calculation (without color codes)
+        let cursorWrappedContent = wrapBox("${displayContext.prompt}${currentText}", boxColor: boxColor)
+        let (cursorRow, cursorCol) = calculateCursorPos(
+            cursorWrappedContent,
+            inputState.cursor,
+            prefix: displayContext.prompt
+        )
+
+        // Clear previous render (similar to original redraw logic)
+        if (!isFirst && displayContext.lastRenderedLines > 0) {
+            // Move up based on previous cursor position + 1, like original implementation
+            moveCursor(displayContext.lastRenderedLines, UP)
+            moveCursor(col: 0)
+            clearScreen(AfterCursorScreen)
+        }
+
+        // Print the wrapped content
+        print(wrappedContent, flush: true)
+
+        // Handle completion list (similar to extendLine in original)
+        if (completionState.isActive) {
+            let completionText = renderCompletionList(
+                completionState.completions,
+                completionState.selectedIndex
+            )
+            if (!completionText.isEmpty()) {
+                let completionLines = completionText.lines().count() - 1
+                print(completionText, flush: true)
+                // Move cursor up by completion lines (like original colomShift)
+                if (completionLines > 0) {
+                    moveCursor(completionLines, UP)
+                }
+            }
+        }
+
+        // Move cursor to correct position (following original pattern)
+        let totalLines = wrappedContent.lines().count()
+        let linesToMoveUp = totalLines - cursorRow - 2  // -2 like in original
+        if (linesToMoveUp > 0) {
+            moveCursor(linesToMoveUp, UP)
+        }
+        moveCursor(col: cursorCol)
+
+        // Store cursor row for next cycle (not total lines)
+        displayContext.lastRenderedLines = cursorRow + 1
+    }
+
+    /**
+     * Final render when input is complete (similar to DrawPhase.Last)
+     * Positions cursor at the bottom of the input box
+     * Uses shell mode colors if active
+     */
+    private func renderFinal(inputState: InputState, displayContext: DisplayContext) {
+        let currentText = inputState.getText()
+        let isShellMode = inputState.isShellMode()
+
+        // Use different colors for shell mode
+        let boxColor = if (isShellMode) { BRIGHT_YELLOW } else { BRIGHT_BLACK }
+        let textColor = if (isShellMode) { BRIGHT_GREEN } else { "" }
+
+        // Apply colors to both prompt and text in shell mode
+        let displayPrompt = if (isShellMode) {
+            "${textColor}${displayContext.prompt}${RESET}"
+        } else {
+            displayContext.prompt
+        }
+
+        let displayText = if (isShellMode) {
+            "${textColor}${currentText}${RESET}"
+        } else {
+            currentText
+        }
+
+        let wrappedContent = wrapBox("${displayPrompt}${displayText}", boxColor: boxColor)
+
+        // Clear previous render
+        if (displayContext.lastRenderedLines > 0) {
+            moveCursor(displayContext.lastRenderedLines, UP)
+            moveCursor(col: 0)
+            clearScreen(AfterCursorScreen)
+        }
+
+        // Print the final content
+        print(wrappedContent, flush: true)
+
+        // Print newline and position cursor at bottom (like DrawPhase.Last)
+        print("\n", flush: true)
+    }
+
+    /**
+     * Main readline function
+     */
     public func readline(prompt: String): Option<String> {
         try {
             RawInputUtils.rawEnter()
-            if (let Some(line) <- readlineImpl(prompt, this.history)) {
-                this.appendHistoryFile(line)
-                return line
+
+            let inputState = InputState()
+            let completionState = CompletionState()
+            let displayContext = DisplayContext(prompt)
+            inputState.historyIndex = this.history.size
+
+            // Initial render (first time)
+            this.render(inputState, completionState, displayContext, isFirst: true)
+
+            while (true) {
+                let rune = if (let Some(r) <- RawInputUtils.rawGetRune()) {
+                    r
+                } else {
+                    return None // EOF
+                }
+
+                let result = this.handleInput(rune, inputState, completionState, displayContext)
+
+                if (let Some(line) <- result) {
+                    // Final render to position cursor at bottom of input box (like DrawPhase.Last)
+                    this.renderFinal(inputState, displayContext)
+                    return line
+                } else {
+                    // Re-render after handling input (not first time)
+                    this.render(inputState, completionState, displayContext, isFirst: false)
+                }
             }
+
             return None
         } finally {
             RawInputUtils.rawExit()
         }
     }
 
-    public func readLineBlock(prompt: String): Option<String> {
+    /**
+     * Simple blocking readline without fancy UI
+     */
+    public func simpleReadLine(prompt: String): Option<String> {
         print(prompt, flush: true)
         return readln()
     }
 
+    /**
+     * Conditional readline based on withBox parameter
+     */
     public func readline(prompt: String, withBox!: Bool): Option<String> {
         if (withBox) {
-            return readline(prompt)
+            return this.readline(prompt)
         } else {
-            print(prompt, flush: true)
-            return readln()
-        }
-    }
-}
-
-public class ByteChecker {
-    private static let VK_BACK: Byte = 0x08
-    private static let VK_TAB: Byte = 0x09
-    private static let VK_ENTER: Byte = 0x0A
-    private static let VK_RETURN: Byte = 0x0D
-    private static let VK_ESCAPE: Byte = 0x1B
-    private static let VK_DELETE: Byte = 0x2E
-    private static let VK_UP: Byte = 0x26
-    private static let VK_DOWN: Byte = 0x28
-    private static let VK_LEFT: Byte = 0x25
-    private static let VK_RIGHT: Byte = 0x27
-
-    public static func checkEsc(infinite!: Bool = false): ?String {
-        try {
-            RawInputUtils.rawEnter()
-            if (RawInputUtils.checkReadByte([VK_ESCAPE], infinite: infinite)) {
-                '\u{1B}'
-            } else {
-                None
-            }
-        } finally {
-            RawInputUtils.rawExit()
-        }
-    }
-
-    public static func checkEnter(infinite!: Bool = false): ?String {
-        try {
-            RawInputUtils.rawEnter()
-            if (RawInputUtils.checkReadByte([VK_ENTER, VK_RETURN], infinite: infinite)) {
-                '\n'
-            } else {
-                None
-            }
-        } finally {
-            RawInputUtils.rawExit()
+            return this.simpleReadLine(prompt)
         }
     }
 }
