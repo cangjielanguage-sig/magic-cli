@@ -41,6 +41,8 @@ package rootPackage.sub1.sub2          // Nested sub-packages
 - `cjpm run` - Compile and run the executable
 - `cjpm test` - Run unit tests
 
+**NOTE**: After `cjpm init`, the project already has the standard structure with `src/main.cj` containing proper package declaration and main function. Do NOT search for or query basic initialization patterns - they are automatically provided by cjpm init.
+
 ### Main Function and Program Entry
 The main function serves as the program entry point and must be defined in `src/main.cj`:
 
