@@ -3,11 +3,14 @@ package cli.io
 import magic.core.agent.{AsyncAgentResponse, AgentResponse}
 
 import cli.utils.InfoUtils
+import cli.core.config.CliConfig
+import cli.core.tools.fs_utils.writeFileBasic
 
 import std.collection.{map, enumerate, collectArray}
 import std.time.DateTime
 import std.process.executeWithOutput
 import std.env.getVariable
+import std.fs.OpenMode
 
 
 /**
@@ -25,15 +28,29 @@ protected class WorkingIndicator {
     }
 }
 
+private let printInfoSavingFilename = "print_info.txt"
+
 protected class PrintUtils {
     //---------------------------------------------------
     // Two fundamental print methods
     static public func printLine(line: String): Unit {
-        println(line)
+        // do not print anything if detached, but saving the print info to a file 
+        if (!CliConfig.detach) {
+            println(line)
+        } else {
+            let printInfoSavingPath = CliConfig.printInfoSavingDir.join(printInfoSavingFilename)
+            writeFileBasic(printInfoSavingPath, line + '\n', mode: OpenMode.Append)
+        }
     }
 
     static public func printString(str: String): Unit {
-        print(str, flush: true)
+        // do not print anything if detached, but saving the print info to a file 
+        if (!CliConfig.detach) {
+            print(str, flush: true)
+        } else {
+            let printInfoSavingPath = CliConfig.printInfoSavingDir.join(printInfoSavingFilename)
+            writeFileBasic(printInfoSavingPath, str, mode: OpenMode.Append)
+        }
     }
     //---------------------------------------------------
 

@@ -91,6 +91,13 @@ protected class CliConfig {
     public static var model: String = "ark:kimi-k2-250711"
 
     /**
+     * The prompt when running magic-cli in detach mode
+     */
+    public static var detach: Bool = false
+    public static var detachPrompt: String = ""
+    public static var printInfoSavingDir: Path = Path("")
+
+    /**
     * language in [Cangjie, General]
     */
     public static var language: String = 'General'

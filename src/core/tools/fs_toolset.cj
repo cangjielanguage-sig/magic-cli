@@ -177,19 +177,7 @@ public class FSToolset {
         if (let Deny(userInput) <- InputUtils.confirm("Write File", message)) {
             return "User cancelled the operation, feedback: ${userInput}"
         }
-
-        try {
-            let file = File(filePath, Write)
-            file.write(content.toArray())
-            file.close()
-            return "File ${filePath} written successfully!"
-        } catch (e: FSException) {
-            return "Parent directory does not exist, cannot open file, write failed, partial write, or file is not writable"
-        } catch (e: IllegalArgumentException) {
-            return "File path is empty or contains null characters"
-        } catch (e: Exception) {
-            return "Failed to write file: ${e}"
-        }
+        return writeFileBasic(filePath, content)
     }
 
     @tool[
