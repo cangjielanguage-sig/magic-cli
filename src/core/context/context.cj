@@ -78,4 +78,15 @@ protected class CliContext {
             }
         }
     }
+
+    /**
+     * Manually stop the thinking indicator if it's running
+     * This is useful for error handling scenarios
+     */
+    public func stopThinkingIndicator(): Unit {
+        if (let Some(i) <- this.thinkIndicator.load()) {
+            i.stop()
+            this.thinkIndicator.store(None)
+        }
+    }
 }

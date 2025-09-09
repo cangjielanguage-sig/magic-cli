@@ -209,7 +209,13 @@ func processInput(input: String, context: CliContext): Bool {
             return executeBuiltinCommand(input, context)  // Returns false for /exit
         case _ =>
             // Let agent process the input
-            executeAgentTask(context, input)
+            try {
+                executeAgentTask(context, input)
+            } catch (e: Exception) {
+                context.stopThinkingIndicator()
+                PrintUtils.printLine("❌ Request failed: ${e.message}")
+                LogUtils.error("Agent request failed: ${e.message}")
+            }
             return true  // Continue running
     }
 }
