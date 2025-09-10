@@ -6,7 +6,7 @@ import magic.log.LogUtils
 import magic.core.message.Conversation
 import magic.agent.{ConversationAgent}
 import magic.core.interaction.EventResponse
-import magic.interaction.{EventHandlerManager, ChatModelStartEvent, ChatModelEndEvent}
+import magic.interaction.{EventHandlerManager, ChatModelStartEvent, ChatModelEndEvent, ChatModelFailureEvent}
 
 import cli.core.mcp.MCPConfigManager
 import cli.core.conversation.ConversationManager
@@ -64,6 +64,14 @@ protected class CliContext {
             if (evt.agent.name == this.agent.name && let Some(i) <- this.thinkIndicator.load()) {
                 i.stop()
             }
+        }
+        // Handle model failures to stop thinking indicator
+        EventHandlerManager.global.addHandler { evt: ChatModelFailureEvent =>
+            if (evt.agent.name == this.agent.name && let Some(i) <- this.thinkIndicator.load()) {
+                i.stop()
+                this.thinkIndicator.store(None)
+            }
+            EventResponse.Continue
         }
         // Register the callback to auto-save conversation
         atExit({
