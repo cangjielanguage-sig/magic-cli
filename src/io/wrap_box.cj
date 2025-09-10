@@ -166,6 +166,10 @@ protected func wrapBox(title: String, lines!: Array<String>, width!: Int64 = 100
  */
 protected func wrapLineWithVerticalBorder(line: String, width!: Int64 = 100, boxColor!: String = BRIGHT_BLACK): String {
     let border = VERTICAL_BORDER.withColor(boxColor)
+    // If line is empty, fill with spaces
+    if (line.isEmpty()) {
+        return "${border}${' ' * width}${border}"
+    }
     let subLines: ArrayList<String> = ArrayList()
     // Split the line into multiple sub-lines if it exceeds the width
     for (subLine in splitLine(line, width)) {

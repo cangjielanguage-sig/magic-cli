@@ -9,7 +9,7 @@ import cli.core.conversation.ConversationManager
 import cli.core.context.CliContext
 import cli.core.agents.CodeAnalyzer
 import cli.io.{InputUtils, PrintUtils}
-import cli.io.WithColor
+import cli.io.{WithColor, AnsiColor}
 import cli.utils.TerminalUtils
 
 import std.collection.ArrayList
@@ -211,10 +211,10 @@ func processInput(input: String, context: CliContext): Bool {
             // Let agent process the input
             try {
                 executeAgentTask(context, input)
-            } catch (e: Exception) {
-                context.stopThinkingIndicator()
-                PrintUtils.printLine("❌ Request failed: ${e.message}")
-                LogUtils.error("Agent request failed: ${e.message}")
+            } catch (ex: Exception) {
+                let msg = "Execution failure: ${ex.message}"
+                PrintUtils.printLine(msg.withColor(AnsiColor(100)))
+                LogUtils.error(msg)
             }
             return true  // Continue running
     }

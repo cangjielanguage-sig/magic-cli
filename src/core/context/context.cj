@@ -6,7 +6,9 @@ import magic.log.LogUtils
 import magic.core.message.Conversation
 import magic.agent.{ConversationAgent}
 import magic.core.interaction.EventResponse
-import magic.interaction.{EventHandlerManager, ChatModelStartEvent, ChatModelEndEvent, ChatModelFailureEvent}
+import magic.interaction.*
+import magic.config.Config
+import magic.tool.AgentAsTool
 
 import cli.core.mcp.MCPConfigManager
 import cli.core.conversation.ConversationManager
@@ -15,13 +17,13 @@ import cli.core.config.CliConfig
 import cli.core.agents.*
 import cli.io.{PrintUtils, WorkingIndicator, moveCursor, clearScreen, ClearMode}
 
+import std.collection.ArrayList
 import std.fs.Path
 import std.collection.HashMap
 import std.sync.*
 import std.env.atExit
 
 protected class CliContext {
-    private let _chatAgent: Agent
     private var _agent: AtomicReference<ConversationAgent>
     private let mtx: Mutex = Mutex()
     private let thinkIndicator = AtomicOptionReference<WorkingIndicator>()
@@ -30,12 +32,12 @@ protected class CliContext {
     protected let mcpManager: MCPConfigManager
 
     protected init() {
-        this._chatAgent = if (CliConfig.language.toAsciiLower() == 'cangjie') {
+        let codeAgent = if (CliConfig.language.toAsciiLower() == 'cangjie') {
             CangjieCodeAgent()
         } else {
             GeneralCodeAgent()
         }
-        let agent = ConversationAgent(this._chatAgent)
+        let agent = ConversationAgent(codeAgent)
         this._agent = AtomicReference(agent)
         // Load MCP servers and add their tools to the agent
         this.mcpManager = MCPConfigManager()
@@ -51,21 +53,29 @@ protected class CliContext {
     }
 
     protected func registerHooks() {
+        // Collect all subAgents as allowed agent that is able to print the thinking indicator
+        let allowedAgentName = ArrayList<String>([this.agent.name])
+        for (tool in this.agent.toolManager.tools) {
+            if (tool is AgentAsTool) {
+                allowedAgentName.add(tool.name)
+            }
+        }
+        //------------------------------------------------------------------------------
+        // Use chat model start/end/failure events to show and stop the thinking indicator
         EventHandlerManager.global.addHandler { evt: ChatModelStartEvent =>
             // There may be other agents during the execution.
-            // Only show the indicator of the main agent
-            if (evt.agent.name == agent.name) {
-                this.thinkIndicator.store(PrintUtils.printWorkingIndicator(message: "💭 Thinking"))
+            // Only show the indicator of the allowed agents
+            if (allowedAgentName.contains(evt.agent.name)) {
+                this.thinkIndicator.store(PrintUtils.printWorkingIndicator(message: "💭 (${evt.agent.name}) Thinking"))
             }
             EventResponse.Continue
         }
-        // The ToolCallEvent happens after the model giving its reply
         EventHandlerManager.global.addHandler { evt: ChatModelEndEvent =>
-            if (evt.agent.name == this.agent.name && let Some(i) <- this.thinkIndicator.load()) {
+            if (allowedAgentName.contains(evt.agent.name) && let Some(i) <- this.thinkIndicator.load()) {
                 i.stop()
+                this.thinkIndicator.store(None)
             }
         }
-        // Handle model failures to stop thinking indicator
         EventHandlerManager.global.addHandler { evt: ChatModelFailureEvent =>
             if (evt.agent.name == this.agent.name && let Some(i) <- this.thinkIndicator.load()) {
                 i.stop()
@@ -73,7 +83,25 @@ protected class CliContext {
             }
             EventResponse.Continue
         }
-        // Register the callback to auto-save conversation
+        //------------------------------------------------------------------------------
+        // Use sub-agent start/end events to print the sub-agent execution info
+        EventHandlerManager.global.addHandler { evt: SubAgentStartEvent =>
+            PrintUtils.printTool(evt.agent.name, "question: ${evt.agentRequest.question}")
+            PrintUtils.beginSubAgent()
+            EventResponse.Continue
+        }
+        EventHandlerManager.global.addHandler { evt: SubAgentEndEvent =>
+            PrintUtils.printLine("🎉 SubAgent ${evt.agent.name} completed 🍻", withIndent: true)
+            PrintUtils.endSubAgent()
+        }
+        // Register uncaught exception handler to avoid ugly stack traces
+        // Note that agent.asyncChat will spawn a thread and throw exceptions there
+        // A bug in Cangjie std.core.Thread?
+        // If we use Thread.handleUncaughtExceptionBy here, it will not affect threads spawn in Magic
+        Config.threadExceptionHandler = { thread: Thread, ex: Exception =>
+            LogUtils.error("Uncaught exception in thread ${thread.name}: ${ex}")
+        }
+        // Register the callback to auto-save conversation when exiting the program
         atExit({
             => conversationManager.autoSave()
         })
@@ -84,17 +112,6 @@ protected class CliContext {
             synchronized(mtx) {
                 return _agent.load()
             }
-        }
-    }
-
-    /**
-     * Manually stop the thinking indicator if it's running
-     * This is useful for error handling scenarios
-     */
-    public func stopThinkingIndicator(): Unit {
-        if (let Some(i) <- this.thinkIndicator.load()) {
-            i.stop()
-            this.thinkIndicator.store(None)
         }
     }
 }
