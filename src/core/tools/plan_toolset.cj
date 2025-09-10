@@ -128,7 +128,7 @@ public class PlanToolset {
     public func markTaskAsComplete(taskIndex: Int64): String {
         if (taskIndex < 1 || taskIndex > this.plan.tasks.size) {
             return "Error: Invalid task index ${taskIndex}."
-        } else if (this.plan.tasks[taskIndex].completed) {
+        } else if (this.plan.tasks[taskIndex-1].completed) {
             return "Task ${taskIndex} is already completed."
         }
         this.plan.tasks[taskIndex-1].markAsComplete()
