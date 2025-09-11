@@ -23,12 +23,14 @@ if "!DEV_ROOT!"=="" (
     set "DEV_ROOT=!DEV_ROOT!"
 )
 
-set /p workspace=Please Input Workspace(Create /vendor/[Workspace] Dir On Harmony):  
+set /p workspace=Please Input Workspace(Create /Desktop/[Workspace] Dir On Harmony):  
 
 call %DEV_ROOT%\cangjie-sdk-windows-1.0-ohos\cangjie\compiler\envsetup.bat
 
 :: save config files
 ren .\build.cj _build.cj
+ren .\cjpm.toml _cjpm.toml
+ren .\cjpm_ohos.toml cjpm.toml
 ren %MAGIC_PATH%\build.cj _build.cj
 ren %MAGIC_PATH%\cjpm.toml _cjpm.toml
 copy magic_cjpm.toml %MAGIC_PATH%\cjpm.toml
@@ -37,7 +39,7 @@ copy magic_cjpm.toml %MAGIC_PATH%\cjpm.toml
 cjpm clean
 %DEV_ROOT%\deveco-studio-5.1.1.804CJ.win\deveco-studio\sdk\default\openharmony\native\llvm\bin\clang.exe -B %DEV_ROOT%/cangjie-sdk-windows-1.0-ohos/cangjie/compiler/third_party/llvm/bin -B %DEV_ROOT%/deveco-studio-5.1.1.804CJ.win/deveco-studio/sdk/default/openharmony/native/sysroot/usr/lib/aarch64-linux-ohos -L %DEV_ROOT%/deveco-studio-5.1.1.804CJ.win/deveco-studio/sdk/default/openharmony/native/sysroot/usr/lib/aarch64-linux-ohos -L %DEV_ROOT%/deveco-studio-5.1.1.804CJ.win/deveco-studio/sdk/default/openharmony/native/llvm/lib/clang/15.0.4/lib/aarch64-linux-ohos -L %DEV_ROOT%/deveco-studio-5.1.1.804CJ.win/deveco-studio/sdk/default/openharmony/native/llvm/lib/aarch64-linux-ohos --sysroot %DEV_ROOT%/deveco-studio-5.1.1.804CJ.win/deveco-studio/sdk/default/openharmony/native/sysroot -c ffi/raw_input_linux.c -o ffi/raw_input_linux_static.o -target aarch64-linux-ohos  
 %DEV_ROOT%/cangjie-sdk-windows-1.0-ohos/cangjie/compiler/third_party/llvm/bin/llvm-ar.exe rcs ffi/librawinput.a ffi/raw_input_linux_static.o
-cjpm build --target aarch64-linux-ohos -i -o magic-cli
+cjpm build --target aarch64-linux-ohos -i -o magic-cli -V
 
 hdc target mount
 echo =================================================SEND CANGJIE RUNTIME=================================================
@@ -50,16 +52,18 @@ hdc file send "target\aarch64-linux-ohos\release\bin\magic-cli" /system/bin
 hdc shell "chmod +x /system/bin/magic-cli"
 
 echo PREPARE WORKSAPCE...
-hdc shell mkdir -p /vendor/%workspace%
-hdc shell "chmod +x /vendor/%workspace%"
-hdc shell mkdir -p /vendor/%workspace%/.magic-cli
-hdc file send "ohos\settings.json" /vendor/%workspace%/.magic-cli
-hdc file send "ohos\.env" /vendor/%workspace%/
-hdc file send "ohos\cl100k_base.tiktoken" /vendor/%workspace%/.magic-cli
+hdc shell mkdir -p /storage/media/100/local/files/Docs/Desktop/%workspace%
+hdc shell "chmod +x /storage/media/100/local/files/Docs/Desktop/%workspace%"
+hdc shell mkdir -p /storage/media/100/local/files/Docs/Desktop/%workspace%/.magic-cli
+hdc file send "ohos\settings.json" /storage/media/100/local/files/Docs/Desktop/%workspace%/.magic-cli
+hdc file send "ohos\.env" /storage/media/100/local/files/Docs/Desktop/%workspace%/
+hdc file send "ohos\cl100k_base.tiktoken" /storage/media/100/local/files/Docs/Desktop/%workspace%/.magic-cli
 
 
 :: resume config files
 ren .\_build.cj build.cj
+ren .\cjpm.toml cjpm_ohos.toml
+ren .\_cjpm.toml cjpm.toml
 ren %MAGIC_PATH%\_build.cj build.cj
 del /q %MAGIC_PATH%\cjpm.toml
 ren %MAGIC_PATH%\_cjpm.toml cjpm.toml

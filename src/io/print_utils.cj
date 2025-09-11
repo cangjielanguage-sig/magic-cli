@@ -54,11 +54,8 @@ protected class PrintUtils {
     //---------------------------------------------------
 
     static public func clearScreen(): Unit {
-        let (exitCode, stdOutData, stdErrData) = if (InfoUtils.os == "windows") {
-            executeWithOutput("powershell", ["-Command", "clear"])
-        } else {
-            executeWithOutput("/bin/bash", ["-c", "clear"])
-        }
+        moveCursor(row: 0, col: 0)
+        clearScreen(mode: AfterCursorScreen)
     }
 
     static public func printWelcome() {

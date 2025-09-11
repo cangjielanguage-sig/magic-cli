@@ -37,9 +37,9 @@ private func executeShellCommand(command: String, context: CliContext): Unit {
         PrintUtils.printLine("Shell Command: No command provided after '!'.")
         return
     }
-    let items = command.split(" ")  // Simple split by space, does not handle quotes
-    let args = if (items.size > 1) { items[1..] } else { Array<String>() }
-    let (exitCode, stdOutData, stdErrData) = executeWithOutput(items[0], args, workingDirectory: CliConfig.cwd)
+    //let items = command.split(" ")  // Simple split by space, does not handle quotes
+    //let args = if (items.size > 1) { items[1..] } else { Array<String>() }
+    let (exitCode, stdOutData, stdErrData) = TerminalUtils.execute([command], workDir: CliConfig.cwd)
     let output = if (exitCode == 0) {
         String.fromUtf8(stdOutData).trimAscii()
     } else {
