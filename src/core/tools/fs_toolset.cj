@@ -173,7 +173,7 @@ public class FSToolset {
         let message = "filePath: ${filePath}\nstartLine: ${startLine}\nendLine: ${endLine.map { n => n.toString() } ?? "end of file"}"
         PrintUtils.printTool("Read File Range", message)
 
-        return catRange(filePath, startLine, endLine: endLine ?? 0)
+        return catRange(filePath, startLine, endLine: endLine ?? Int64.Max)
     }
 
     @tool[
