@@ -3,6 +3,7 @@ package cli.core.agents
 import magic.dsl.*
 import magic.prelude.*
 import magic.config.Config
+import magic.tool.{AgentAsTool, SubAgentMode}
 
 import cli.core.tools.*
 import cli.core.config.CliConfig
@@ -42,7 +43,8 @@ public class GeneralCodeAgent {
         PlanToolset(),
         // GitToolset(),
         fixCangjieProjectCompileError,
-        analyzeCode
+        // analyzeCode
+        AgentAsTool(CodeAnalyzer(), mode: SubAgentMode.WithContext)
     ]
 ]
 public class CangjieCodeAgent {
