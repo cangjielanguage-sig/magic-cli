@@ -131,9 +131,9 @@ public class FSToolset {
 
         try {
             let (exitCode, stdOutData, stdErrData) = if (InfoUtils.os == "windows") {
-                executeWithOutput("powershell", ["-Command", "dir"], workingDirectory: Path(path))
-            } else {
-                executeWithOutput("/bin/bash", ["-c", "ls -la"], workingDirectory: Path(path))
+                TerminalUtils.execute(["dir"], workDir: Path(path))
+            } else { //linux or ohos
+                TerminalUtils.execute(["ls", "-la"], workDir: Path(path))
             }
 
             if (exitCode == 0) {
@@ -173,7 +173,7 @@ public class FSToolset {
         let message = "filePath: ${filePath}\nstartLine: ${startLine}\nendLine: ${endLine.map { n => n.toString() } ?? "end of file"}"
         PrintUtils.printTool("Read File Range", message)
 
-        return catRange(filePath, startLine, endLine: endLine ?? Int64.Max)
+        return catRange(filePath, startLine, endLine: endLine ?? 0)
     }
 
     @tool[

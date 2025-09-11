@@ -1,0 +1,38 @@
+[package]
+  cjc-version = "1.0.0"
+  name = "cli"
+  description = "nothing here"
+  version = "1.0.0"
+  target-dir = ""
+  src-dir = ""
+  output-type = "executable"
+  compile-option = "-Woff unused -Woff deprecated"
+  override-compile-option = ""
+  link-option = ""
+  package-configuration = {}
+
+[dependencies]
+  magic = { path = "${MAGIC_PATH}" }
+
+[ffi.c]
+  rawinput = { path="./ffi/" }
+
+[target.x86_64-unknown-linux-gnu.bin-dependencies]
+  path-option = ["${MAGIC_PATH}/libs/cangjie-stdx-linux-x64-1.0.0.1/linux_x86_64_llvm/dynamic/stdx"]
+
+[target.x86_64-unknown-windows-gnu.bin-dependencies]
+  path-option = ["${MAGIC_PATH}/libs/cangjie-stdx-windows-x64-1.0.0.1/windows_x86_64_llvm/dynamic/stdx"]
+
+[target.x86_64-w64-mingw32.bin-dependencies]
+  path-option = ["${MAGIC_PATH}/libs/cangjie-stdx-windows-x64-1.0.0.1/windows_x86_64_llvm/dynamic/stdx"]
+
+[target.aarch64-unknown-linux-gnu.bin-dependencies]
+  path-option = ["${MAGIC_PATH}/libs/cangjie-stdx-linux-aarch64-1.0.0.1/linux_aarch64_llvm/dynamic/stdx"]
+
+[target.aarch64-apple-darwin.bin-dependencies]
+  path-option = ["${MAGIC_PATH}/libs/cangjie-stdx-mac-aarch64-1.0.0.1/darwin_aarch64_llvm/dynamic/stdx"]
+
+[target.aarch64-linux-ohos]
+  compile-option = "-B \"${DEV_ROOT}/cangjie-sdk-windows-1.0-ohos/cangjie/compiler/third_party/llvm/bin\" -B \"${DEV_ROOT}/deveco-studio-5.1.1.804CJ.win/deveco-studio/sdk/default/openharmony/native/sysroot/usr/lib/aarch64-linux-ohos\" -L \"${DEV_ROOT}/deveco-studio-5.1.1.804CJ.win/deveco-studio/sdk/default/openharmony/native/sysroot/usr/lib/aarch64-linux-ohos\" -L \"${DEV_ROOT}/deveco-studio-5.1.1.804CJ.win/deveco-studio/sdk/default/openharmony/native/llvm/lib/clang/15.0.4/lib/aarch64-linux-ohos\" -L \"${DEV_ROOT}/deveco-studio-5.1.1.804CJ.win/deveco-studio/sdk/default/openharmony/native/llvm/lib/aarch64-linux-ohos\" --sysroot \"${DEV_ROOT}/deveco-studio-5.1.1.804CJ.win/deveco-studio/sdk/default/openharmony/native/sysroot\" --cfg \"ohos=false\" --output-type=staticlib"
+  [target.aarch64-linux-ohos.bin-dependencies]
+    path-option = [ "${DEV_ROOT}/cangjie-stdx-ohos-aarch64-1.0.0.1/linux_ohos_aarch64_llvm/dynamic/stdx" ]
