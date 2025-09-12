@@ -19,7 +19,7 @@
 | 组件 | 技术 |
 |------|------|
 | 语言 | Cangjie (仓颉语言) |
-| 依赖 | Cangjie stdx + CangjieMagic Magic |
+| 依赖 | Cangjie stdx + Cangjie Magic |
 | 模型 | 支持配置 LLM (默认远程 API) |
 | 集成 | MCP (Model Context Protocol) 支持用户自定义配置 |
 
