@@ -43,22 +43,34 @@ protected class PrintUtils {
 
     //---------------------------------------------------
     // Two fundamental print methods
-    static public func printLine(line: String): Unit {
+    static public func printLine(line: String, withIndent!: Bool = false): Unit {
         // do not print anything if detached, but saving the print info to a file 
         if (!CliConfig.detach) {
+            if (withIndent && CURRENT_INDENT > 0) {
+                print(" " * CURRENT_INDENT)
+            }
             println(line)
         } else {
             let printInfoSavingPath = CliConfig.printInfoSavingDir.join(printInfoSavingFilename)
+            if (withIndent && CURRENT_INDENT > 0) {
+                writeFileBasic(printInfoSavingPath, " " * CURRENT_INDENT, mode: OpenMode.Append)
+            }
             writeFileBasic(printInfoSavingPath, line + '\n', mode: OpenMode.Append)
         }
     }
 
-    static public func printString(str: String): Unit {
+    static public func printString(str: String, withIndent!: Bool = false): Unit {
         // do not print anything if detached, but saving the print info to a file 
         if (!CliConfig.detach) {
+            if (withIndent && CURRENT_INDENT > 0) {
+                print(" " * CURRENT_INDENT)
+            }
             print(str, flush: true)
         } else {
             let printInfoSavingPath = CliConfig.printInfoSavingDir.join(printInfoSavingFilename)
+            if (withIndent && CURRENT_INDENT > 0) {
+                writeFileBasic(printInfoSavingPath, " " * CURRENT_INDENT, mode: OpenMode.Append)
+            }
             writeFileBasic(printInfoSavingPath, str, mode: OpenMode.Append)
         }
     }
