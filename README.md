@@ -1,6 +1,6 @@
-# 🤖 Magic-CLI
+# Magic-CLI
 
-基于 **CangjieMagic** 框架的 AI 命令行助手，专为 **Cangjie 语言** 开发设计！
+基于 **Cangjie Agent DSL** 和 **Cangjie Magic** 构建的 AI 命令行助手
 
 ## ✨ 核心特性
 
