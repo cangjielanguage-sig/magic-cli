@@ -116,11 +116,7 @@ private func grepWithTraditional(pattern: String, path: Option<String>, include:
         LogUtils.debug("[Run command] ${command}")
 
         let workingDir = path.map { s => Path(s) } ?? CliConfig.cwd
-        let (exitCode, stdOutData, stdErrData) = if (InfoUtils.os == "windows") {
-            executeWithOutput("powershell", ["-Command", command], workingDirectory: workingDir)
-        } else {
-            executeWithOutput("/bin/bash", ["-c", command], workingDirectory: workingDir)
-        }
+        let (exitCode, stdOutData, stdErrData) = TerminalUtils.execute([command],  workDir: workingDir)
 
         if (exitCode == 0) {
             let outString = String.fromUtf8(stdOutData).trimAscii()

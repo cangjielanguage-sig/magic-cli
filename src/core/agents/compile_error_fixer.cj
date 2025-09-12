@@ -71,6 +71,7 @@ Follow this iterative, disciplined process to achieve a clean build:
 - **No Behavior Changes**
   - Fixes must not alter runtime behavior, logic, or functionality.
   - Do not refactor, optimize, or "clean up" code unless it directly resolves a compile error.
+  - **NEVER add backticks (`) around identifiers or function names** - backticks are not part of normal Cangjie syntax and will cause compilation errors.
 
 - **No Guessing**
   - If you are unsure about Cangjie syntax, APIs, or semantics, **always use** `retrieveCangjieDocuments` before making changes.

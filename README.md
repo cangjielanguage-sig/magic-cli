@@ -1,6 +1,6 @@
-# 🤖 Magic-CLI
+# Magic-CLI
 
-基于 **CangjieMagic** 框架的 AI 命令行助手，专为 **Cangjie 语言** 开发设计！
+基于 **Cangjie Agent DSL** 和 **Cangjie Magic** 构建的 AI 命令行助手
 
 ## ✨ 核心特性
 
@@ -18,11 +18,10 @@
 
 | 组件 | 技术 |
 |------|------|
-| 语言 | **Cangjie** (仓颉语言) |
-| 框架 | **CangjieMagic** (AI Agent 框架) |
-| 依赖 | Cangjie stdx 标准库 + Magic 框架 |
+| 语言 | Cangjie (仓颉语言) |
+| 依赖 | Cangjie stdx + Cangjie Magic |
 | 模型 | 支持配置 LLM (默认远程 API) |
-| 集成 | **MCP** (Model Context Protocol) 支持用户自定义配置 |
+| 集成 | MCP (Model Context Protocol) 支持用户自定义配置 |
 
 ## 🏗️ 项目结构
 

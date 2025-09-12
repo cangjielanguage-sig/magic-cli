@@ -9,7 +9,7 @@ import cli.core.conversation.ConversationManager
 import cli.core.context.CliContext
 import cli.core.agents.CodeAnalyzer
 import cli.io.{InputUtils, PrintUtils}
-import cli.io.WithColor
+import cli.io.{WithColor, AnsiColor}
 import cli.utils.TerminalUtils
 
 import std.collection.ArrayList
@@ -37,9 +37,9 @@ private func executeShellCommand(command: String, context: CliContext): Unit {
         PrintUtils.printLine("Shell Command: No command provided after '!'.")
         return
     }
-    let items = command.split(" ")  // Simple split by space, does not handle quotes
-    let args = if (items.size > 1) { items[1..] } else { Array<String>() }
-    let (exitCode, stdOutData, stdErrData) = executeWithOutput(items[0], args, workingDirectory: CliConfig.cwd)
+    //let items = command.split(" ")  // Simple split by space, does not handle quotes
+    //let args = if (items.size > 1) { items[1..] } else { Array<String>() }
+    let (exitCode, stdOutData, stdErrData) = TerminalUtils.execute([command], workDir: CliConfig.cwd)
     let output = if (exitCode == 0) {
         String.fromUtf8(stdOutData).trimAscii()
     } else {
@@ -209,7 +209,13 @@ func processInput(input: String, context: CliContext): Bool {
             return executeBuiltinCommand(input, context)  // Returns false for /exit
         case _ =>
             // Let agent process the input
-            executeAgentTask(context, input)
+            try {
+                executeAgentTask(context, input)
+            } catch (ex: Exception) {
+                let msg = "Execution failure: ${ex.message}"
+                PrintUtils.printLine(msg.withColor(AnsiColor(100)))
+                LogUtils.error(msg)
+            }
             return true  // Continue running
     }
 }

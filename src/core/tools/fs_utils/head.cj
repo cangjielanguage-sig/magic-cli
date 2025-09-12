@@ -45,7 +45,7 @@ public func head(filePath: String, lines!: Int64 = 10): String {
             }
             // Format with line number (similar to cat -n)
             let lineNo = lineNumber.toString()
-            result.append("${lineNo.padEnd(6)}:${line}\n")
+            result.append("${lineNo.padStart(6)}  ${line}\n")
             lineNumber += 1
             linesRead += 1
         }
@@ -54,7 +54,7 @@ public func head(filePath: String, lines!: Int64 = 10): String {
             return "File is empty: ${filePath}"
         }
 
-        return result.toString()
+        return result.toString().trimAscii()
 
     } catch (e: FSException) {
         return "Failed to read file: ${e}"

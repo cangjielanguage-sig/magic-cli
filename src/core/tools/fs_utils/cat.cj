@@ -1,5 +1,7 @@
 package cli.core.tools.fs_utils
 
+import magic.utils.readFile
+
 import std.fs.*
 import std.io.*
 import std.collection.*
@@ -12,35 +14,19 @@ import std.collection.*
  * @return String containing the full file content with line numbers
  */
 public func cat(filePath: String): String {
-    if (!Path(filePath).isAbsolute()) {
+    let path = Path(filePath)
+    if (!path.isAbsolute()) {
         return "File path must be absolute"
     }
-
-    if (!exists(filePath)) {
+    if (!exists(path)) {
         return "File does not exist: ${filePath}"
     }
-
-    let path = Path(filePath)
     if (!FileInfo(path).isRegular()) {
         return "Path is not a regular file: ${filePath}"
     }
 
-    try (file = File(filePath, Read)) {
-        let result = StringBuilder()
-        var lineNumber: Int64 = 1
-        let reader = StringReader(file)
-        while (let Some(line) <- reader.readln()) {
-            // Format with line number (right-aligned, tab-separated)
-            let lineNo = lineNumber.toString()
-            result.append("${lineNo.padEnd(6)}:${line}\n")
-            lineNumber += 1
-        }
-
-        if (result.size == 0) {
-            return "File is empty: ${filePath}"
-        }
-
-        return result.toString()
+    try {
+        return readFile(path, withLineNumber: true)
     } catch (e: FSException) {
         return "Failed to read file: ${e}"
     } catch (e: Exception) {
@@ -58,71 +44,26 @@ public func cat(filePath: String): String {
  * @param endLine Ending line number (1-based, inclusive). If 0 or negative, reads to end of file
  * @return String containing the specified line range with line numbers
  */
-public func catRange(filePath: String, startLine: Int64, endLine!: Int64 = 0): String {
-    if (!Path(filePath).isAbsolute()) {
+public func catRange(filePath: String, startLine: Int64, endLine!: Int64 = Int64.Max): String {
+    let path = Path(filePath)
+    if (!path.isAbsolute()) {
         return "File path must be absolute"
     }
-
-    if (!exists(filePath)) {
+    if (!exists(path)) {
         return "File does not exist: ${filePath}"
     }
-
-    let path = Path(filePath)
     if (!FileInfo(path).isRegular()) {
         return "Path is not a regular file: ${filePath}"
     }
-
     if (startLine <= 0) {
         return "Start line must be positive (1-based)"
     }
-
     if (endLine > 0 && endLine < startLine) {
         return "End line must be greater than or equal to start line"
     }
 
     try(file = File(filePath, Read)) {
-        let result = StringBuilder()
-        var currentLine: Int64 = 1
-        let reader = StringReader(file)
-
-        // Skip lines before startLine
-        while (currentLine < startLine) {
-            if (let Some(line) <- reader.readln()) {
-                line
-            } else {
-                // End of file reached
-                return "Start line ${startLine} exceeds file length"
-            }
-
-            currentLine += 1
-        }
-
-        // Read and format lines in range
-        while (true) {
-            let line = if (let Some(line) <- reader.readln()) {
-                line
-            } else {
-                // End of file reached
-                break
-            }
-
-            // Format with line number
-            let lineNo = currentLine.toString()
-            result.append("${lineNo.padEnd(6)}:${line}\n")
-
-            currentLine += 1
-
-            // Stop if we've reached the end line
-            if (endLine > 0 && currentLine > endLine) {
-                break
-            }
-        }
-
-        if (result.size == 0) {
-            return "No lines found in specified range"
-        }
-
-        return result.toString()
+        return readFile(path, withLineNumber: true, startLine: startLine, endLine: endLine)
     } catch (e: FSException) {
         return "Failed to read file: ${e}"
     } catch (e: Exception) {

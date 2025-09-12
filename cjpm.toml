@@ -6,7 +6,7 @@
   target-dir = ""
   src-dir = ""
   output-type = "executable"
-  compile-option = "-Woff unused -Woff deprecated"
+  compile-option = "-Woff unused -Woff deprecated --cfg \"ohos=false\""
   override-compile-option = ""
   link-option = ""
   package-configuration = {}

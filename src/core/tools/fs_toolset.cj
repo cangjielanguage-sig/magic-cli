@@ -24,6 +24,18 @@ import cli.core.config.CliConfig
 // https://github.com/google-gemini/gemini-cli/tree/main/packages/core/src/tools
 //==============================================================================
 
+let EDIT_FILE_DESCRIPTION = """
+Replaces text within a file. By default, replaces a single occurrence.
+This tool requires providing significant context around the change to ensure precise targeting. Always use the readFile or readFileRange tool to examine the file's current content before attempting a text replacement.
+
+Expectation for required parameters:
+1. path MUST be an absolute path; otherwise an error will be thrown.
+2. oldContent MUST be the exact literal text to replace (including all whitespace, indentation, newlines, and surrounding code etc.).
+3. newContent MUST be the exact literal text to replace `oldContent` with (also including all whitespace, indentation, newlines, and surrounding code etc.). Ensure the resulting code is correct and idiomatic.
+4. NEVER escape `oldContent` or `newContent`, that would break the exact literal text requirement.
+**Important:** If ANY of the above are not satisfied, the tool will fail. CRITICAL for `oldContent`: Must uniquely identify the single instance to change. Include at least 3 lines of context BEFORE and AFTER the target text, matching whitespace and indentation precisely. If this string matches multiple locations, or does not match exactly, the tool will fail.
+"""
+
 @toolset
 public class FSToolset {
     @tool[
@@ -119,9 +131,9 @@ public class FSToolset {
 
         try {
             let (exitCode, stdOutData, stdErrData) = if (InfoUtils.os == "windows") {
-                executeWithOutput("powershell", ["-Command", "dir"], workingDirectory: Path(path))
-            } else {
-                executeWithOutput("/bin/bash", ["-c", "ls -la"], workingDirectory: Path(path))
+                TerminalUtils.execute(["dir"], workDir: Path(path))
+            } else { //linux or ohos
+                TerminalUtils.execute(["ls", "-la"], workDir: Path(path))
             }
 
             if (exitCode == 0) {
@@ -161,7 +173,7 @@ public class FSToolset {
         let message = "filePath: ${filePath}\nstartLine: ${startLine}\nendLine: ${endLine.map { n => n.toString() } ?? "end of file"}"
         PrintUtils.printTool("Read File Range", message)
 
-        return catRange(filePath, startLine, endLine: endLine ?? 0)
+        return catRange(filePath, startLine, endLine: endLine ?? Int64.Max)
     }
 
     @tool[
@@ -178,6 +190,42 @@ public class FSToolset {
             return "User cancelled the operation, feedback: ${userInput}"
         }
         return writeFileBasic(filePath, content)
+    }
+
+    @tool[
+        description: "${EDIT_FILE_DESCRIPTION}",
+        parameters: {
+            filePath: "File path, must be an absolute path",
+            oldContent: "The exact literal text to replace, preferably unescaped. For single replacements (default), include at least 3 lines of context BEFORE and AFTER the target text, matching whitespace and indentation precisely. For multiple replacements, specify expected_replacements parameter. If this string is not the exact literal text (i.e. you escaped it) or does not match exactly, the tool will fail.",
+            newContent: "The exact literal text to replace `oldContent` with, preferably unescaped. Provide the EXACT text. Ensure the resulting code is correct and idiomatic."
+        }
+    ]
+    public func editFile(filePath: String, oldContent: String, newContent: String): String {
+        if (!Path(filePath).isAbsolute()) {
+            return "File path must be absolute"
+        }
+
+        try {
+            let oldFileContent = String.fromUtf8(File.readFrom(filePath))
+            if (!oldFileContent.contains(oldContent)) {
+                return "File ${filePath} does not contain the specified content '${oldContent}', cannot modify"
+            }
+            let newFileContent = oldFileContent.replace(oldContent, newContent)
+
+            let message = diff(oldFileContent, newFileContent) |> PrintUtils.renderDiff
+            if (let Deny(_) <- InputUtils.confirm("Edit File (${filePath})", message)) {
+                return "User cancelled the operation"
+            }
+
+            File.writeTo(filePath, newFileContent.toArray())
+            return "File ${filePath} content modified successfully"
+        } catch (e: FSException) {
+            return "File path error or file is not readable/writable"
+        } catch (e: IllegalArgumentException) {
+            return "File path is empty or contains illegal characters"
+        } catch (e: Exception) {
+            return "Failed to modify file content: ${e}"
+        }
     }
 
     @tool[
@@ -204,42 +252,6 @@ public class FSToolset {
             return "Nothing found"
         } else {
             return result
-        }
-    }
-
-    @tool[
-        description: "Modifies file content, must modify at least one function's content at a time, returns modification result. You should put as many modifications as possible into one tool use to improve efficiency",
-        parameters: {
-            filePath: "File path, must be an absolute path",
-            oldContent: "Original file content, must be a part that appears in the file, must contain at least one function from the original file",
-            newContent: "Content to overwrite with"
-        }
-    ]
-    public func editFile(filePath: String, oldContent: String, newContent: String): String {
-        if (!Path(filePath).isAbsolute()) {
-            return "File path must be absolute"
-        }
-
-        try {
-            let oldFileContent = String.fromUtf8(File.readFrom(filePath))
-            if (!oldFileContent.contains(oldContent)) {
-                return "File ${filePath} does not contain the specified content '${oldContent}', cannot modify"
-            }
-            let newFileContent = oldFileContent.replace(oldContent, newContent)
-
-            let message = diff(oldFileContent, newFileContent) |> PrintUtils.renderDiff
-            if (let Deny(userInput) <- InputUtils.confirm("Edit File (${filePath})", message)) {
-                return "User cancelled the operation, feedback: ${userInput}"
-            }
-
-            File.writeTo(filePath, newFileContent.toArray())
-            return "File ${filePath} content modified successfully"
-        } catch (e: FSException) {
-            return "File path error or file is not readable/writable"
-        } catch (e: IllegalArgumentException) {
-            return "File path is empty or contains illegal characters"
-        } catch (e: Exception) {
-            return "Failed to modify file content: ${e}"
         }
     }
 

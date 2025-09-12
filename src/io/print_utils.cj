@@ -31,6 +31,16 @@ protected class WorkingIndicator {
 private let printInfoSavingFilename = "print_info.txt"
 
 protected class PrintUtils {
+    static var CURRENT_INDENT = 0
+
+    static public func beginSubAgent(): Unit {
+        CURRENT_INDENT += 4
+    }
+
+    static public func endSubAgent(): Unit {
+        CURRENT_INDENT -= 4
+    }
+
     //---------------------------------------------------
     // Two fundamental print methods
     static public func printLine(line: String): Unit {
@@ -55,11 +65,8 @@ protected class PrintUtils {
     //---------------------------------------------------
 
     static public func clearScreen(): Unit {
-        let (exitCode, stdOutData, stdErrData) = if (InfoUtils.os == "windows") {
-            executeWithOutput("powershell", ["-Command", "clear"])
-        } else {
-            executeWithOutput("/bin/bash", ["-c", "clear"])
-        }
+        moveCursor(row: 0, col: 0)
+        clearScreen(mode: AfterCursorScreen)
     }
 
     static public func printWelcome() {
@@ -114,44 +121,27 @@ protected class PrintUtils {
     // The following print methods are called by tools
     //----------------------------------------------------------------------------------
 
-    static var CURRENT_INDENT = 0
-
-    static public func beginSubAgent(): Unit {
-        CURRENT_INDENT += 4
-    }
-
-    static public func endSubAgent(): Unit {
-        CURRENT_INDENT -= 4
-    }
-
     static public func printInterrupt() {
-        if (CURRENT_INDENT > 0) {
-            PrintUtils.printString(" " * CURRENT_INDENT)
-        }
-        PrintUtils.printLine(" ❗ Interrupted ...")
+        PrintUtils.printLine(" ❗ Interrupted ...", withIndent: true)
     }
 
     static public func printUserConfirm() {
-        if (CURRENT_INDENT > 0) {
-            PrintUtils.printString(" " * CURRENT_INDENT)
-        }
-        PrintUtils.printLine("(Enter to confirm, any other key to cancel): ".withColor(THEME_PRIMARY))
+        PrintUtils.printLine(
+            "(Enter to confirm, any other key to cancel): ".withColor(THEME_PRIMARY),
+            withIndent: true
+        )
     }
 
     static public func printApproval(): Unit {
-        if (CURRENT_INDENT > 0) {
-            PrintUtils.printString(" " * CURRENT_INDENT)
-        }
-        PrintUtils.printLine("└─ 🔧 Approved to run...".withColor(THEME_MUTED))
+        PrintUtils.printLine(
+            "└─ 🔧 Approved to run...".withColor(THEME_MUTED),
+            withIndent: true
+        )
     }
 
     static public func printCancellation(): Unit {
-        if (CURRENT_INDENT > 0) {
-            PrintUtils.printString(" " * CURRENT_INDENT)
-        }
-        PrintUtils.printLine("└─ ✖ Cancelled...".withColor(THEME_MUTED))
+        PrintUtils.printLine("└─ ✖ Cancelled...".withColor(THEME_MUTED), withIndent: true)
     }
-
 
     static public func printTool(name: String, message: String, needConfirm!: Bool = false) {
         // Whether to confirm decides the mark
@@ -200,12 +190,14 @@ protected class PrintUtils {
     static let INDICATORS = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"]
 
     static public func printWorkingIndicator(message!: String = "Working"): WorkingIndicator {
-        clearScreen(mode: ClearMode.EntireLine)
         let future = spawn {
             var idx = 0
             while (!Thread.currentThread.hasPendingCancellation) {
                 let spinner = INDICATORS[idx % INDICATORS.size]
-                PrintUtils.printString("\r${spinner} ${message}...".withColor(THEME_MUTED))
+                clearScreen(mode: ClearMode.EntireLine)
+                PrintUtils.printString(
+                    "${spinner} ${message}...".withColor(THEME_MUTED), withIndent: true
+                )
                 sleep(Duration.millisecond * 100)
                 idx = (idx + 1) % INDICATORS.size
             }
