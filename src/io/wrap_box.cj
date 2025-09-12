@@ -90,11 +90,11 @@ private func splitLine(line: String, width: Int64): Array<String> {
  * Create a bordered text box containing the given content
  * @param content The text content to display in the box
  * @param width The width of the box in display characters (default: 100)
- * @param boxColor The color of the box border (default: BRIGHT_BLACK)
+ * @param boxColor The color of the box border (default: AnsiColor.BRIGHT_BLACK)
  * @param centerTitle Whether to center the title (default: false, not used in this overload)
  * @return The formatted box as a string with borders
  */
-protected func wrapBox(content: String, width!: Int64 = 100, boxColor!: String = BRIGHT_BLACK,
+protected func wrapBox(content: String, width!: Int64 = 100, boxColor!: AnsiColor = AnsiColor.BRIGHT_BLACK,
     centerTitle!: Bool = false): String {
     return wrapBox("", content: content, width: width, boxColor: boxColor, centerTitle: centerTitle)
 }
@@ -104,11 +104,11 @@ protected func wrapBox(content: String, width!: Int64 = 100, boxColor!: String =
  * @param title The title to display at the top of the box
  * @param content The text content to display in the box (will be split by newlines)
  * @param width The width of the box in display characters (default: 100)
- * @param boxColor The color of the box border (default: BRIGHT_BLACK)
+ * @param boxColor The color of the box border (default: AnsiColor.BRIGHT_BLACK)
  * @param centerTitle Whether to center the title text (default: false)
  * @return The formatted box as a string with borders, title, and content
  */
-protected func wrapBox(title: String, content!: String, width!: Int64 = 100, boxColor!: String = BRIGHT_BLACK,
+protected func wrapBox(title: String, content!: String, width!: Int64 = 100, boxColor!: AnsiColor = AnsiColor.BRIGHT_BLACK,
     centerTitle!: Bool = false): String {
     let lines = content.split("\n")
     return wrapBox(title, lines: lines, width: width, boxColor: boxColor, centerTitle: centerTitle)
@@ -125,11 +125,11 @@ protected func wrapBox(title: String, content!: String, width!: Int64 = 100, box
  * @param title The title to display at the top of the box
  * @param lines Array of content lines to display in the box
  * @param width The width of the box in display characters (default: 100)
- * @param boxColor The color of the box border (default: BRIGHT_BLACK)
+ * @param boxColor The color of the box border (default: AnsiColor.BRIGHT_BLACK)
  * @param centerTitle Whether to center the title text (default: false)
  * @return The complete formatted box as a string
  */
-protected func wrapBox(title: String, lines!: Array<String>, width!: Int64 = 100, boxColor!: String = BRIGHT_BLACK,
+protected func wrapBox(title: String, lines!: Array<String>, width!: Int64 = 100, boxColor!: AnsiColor = AnsiColor.BRIGHT_BLACK,
     centerTitle!: Bool = false): String {
     let strBuilder = StringBuilder()
     // Add the top border line with corner characters
@@ -161,10 +161,10 @@ protected func wrapBox(title: String, lines!: Array<String>, width!: Int64 = 100
  *
  * @param line The input line of text to wrap
  * @param width The target width for the box content (default: 100)
- * @param boxColor The color of the vertical border characters (default: BRIGHT_BLACK)
+ * @param boxColor The color of the vertical border characters (default: AnsiColor.BRIGHT_BLACK)
  * @return The line(s) wrapped with vertical borders, joined by newlines if split
  */
-protected func wrapLineWithVerticalBorder(line: String, width!: Int64 = 100, boxColor!: String = BRIGHT_BLACK): String {
+protected func wrapLineWithVerticalBorder(line: String, width!: Int64 = 100, boxColor!: AnsiColor = AnsiColor.BRIGHT_BLACK): String {
     let border = VERTICAL_BORDER.withColor(boxColor)
     // If line is empty, fill with spaces
     if (line.isEmpty()) {
@@ -187,13 +187,13 @@ protected func wrapLineWithVerticalBorder(line: String, width!: Int64 = 100, box
  * @param selectIdx Index of the currently selected item (0-based)
  * @return Formatted string with the visible portion of the list, with scroll indicators
  */
-protected func wrapShowList(showArray: Array<String>, selectIdx: Int64): String {
-    if (showArray.size == 0) {
+protected func wrapOptionList(options: Array<String>, selectedIndex: Int64): String {
+    if (options.size == 0) {
         return ""
     }
     let listBuilder = StringBuilder()
     let maxVisibleItems = 8  // Maximum number of items to show at once
-    let visibleRangeEnd = min(max(selectIdx + 1, maxVisibleItems), showArray.size)
+    let visibleRangeEnd = min(max(selectedIndex + 1, maxVisibleItems), options.size)
     let visibleRangeStart = max(0, visibleRangeEnd - maxVisibleItems)
 
     // Show up arrow if there are items above the visible range
@@ -203,20 +203,20 @@ protected func wrapShowList(showArray: Array<String>, selectIdx: Int64): String 
 
     // Show the visible range of items
     for (itemIndex in visibleRangeStart..visibleRangeEnd) {
-        let currentItem = showArray[itemIndex]
+        let currentItem = options[itemIndex]
         listBuilder.append("\n")
-        if (itemIndex == selectIdx) {
+        if (itemIndex == selectedIndex) {
             // Highlight the selected item
-            listBuilder.append("${BRIGHT_BLUE}${BOLD}${currentItem}${RESET}")
+            listBuilder.append("${AnsiColor.BRIGHT_BLUE}${AnsiColor.BOLD}${currentItem}${AnsiColor.RESET}")
         } else {
             // Normal display for unselected items
-            listBuilder.append("${BRIGHT_BLACK}${currentItem}${RESET}")
+            listBuilder.append("${AnsiColor.BRIGHT_BLACK}${currentItem}${AnsiColor.RESET}")
         }
     }
 
     // Show down arrow and position indicator if there are more items
-    if (showArray.size > maxVisibleItems) {
-        listBuilder.append("\n▼(${selectIdx + 1}/${showArray.size})")
+    if (options.size > maxVisibleItems) {
+        listBuilder.append("\n▼(${selectedIndex + 1}/${options.size})")
     }
     return listBuilder.toString()
 }
@@ -240,7 +240,7 @@ protected func wrapShowList(showArray: Array<String>, selectIdx: Int64): String 
  * @return Tuple of (row, column) representing the visual cursor position
  */
 protected func calculateCursorPos(wrappedContent: String, cursorPos: Int64, prefix!: String = String.empty,
-    width!: Int64 = 100, boxColor!: String = BRIGHT_BLACK): (Int64, Int64) {
+    width!: Int64 = 100, boxColor!: AnsiColor = AnsiColor.BRIGHT_BLACK): (Int64, Int64) {
     let realCursorPos = cursorPos + runeSizeOf(prefix)
     let widthList = ArrayList<Int64>()
     var lines = collectArray(wrappedContent.lines())

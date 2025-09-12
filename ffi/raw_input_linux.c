@@ -2,9 +2,9 @@
 #include <unistd.h>
 #include <stdio.h>
 #include <stdint.h>
+#include <stdbool.h>
 #include <errno.h>
 #include <poll.h>
-
 
 // Static storage for original terminal settings
 static struct termios orig_termios;
@@ -61,8 +61,132 @@ unsigned char getRawByte() {
 
     // Read the first byte
     n = read(STDIN_FILENO, &c, 1);
-    if (n <= 0) return n;  // EOF or read error
+    if (n <= 0) return 0;  // EOF or read error
     return c;
+}
+
+/**
+ * Checks if there is input available on the given file descriptor with a timeout.
+ * @param timeout_ms Timeout in milliseconds (0 for infinite)
+ * @return true if input is available, false if timed out or error
+ */
+static bool hasInputTimeout(int fd, int timeout_ms) {
+    struct pollfd pfd = {
+        .fd = fd,
+        .events = POLLIN, // Poll read event
+        .revents = 0
+    };
+    int ret = poll(&pfd, 1, timeout_ms); // One fd and with timeout timeout_ms
+    return ret > 0 && (pfd.revents & POLLIN);
+}
+
+/**
+ * Reads a byte asynchronously from stdin with a timeout.
+ *
+ * @param byte Output buffer for the byte
+ * @param timeout Timeout in milliseconds (0 for infinite)
+ * @return 0 on success, 1 on timeout, -1 on error
+ */
+int asyncGetRawByte(unsigned char* bytePtr, int timeout) {
+    struct pollfd fds;
+    int ret;
+
+    fds.fd = STDIN_FILENO;
+    fds.events = POLLIN;
+    fds.revents = 0;
+
+    ret = poll(&fds, 1, timeout);
+
+    if (ret == 0) { // Timeout
+        return 1;
+    } else if (ret == -1) { // Error
+        return -1;
+    }
+    if (fds.revents & POLLIN) {
+        if (read(STDIN_FILENO, bytePtr, 1) == 1) {
+            return 0;
+        }
+    }
+    return -1;
+}
+
+int getByte(uint32_t timeout, uint16_t* keyCode) {
+    unsigned char c;
+    int ret = asyncGetRawByte(&c, (timeout == 0) ? -1 : (int)timeout);
+    if (ret == 0) {
+        if (c <= 0x7F) {
+            *keyCode = (uint16_t)c;
+            return 1;
+        } else {
+            return 2;
+        }
+    } else if (ret == 1) {
+        return 0;
+    } else {
+        return -1;
+    }
+}
+
+/**
+ * Parses an escape sequence to the read buffer.
+ *
+ */
+static int parseEscapeSequence(unsigned char* bytes) {
+    int n = 0;
+    unsigned char c = 0;
+
+    if (!hasInputTimeout(STDIN_FILENO, 10)) { // Just ESC
+        return 1;
+    }
+    n = read(STDIN_FILENO, &c, 1);
+    if (n <= 0) return 1; // Error, just return the first ESC
+    bytes[1] = c; // Save the byte
+
+    // CSI: ESC [
+    if (c == 0x5b) {
+        n = read(STDIN_FILENO, &c, 1);
+        if (n <= 0) return 1; // Error, just return the first ESC
+        bytes[2] = c;
+
+        // Check for arrow keys
+        switch (c) {
+            case 'A': // Up Arrow → U+2191 ↑
+                bytes[0] = 0xE2;  // UTF-8 for U+2191
+                bytes[1] = 0x86;
+                bytes[2] = 0x91;
+                return 3;
+
+            case 'B': // Down Arrow → U+2193 ↓
+                bytes[0] = 0xE2;
+                bytes[1] = 0x86;
+                bytes[2] = 0x93;
+                return 3;
+
+            case 'C': // Right Arrow → U+2192 →
+                bytes[0] = 0xE2;
+                bytes[1] = 0x86;
+                bytes[2] = 0x92;
+                return 3;
+
+            case 'D': // Left Arrow → U+2190 ←
+                bytes[0] = 0xE2;
+                bytes[1] = 0x86;
+                bytes[2] = 0x90;
+                return 3;
+
+            case '3': // DELETE
+                n = read(STDIN_FILENO, &c, 1);
+                if (n <= 0) return -1;
+                if (c != '~') return -1;
+                bytes[0] = 0x04;  // Send Ctrl+D (0x04) for Delete key to differentiate from Backspace
+                return 1;
+
+            default:
+                return -1; // Unknown CSI
+        }
+    } else {
+        return 1; // Unknown escaped chars
+    }
 }
 
 /**
@@ -74,8 +198,8 @@ unsigned char getRawByte() {
  * @return Number of bytes written, 0 on EOF, -1 on error
  */
 int getRawUtf8(unsigned char *bytes) {
-    unsigned char c;
-    int n;
+    unsigned char c = 0;
+    int n = 0;
 
     // Read first byte
     n = read(STDIN_FILENO, &c, 1);
@@ -84,54 +208,7 @@ int getRawUtf8(unsigned char *bytes) {
 
     // --- 0. Escape Sequence (Special Keys) ---
     if (c == 0x1b) {  // ESC
-        n = read(STDIN_FILENO, &c, 1);
-        if (n <= 0) return 1;  // Just ESC
-        bytes[1] = c;
-
-        // CSI: ESC [
-        if (c == 0x5b) {
-            n = read(STDIN_FILENO, &c, 1);
-            if (n <= 0) return -1;
-            bytes[2] = c;
-
-            // Check for arrow keys
-            switch (c) {
-                case 'A': // Up Arrow → U+2191 ↑
-                    bytes[0] = 0xE2;  // UTF-8 for U+2191
-                    bytes[1] = 0x86;
-                    bytes[2] = 0x91;
-                    return 3;
-
-                case 'B': // Down Arrow → U+2193 ↓
-                    bytes[0] = 0xE2;
-                    bytes[1] = 0x86;
-                    bytes[2] = 0x93;
-                    return 3;
-
-                case 'C': // Right Arrow → U+2192 →
-                    bytes[0] = 0xE2;
-                    bytes[1] = 0x86;
-                    bytes[2] = 0x92;
-                    return 3;
-
-                case 'D': // Left Arrow → U+2190 ←
-                    bytes[0] = 0xE2;
-                    bytes[1] = 0x86;
-                    bytes[2] = 0x90;
-                    return 3;
-
-                case '3': // DELETE
-                    n = read(STDIN_FILENO, &c, 1);
-                    if (n <= 0) return -1;
-                    if (c != '~') return -1;
-                    bytes[0] = 0x04;  // Send Ctrl+D (0x04) for Delete key to differentiate from Backspace
-                    return 1;
-                default:
-                    return -1; // Unknown CSI
-            }
-        }
-
-        return 1; // Just ESC
+        return parseEscapeSequence(bytes);
     }
 
     // --- 1. ASCII (1-byte UTF-8) ---
@@ -168,32 +245,4 @@ int getRawUtf8(unsigned char *bytes) {
     }
 
     return -1; // Invalid start byte
-}
-
-int getByte(uint32_t timeout, uint16_t* keyCode) {
-    struct pollfd fds;
-    int ret;
-    unsigned char c;
-
-    fds.fd = STDIN_FILENO;
-    fds.events = POLLIN;
-    fds.revents = 0;
-
-    ret = poll(&fds, 1, (timeout == 0) ? -1 : (int)timeout);
-
-    if (ret == -1 || ret == 0) {
-        return 0;
-    }
-    if (fds.revents & POLLIN) {
-        if (read(STDIN_FILENO, &c, 1) == 1) {
-            if (c <= 0x7F) {
-                *keyCode = (uint16_t)c;
-                return 1;
-            } else {
-                return 2;
-            }
-        }
-    }
-
-    return -1;
 }

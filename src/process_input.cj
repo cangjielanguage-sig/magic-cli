@@ -1,15 +1,13 @@
 package cli
 
-import magic.core.agent.AgentRequest
+import magic.core.agent.{AgentRequest, AgentResponseStatus, AsyncAgentResponse}
 import magic.log.LogUtils
 
 import cli.core.config.CliConfig
 import cli.core.mcp.MCPConfigManager
 import cli.core.conversation.ConversationManager
-import cli.core.context.CliContext
 import cli.core.agents.CodeAnalyzer
-import cli.io.{InputUtils, PrintUtils}
-import cli.io.{WithColor, AnsiColor}
+import cli.io.{InputUtils, PrintUtils, WithColor, AnsiColor, Confirmation}
 import cli.utils.TerminalUtils
 
 import std.collection.ArrayList
@@ -122,7 +120,7 @@ private func initMagicFile(): Unit {
     let magicFilePath = CliConfig.uerRuleFile
 
     if (exists(magicFilePath)) {
-        if (let Deny(userInput) <- InputUtils.confirm("MAGIC.md already exists.", "Overwrite?")) {
+        if (InputUtils.confirm("MAGIC.md already exists.", "Overwrite?") == Confirmation.Deny) {
             return
         }
     }
@@ -147,9 +145,10 @@ private func initMagicFile(): Unit {
     }
 }
 
-private func executeAgentTask(context: CliContext, input: String) {
+private func executeAgentTask(context: CliContext, input: String): Unit {
+    LogUtils.debug("Handle user input `${input}`")
     // Start agent execution
-    let response = context.agent.asyncChat(AgentRequest(input))
+    let response = context.agent.asyncChat(AgentRequest(input, conversation: context.conversationManager.conversation))
 
     // Spawn a thread to check for ESC cancellation
     let cancelled = AtomicBool(false)
@@ -171,17 +170,7 @@ private func executeAgentTask(context: CliContext, input: String) {
     }
 
     try {
-        // Wait for response completion (blocking)
-        // This ensures response.content access is safe
-        let content = response.content
-
-        // Check if cancellation occurred
-        if (!escPressed.load()) {
-            if (!content.isEmpty()) {
-                PrintUtils.printAgentResponse(response)
-            }
-            context.conversationManager.compact()
-        }
+        handleAgentResponse(context, response, escPressed)
     } finally {
         // Properly shutdown ESC checker
         cancelled.store(true)
@@ -192,6 +181,37 @@ private func executeAgentTask(context: CliContext, input: String) {
             LogUtils.error("ESC checker thread ended with exception: ${e}")
             // Ignore cancellation exceptions during cleanup
         }
+    }
+}
+
+/**
+ * Handle the agent response, print the response and update the conversation
+ */
+private func handleAgentResponse(context: CliContext,
+                                 response: AsyncAgentResponse,
+                                 escPressed: AtomicBool): Unit {
+    // Wait for response completion (blocking)
+    // This ensures response.content access is safe
+    let content = response.content
+    match (response.status) {
+        case AgentResponseStatus.Success =>
+            // Check if cancellation occurred
+            if (!escPressed.load()) {
+                if (!content.isEmpty()) {
+                    PrintUtils.printAgentResponse(response)
+                }
+                context.conversationManager.conversation.addChatRound(response.execution.chatRound)
+                context.conversationManager.compact()
+            }
+        case AgentResponseStatus.Cancelled =>
+            if (content == "__USER_CLARIFY__") {
+                // User needs to clarify the execution,
+                // so, we should save the chat round and let it it continue to execute.
+                // Change the answer that wil be added to the chat round
+                response.execution.setAnswer("The user denied the last tool and will guide the execution.")
+                context.conversationManager.conversation.addChatRound(response.execution.chatRound)
+            }
+            // Otherwise, user denied the execution
     }
 }
 
@@ -213,7 +233,7 @@ func processInput(input: String, context: CliContext): Bool {
                 executeAgentTask(context, input)
             } catch (ex: Exception) {
                 let msg = "Execution failure: ${ex.message}"
-                PrintUtils.printLine(msg.withColor(AnsiColor(100)))
+                PrintUtils.printLine(msg.withColor(AnsiColor.color256(100)))
                 LogUtils.error(msg)
             }
             return true  // Continue running

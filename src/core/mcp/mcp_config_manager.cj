@@ -4,7 +4,7 @@ import magic.dsl.jsonable
 import magic.mcp.{MCPClient, StdioMCPClient, SseMCPClient, StdioMCPInitParams, SseMCPInitParams}
 import magic.log.LogUtils
 import magic.core.tool.Tool
-import magic.agent.ConversationAgent
+import magic.core.agent.Agent
 import magic.jsonable.*
 
 import cli.core.config.CliConfig
@@ -156,7 +156,7 @@ public class MCPConfigManager {
         return tools.toArray()
     }
 
-    public func showLoadedMCPTools(agent: ConversationAgent): Unit {
+    public func showLoadedMCPTools(agent: Agent): Unit {
         PrintUtils.printTool("MCP Servers and Tools", "🔌Total MCP tools loaded: ")
 
         if (this.mcpClients.isEmpty()) {
@@ -215,7 +215,7 @@ public class MCPConfigManager {
         return (args.toArray(), envVars.toArray())
     }
 
-    public func handleCommand(parts: Array<String>, agent: ConversationAgent): Unit {
+    public func handleCommand(parts: Array<String>, agent: Agent): Unit {
         if (parts.size == 1) {
             // Just "/mcp" or "mcp" - show current loaded tools
             showLoadedMCPTools(agent)

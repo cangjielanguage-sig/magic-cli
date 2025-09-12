@@ -1,93 +1,195 @@
 package cli.io
 
-protected struct AnsiColor <: ToString {
+public struct AnsiColor <: ToString {
     public AnsiColor(
-        private let colorIndex: Int64) {
+        private let colorContent: String) {
     }
 
     public static func color256(colorIndex: Int64): AnsiColor {
-        return AnsiColor(colorIndex)
+        return AnsiColor("\u{1b}[38;5;${colorIndex}m")
+    }
+
+    public static func colorBg256(colorIndex: Int64): AnsiColor {
+        return AnsiColor("\u{1b}[48;5;${colorIndex}m")
+    }
+
+    public static func color16(colorCode: Int64): AnsiColor {
+        return AnsiColor("\u{1b}[${colorCode}m")
     }
 
     override public func toString(): String {
-        return "\u{1b}[38;5;${this.colorIndex}m"
+        return this.colorContent
     }
+
+    // ANSI color code definitions as static variables
+    public static let RESET = AnsiColor.color16(0)
+    public static let BOLD = AnsiColor.color16(1)
+    public static let DIM = AnsiColor.color16(2)
+    public static let ITALIC = AnsiColor.color16(3)
+    public static let UNDERLINE = AnsiColor.color16(4)
+    public static let STRIKETHROUGH = AnsiColor.color16(9)
+
+    // Foreground colors
+    public static let BLACK = AnsiColor.color16(30)
+    public static let RED = AnsiColor.color16(31)
+    public static let GREEN = AnsiColor.color16(32)
+    public static let YELLOW = AnsiColor.color16(33)
+    public static let BLUE = AnsiColor.color16(34)
+    public static let MAGENTA = AnsiColor.color16(35)
+    public static let CYAN = AnsiColor.color16(36)
+    public static let WHITE = AnsiColor.color16(37)
+
+    // Bright foreground colors
+    public static let BRIGHT_BLACK = AnsiColor.color16(90)
+    public static let BRIGHT_RED = AnsiColor.color16(91)
+    public static let BRIGHT_GREEN = AnsiColor.color16(92)
+    public static let BRIGHT_YELLOW = AnsiColor.color16(93)
+    public static let BRIGHT_BLUE = AnsiColor.color16(94)
+    public static let PURPLE = AnsiColor.color16(95)
+    public static let BRIGHT_CYAN = AnsiColor.color16(96)
+    public static let BRIGHT_WHITE = AnsiColor.color16(97)
+
+    // Background colors
+    public static let BG_BLACK = AnsiColor.color16(40)
+    public static let BG_RED = AnsiColor.color16(41)
+    public static let BG_GREEN = AnsiColor.color16(42)
+    public static let BG_YELLOW = AnsiColor.color16(43)
+    public static let BG_BLUE = AnsiColor.color16(44)
+    public static let BG_MAGENTA = AnsiColor.color16(45)
+    public static let BG_CYAN = AnsiColor.color16(46)
+    public static let BG_WHITE = AnsiColor.color16(47)
+
+    public static let BG_LIGHT_GREEN = AnsiColor.colorBg256(22)   // Dark green background
+    public static let BG_LIGHT_RED = AnsiColor.colorBg256(52)     // Dark red background
+
+    // Magic CLI logo colors
+    public static let LIGHT_PURPLE = AnsiColor.color256(141)
+    public static let DARK_PURPLE = AnsiColor.color256(53)
+    public static let VIOLET = AnsiColor.color256(99)
+    public static let LAVENDER = AnsiColor.color256(183)
+    public static let PLUM = AnsiColor.color256(96)
+    public static let INDIGO = AnsiColor.color256(54)
+    public static let ORCHID = AnsiColor.color256(170)
+    public static let LOGO_MAGENTA = AnsiColor.color256(201)
+    public static let PINK_PURPLE = AnsiColor.color256(213)
+    public static let ROYAL_PURPLE = AnsiColor.color256(57)
+    public static let AMETHYST = AnsiColor.color256(135)
+    public static let PERIWINKLE = AnsiColor.color256(147)
+    public static let LILAC = AnsiColor.color256(182)
+    public static let MAUVE = AnsiColor.color256(139)
 }
 
-// ANSI color code definitions
-const RESET = "\u{1B}[0m"
-const BOLD = "\u{1B}[1m"
-const DIM = "\u{1B}[2m"
-const ITALIC = "\u{1B}[3m"
-const UNDERLINE = "\u{1B}[4m"
-const STRIKETHROUGH = "\u{1B}[9m"
+// Theme configuration struct for different color schemes
+public struct ThemeConfig {
+    ThemeConfig(
+    public let name!: String,
+    public let primary!: AnsiColor,
+    public let secondary!: AnsiColor,
+    public let success!: AnsiColor,
+    public let warning!: AnsiColor,
+    public let error!: AnsiColor,
+    public let info!: AnsiColor,
+    public let muted!: AnsiColor,
+    public let accent!: AnsiColor,
+    public let highlight!: AnsiColor,
+    public let subtle!: AnsiColor,
+    public let bgSuccess!: AnsiColor,
+    public let bgError!: AnsiColor
+    ) {}
+}
 
-// Foreground colors
-const BLACK = "\u{1B}[30m"
-const RED = "\u{1B}[31m"
-const GREEN = "\u{1B}[32m"
-const YELLOW = "\u{1B}[33m"
-const BLUE = "\u{1B}[34m"
-const MAGENTA = "\u{1B}[35m"
-const CYAN = "\u{1B}[36m"
-const WHITE = "\u{1B}[37m"
+// Theme provider class for managing active theme
+public class Theme {
+    // Pre-defined themes
+    public static let DEFAULT = ThemeConfig(
+        name: "default",
+        primary: AnsiColor.BRIGHT_CYAN,
+        secondary: AnsiColor.BRIGHT_BLUE,
+        success: AnsiColor.BRIGHT_GREEN,
+        warning: AnsiColor.BRIGHT_YELLOW,
+        error: AnsiColor.BRIGHT_RED,
+        info: AnsiColor.BRIGHT_WHITE,
+        muted: AnsiColor.BRIGHT_BLACK,
+        accent: AnsiColor.color256(39),    // Deep sky blue
+        highlight: AnsiColor.color256(226),  // Bright yellow
+        subtle: AnsiColor.color256(245),    // Medium gray
+        bgSuccess: AnsiColor.BG_LIGHT_GREEN,
+        bgError: AnsiColor.BG_LIGHT_RED
+    )
 
-// Bright foreground colors
-const BRIGHT_BLACK = "\u{1B}[90m"
-const BRIGHT_RED = "\u{1B}[91m"
-const BRIGHT_GREEN = "\u{1B}[92m"
-const BRIGHT_YELLOW = "\u{1B}[93m"
-const BRIGHT_BLUE = "\u{1B}[94m"
-const BRIGHT_MAGENTA = "\u{1B}[95m"
-const BRIGHT_CYAN = "\u{1B}[96m"
-const BRIGHT_WHITE = "\u{1B}[97m"
+    public static let LIGHT = ThemeConfig(
+        name: "light",
+        primary: AnsiColor.color256(33),   // Deep sky blue
+        secondary: AnsiColor.color256(39),  // Dodger blue
+        success: AnsiColor.color256(28),    // Green
+        warning: AnsiColor.color256(208),   // Orange
+        error: AnsiColor.color256(196),     // Red
+        info: AnsiColor.color256(240),      // Gray
+        muted: AnsiColor.color256(251),     // Light gray
+        accent: AnsiColor.color256(201),    // Hot pink
+        highlight: AnsiColor.color256(220), // Gold
+        subtle: AnsiColor.color256(188),    // Light steel blue
+        bgSuccess: AnsiColor.colorBg256(194), // Light green
+        bgError: AnsiColor.colorBg256(224)    // Light red
+    )
 
-// Background colors
-const BG_BLACK = "\u{1B}[40m"
-const BG_RED = "\u{1B}[41m"
-const BG_GREEN = "\u{1B}[42m"
-const BG_YELLOW = "\u{1B}[43m"
-const BG_BLUE = "\u{1B}[44m"
-const BG_MAGENTA = "\u{1B}[45m"
-const BG_CYAN = "\u{1B}[46m"
-const BG_WHITE = "\u{1B}[47m"
+    public static let DARK = ThemeConfig(
+        name: "dark",
+        primary: AnsiColor.color256(81),    // Cyan
+        secondary: AnsiColor.color256(147), // Light sky blue
+        success: AnsiColor.color256(84),   // Light green
+        warning: AnsiColor.color256(226),  // Yellow
+        error: AnsiColor.color256(203),    // Hot pink
+        info: AnsiColor.color256(252),      // White
+        muted: AnsiColor.color256(245),     // Gray
+        accent: AnsiColor.color256(207),    // Magenta
+        highlight: AnsiColor.color256(51), // Cyan
+        subtle: AnsiColor.color256(238),    // Dark gray
+        bgSuccess: AnsiColor.colorBg256(22),  // Dark green
+        bgError: AnsiColor.colorBg256(52)     // Dark red
+    )
 
-// Special theme colors
-const THEME_PRIMARY = BRIGHT_CYAN
-const THEME_SECONDARY = BRIGHT_BLUE
-const THEME_SUCCESS = BRIGHT_GREEN
-const THEME_WARNING = BRIGHT_YELLOW
-const THEME_ERROR = BRIGHT_RED
-const THEME_INFO = BRIGHT_WHITE
-const THEME_MUTED = BRIGHT_BLACK
-const THEME_YELLOW = BRIGHT_YELLOW
+    private static var currentTheme: ThemeConfig = DEFAULT
 
-// Light background colors (256-color mode for better visibility)
-const BG_LIGHT_GREEN = "\u{1B}[48;5;22m"   // Dark green background
-const BG_LIGHT_RED = "\u{1B}[48;5;52m"     // Dark red background
+    public static func set(theme: ThemeConfig): Unit {
+        currentTheme = theme
+    }
 
-// Background theme colors
-const THEME_BG_SUCCESS = BG_LIGHT_GREEN
-const THEME_BG_ERROR = BG_LIGHT_RED
+    public static func get(): ThemeConfig {
+        return currentTheme
+    }
+
+    public static func listThemes(): Array<ThemeConfig> {
+        return [DEFAULT, LIGHT, DARK]
+    }
+
+    // Backward compatibility accessors
+    public static prop PRIMARY: AnsiColor { get() { currentTheme.primary } }
+    public static prop SECONDARY: AnsiColor { get() { currentTheme.secondary } }
+    public static prop SUCCESS: AnsiColor { get() { currentTheme.success } }
+    public static prop WARNING: AnsiColor { get() { currentTheme.warning } }
+    public static prop ERROR: AnsiColor { get() { currentTheme.error } }
+    public static prop INFO: AnsiColor { get() { currentTheme.info } }
+    public static prop MUTED: AnsiColor { get() { currentTheme.muted } }
+    public static prop ACCENT: AnsiColor { get() { currentTheme.accent } }
+    public static prop HIGHLIGHT: AnsiColor { get() { currentTheme.highlight } }
+    public static prop SUBTLE: AnsiColor { get() { currentTheme.subtle } }
+    public static prop BG_SUCCESS: AnsiColor { get() { currentTheme.bgSuccess } }
+    public static prop BG_ERROR: AnsiColor { get() { currentTheme.bgError } }
+}
 
 protected interface WithColor {
-    func withColor(color: String): String
-
     func withColor(color: AnsiColor): String
 
-    func withBgColor(bgColor: String): String
+    func withBgColor(bgColor: AnsiColor): String
 }
 
 extend String <: WithColor {
-    public func withColor(color: String): String {
-        return "${color}${this}${RESET}"
-    }
-
     public func withColor(color: AnsiColor): String {
-        return "${color}${this}${RESET}"
+        return "${color}${this}${AnsiColor.RESET}"
     }
 
-    public func withBgColor(bgColor: String): String {
-        return "${bgColor}${this}${RESET}"
+    public func withBgColor(bgColor: AnsiColor): String {
+        return "${bgColor}${this}${AnsiColor.RESET}"
     }
 }

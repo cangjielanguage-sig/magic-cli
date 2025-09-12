@@ -3,7 +3,7 @@ package cli.core.tools
 import magic.dsl.*
 import magic.prelude.*
 
-import cli.io.{InputUtils, PrintUtils}
+import cli.io.{InputUtils, PrintUtils, Confirmation}
 import cli.utils.*
 
 import std.fs.*
@@ -21,8 +21,8 @@ public class ShellTool {
     ]
     public func shellExecute(path: String, command: String): String {
         let message = command
-        if (let Deny(userInput) <- InputUtils.confirm("Execute Shell Command", message)) {
-            return "User cancelled the operation, feedback: ${userInput}"
+        if (InputUtils.confirm("Execute Shell Command", message) == Confirmation.Deny) {
+            return "User denied the operation"
         }
 
         try {

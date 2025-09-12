@@ -31,6 +31,8 @@ protected class WorkingIndicator {
 private let printInfoSavingFilename = "print_info.txt"
 
 protected class PrintUtils {
+    //--------------------------------------------------------
+    // When we enter a sub-agent, we need to indent the output
     static var CURRENT_INDENT = 0
 
     static public func beginSubAgent(): Unit {
@@ -88,7 +90,7 @@ protected class PrintUtils {
         let formattedTime = currentTime.format("yyyy-MM-dd HH:mm:ss")
 
         PrintUtils.printLine(
-            "🚦 ${THEME_MUTED}Input '${THEME_YELLOW}/help${THEME_MUTED}' to check the manual and '${THEME_YELLOW}/exit${THEME_MUTED}' to exit the program.${RESET}\n"
+            "🚦 ${Theme.MUTED}Input '${AnsiColor.YELLOW}/help${Theme.MUTED}' to check the manual and '${AnsiColor.YELLOW}/exit${Theme.MUTED}' to exit the program.${AnsiColor.RESET}\n"
         )
     }
 
@@ -97,7 +99,7 @@ protected class PrintUtils {
     }
 
     static public func printExitMessage() {
-        PrintUtils.printLine("\n👋 Goodbye ✨!\n".withColor(THEME_SECONDARY))
+        PrintUtils.printLine("\n👋 Goodbye ✨!\n".withColor(Theme.SECONDARY))
     }
 
     static let HELP_INFO = [
@@ -114,12 +116,12 @@ protected class PrintUtils {
 
     static public func printHelpMessage() {
         let helpMessage = wrapBox(
-            "Available Commands".withColor(THEME_PRIMARY),
+            "Available Commands".withColor(Theme.PRIMARY),
             lines: HELP_INFO |>
                 map { info =>
-                    let cmd = "/${info[0]}".padEnd(15).withColor(THEME_YELLOW)
-                    let separator = " ║ ".withColor(THEME_MUTED)
-                    let message = "- ${info[1]}".withColor(THEME_MUTED)
+                    let cmd = "/${info[0]}".padEnd(15).withColor(AnsiColor.YELLOW)
+                    let separator = " ║ ".withColor(Theme.MUTED)
+                    let message = "- ${info[1]}".withColor(Theme.MUTED)
                     " ${cmd}${separator}${message}"
                 } |>
                 collectArray,
@@ -139,32 +141,32 @@ protected class PrintUtils {
 
     static public func printUserConfirm() {
         PrintUtils.printLine(
-            "(Enter to confirm, any other key to cancel): ".withColor(THEME_PRIMARY),
+            "(Enter to confirm, any other key to cancel): ".withColor(Theme.PRIMARY),
             withIndent: true
         )
     }
 
     static public func printApproval(): Unit {
         PrintUtils.printLine(
-            "└─ 🔧 Approved to run...".withColor(THEME_MUTED),
+            "└─ 🔧 Approved to run...".withColor(Theme.MUTED),
             withIndent: true
         )
     }
 
     static public func printCancellation(): Unit {
-        PrintUtils.printLine("└─ ✖ Cancelled...".withColor(THEME_MUTED), withIndent: true)
+        PrintUtils.printLine("└─ ✖ Cancelled...".withColor(Theme.MUTED), withIndent: true)
     }
 
     static public func printTool(name: String, message: String, needConfirm!: Bool = false) {
         // Whether to confirm decides the mark
         let mark = if (needConfirm) {
-            " ? ".withColor(THEME_WARNING)
+            " ? ".withColor(Theme.WARNING)
         } else {
-            " ✔ ".withColor(THEME_SUCCESS)
+            " ✔ ".withColor(Theme.SUCCESS)
         }
         let boxContent = wrapBox(
-            mark + name.withColor(THEME_PRIMARY),
-            content: message.withColor(THEME_INFO)
+            mark + name.withColor(Theme.PRIMARY),
+            content: message.withColor(Theme.INFO)
         )
         if (CURRENT_INDENT == 0) {
             PrintUtils.printLine(boxContent)
@@ -208,7 +210,7 @@ protected class PrintUtils {
                 let spinner = INDICATORS[idx % INDICATORS.size]
                 clearScreen(mode: ClearMode.EntireLine)
                 PrintUtils.printString(
-                    "${spinner} ${message}...".withColor(THEME_MUTED), withIndent: true
+                    "${spinner} ${message}...".withColor(Theme.MUTED), withIndent: true
                 )
                 sleep(Duration.millisecond * 100)
                 idx = (idx + 1) % INDICATORS.size
@@ -224,11 +226,11 @@ protected class PrintUtils {
                 map { line =>
                     // Add background colors to diff lines
                     if (line.startsWith("+")) {
-                        line.withBgColor(THEME_BG_SUCCESS)  // Green background for added lines
+                        line.withBgColor(Theme.BG_SUCCESS)  // Green background for added lines
                     } else if (line.startsWith("-")) {
-                        line.withBgColor(THEME_BG_ERROR)    // Red background for deleted lines
+                        line.withBgColor(Theme.BG_ERROR)    // Red background for deleted lines
                     } else if (line.startsWith("@@")) {
-                        line.withColor(THEME_MUTED)         // Muted color for hunk headers
+                        line.withColor(Theme.MUTED)         // Muted color for hunk headers
                     } else {
                         line  // No color for context lines
                     }

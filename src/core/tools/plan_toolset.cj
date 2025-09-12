@@ -5,7 +5,7 @@ import magic.prelude.*
 import magic.log.LogUtils
 
 import cli.core.config.CliConfig
-import cli.io.{InputUtils, PrintUtils}
+import cli.io.{InputUtils, PrintUtils, Confirmation}
 import cli.utils.*
 
 import std.collection.*
@@ -104,8 +104,8 @@ public class PlanToolset {
     public func createOrUpdatePlan(tasks: Array<String>): String {
         this.plan = Plan(tasks)
         let message = "\n${this.plan}\nPlan has been created. Please confirm if you need to modify the plan. Confirm execution to save this plan and start execution."
-        if (let Deny(userInput) <- InputUtils.confirm("Plan", message)) {
-            return "User cancelled the operation, feedback: ${userInput}"
+        if (InputUtils.confirm("Plan", message) == Confirmation.Deny) {
+            return "User denied the plan"
         }
         this.plan.save()
         return "\nPlan has been approved by user, ready to start execution."
