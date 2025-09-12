@@ -6,8 +6,9 @@ import magic.log.LogUtils
 import cli.core.config.CliConfig
 import cli.core.context.CliContext
 import cli.io.{InputUtils, PrintUtils}
+import cli.core.tools.fs_utils.writeFileBasic
 
-import std.fs.{exists, File, FSException, Path}
+import std.fs.{exists, File, Path, Directory}
 import std.regex.Regex
 
 private func loadEnvFile(): Unit {
@@ -54,12 +55,22 @@ main(args: Array<String>): Int64 {
         return 0
     }
     setConfig()
-    PrintUtils.printWelcome()
 
     // register global context
     let context = CliContext()
     context.registerHooks()
+    if (CliConfig.detach) {
+        if (!exists(CliConfig.printInfoSavingDir)) {
+            Directory.create(CliConfig.printInfoSavingDir, recursive: true)
+        }
+        let commandSavingPath = CliConfig.printInfoSavingDir.join("command_args.txt")
+        writeFileBasic(commandSavingPath, String.join(args, delimiter: " "))
+        let input = CliConfig.detachPrompt
+        processInput(input, context)
+        return 0
+    }
 
+    PrintUtils.printWelcome()
     // Simplified event loop
     while (true) {
         let input = InputUtils.getUserInput()

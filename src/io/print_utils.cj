@@ -3,11 +3,14 @@ package cli.io
 import magic.core.agent.{AsyncAgentResponse, AgentResponse}
 
 import cli.utils.InfoUtils
+import cli.core.config.CliConfig
+import cli.core.tools.fs_utils.writeFileBasic
 
 import std.collection.{map, enumerate, collectArray}
 import std.time.DateTime
 import std.process.executeWithOutput
 import std.env.getVariable
+import std.fs.OpenMode
 
 
 /**
@@ -25,6 +28,8 @@ protected class WorkingIndicator {
     }
 }
 
+private let printInfoSavingFilename = "print_info.txt"
+
 protected class PrintUtils {
     static var CURRENT_INDENT = 0
 
@@ -38,18 +43,24 @@ protected class PrintUtils {
 
     //---------------------------------------------------
     // Two fundamental print methods
-    static public func printLine(line: String, withIndent!: Bool = false): Unit {
-        if (withIndent && CURRENT_INDENT > 0) {
-            print(" " * CURRENT_INDENT)
+    static public func printLine(line: String): Unit {
+        // do not print anything if detached, but saving the print info to a file 
+        if (!CliConfig.detach) {
+            println(line)
+        } else {
+            let printInfoSavingPath = CliConfig.printInfoSavingDir.join(printInfoSavingFilename)
+            writeFileBasic(printInfoSavingPath, line + '\n', mode: OpenMode.Append)
         }
-        println(line)
     }
 
-    static public func printString(str: String, withIndent!: Bool = false): Unit {
-        if (withIndent && CURRENT_INDENT > 0) {
-            print(" " * CURRENT_INDENT)
+    static public func printString(str: String): Unit {
+        // do not print anything if detached, but saving the print info to a file 
+        if (!CliConfig.detach) {
+            print(str, flush: true)
+        } else {
+            let printInfoSavingPath = CliConfig.printInfoSavingDir.join(printInfoSavingFilename)
+            writeFileBasic(printInfoSavingPath, str, mode: OpenMode.Append)
         }
-        print(str, flush: true)
     }
     //---------------------------------------------------
 

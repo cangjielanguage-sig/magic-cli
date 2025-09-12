@@ -34,6 +34,7 @@ todo.md
 
 # Test files
 test/
+test_examples/
 
 # External modules
 CangjieMagic/
