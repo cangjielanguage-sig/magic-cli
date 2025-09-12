@@ -28,7 +28,7 @@ func getOsInfo() {
 
 func compile(os: String, sourceFile: String, libFile: String): Bool {
     let objectFile = sourceFile.replace(".c", ".o")
-    if (launch("gcc", ["-c", "-fPIC", sourceFile, "-o", objectFile]).wait() != 0) {
+    if (launch("gcc", ["-c", "-Wall", "-Werror", "-fPIC", sourceFile, "-o", objectFile]).wait() != 0) {
         println("Building object file failed")
         return false
     }

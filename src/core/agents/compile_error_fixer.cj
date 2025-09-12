@@ -134,7 +134,7 @@ Designed to fix compilation errors in the Cangjie project.
 ]
 func fixCangjieProjectCompileError(path: String): String {
     try {
-        PrintUtils.printTool("Fix Compile Errors", "path: ${path}")
+        PrintUtils.printTool("CompileErrorFixer", "path: ${path}")
         PrintUtils.beginSubAgent()
 
         let fixer = CompileErrorFixer(Path(path))

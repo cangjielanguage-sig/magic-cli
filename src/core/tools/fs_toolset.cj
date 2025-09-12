@@ -14,7 +14,7 @@ import magic.prelude.*
 import magic.log.LogUtils
 
 import cli.utils.*
-import cli.io.{InputUtils, PrintUtils}
+import cli.io.{InputUtils, PrintUtils, Confirmation}
 import cli.core.tools.fs_utils.*
 import cli.core.config.CliConfig
 
@@ -48,8 +48,8 @@ public class FSToolset {
         }
 
         let message = path
-        if (let Deny(userInput) <- InputUtils.confirm("Create Directory", message)) {
-            return "User cancelled the operation, feedback: ${userInput}"
+        if (InputUtils.confirm("Create Directory", message) == Confirmation.Deny) {
+            return "User denied the operation"
         }
 
         try {
@@ -77,8 +77,8 @@ public class FSToolset {
         }
 
         let message = filePath + "\n" + content
-        if (let Deny(userInput) <- InputUtils.confirm("Create File", message)) {
-            return "User cancelled the operation, feedback: ${userInput}"
+        if (InputUtils.confirm("Create File", message) == Confirmation.Deny) {
+            return "User denied the operation"
         }
 
         try {
@@ -101,8 +101,8 @@ public class FSToolset {
         }
 
         let message = path
-        if (let Deny(userInput) <- InputUtils.confirm("Delete File or Directory", message)) {
-            return "User cancelled the operation, feedback: ${userInput}"
+        if (InputUtils.confirm("Delete File or Directory", message) == Confirmation.Deny) {
+            return "User denied the operation"
         }
 
         try {
@@ -149,31 +149,18 @@ public class FSToolset {
     }
 
     @tool[
-        description: "Reads and returns the full content of a single file with line numbers. Similar to Unix cat -n command, shows content with line numbers for easy reference.",
-        parameters: {
-            filePath: "The absolute path to the file to read"
-        }
-    ]
-    public func readFile(filePath: String): String {
-        let message = "filePath: ${filePath}"
-        PrintUtils.printTool("Read File", message)
-
-        return cat(filePath)
-    }
-
-    @tool[
-        description: "Reads and returns a specific range of lines from a file with line numbers. Useful for viewing specific sections of large files.",
+        description: "Reads and returns a specific range of lines from a file with line numbers.",
         parameters: {
             filePath: "The absolute path to the file to read",
-            startLine: "Starting line number (1-based, inclusive)",
+            startLine: "Optional: Starting line number (1-based, inclusive). If not provided, reads from start of file",
             endLine: "Optional: Ending line number (1-based, inclusive). If not provided, reads to end of file"
         }
     ]
-    public func readFileRange(filePath: String, startLine: Int64, endLine: Option<Int64>): String {
-        let message = "filePath: ${filePath}\nstartLine: ${startLine}\nendLine: ${endLine.map { n => n.toString() } ?? "end of file"}"
+    public func readFile(filePath: String, startLine: Option<Int64>, endLine: Option<Int64>): String {
+        let message = "filePath: ${filePath}\nstart: ${startLine ?? 1}\nend: ${endLine.map { n => n.toString() } ?? "end of file"}"
         PrintUtils.printTool("Read File Range", message)
 
-        return catRange(filePath, startLine, endLine: endLine ?? Int64.Max)
+        return catRange(filePath, startLine ?? 1, endLine: endLine ?? Int64.Max)
     }
 
     @tool[
@@ -186,8 +173,8 @@ public class FSToolset {
         }
 
         let message = filePath + "\n" + content
-        if (let Deny(userInput) <- InputUtils.confirm("Write File", message)) {
-            return "User cancelled the operation, feedback: ${userInput}"
+        if (InputUtils.confirm("Write File", message) == Confirmation.Deny) {
+            return "User denied the operation"
         }
         return writeFileBasic(filePath, content)
     }
@@ -213,8 +200,8 @@ public class FSToolset {
             let newFileContent = oldFileContent.replace(oldContent, newContent)
 
             let message = diff(oldFileContent, newFileContent) |> PrintUtils.renderDiff
-            if (let Deny(_) <- InputUtils.confirm("Edit File (${filePath})", message)) {
-                return "User cancelled the operation"
+            if (InputUtils.confirm("Edit File (${filePath})", message) == Confirmation.Deny) {
+                return "User denied the operation"
             }
 
             File.writeTo(filePath, newFileContent.toArray())

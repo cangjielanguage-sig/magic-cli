@@ -283,13 +283,11 @@ private func calculateCursorPosition(text: String, cursor: Int64, prefix: String
     return calculateCursorPos(wrappedContent, cursor, prefix: prefix)
 }
 
-// Removed wrapText function, use wrapBox instead
-
 /**
  * Render completion list using existing wrapShowList function
  */
 private func renderCompletionList(completions: Array<String>, selectedIndex: Int64): String {
-    return wrapShowList(completions, selectedIndex)
+    return wrapOptionList(completions, selectedIndex)
 }
 
 /**
@@ -413,7 +411,7 @@ public class Readline {
                             let beforePathRunes = runes[0..pathStart]
                             let afterPathRunes = runes[pathEnd..]
                             let selectedRunes = selected.toRuneArray()
-                            
+
                             // Reconstruct text using rune arrays
                             newText = String(beforePathRunes) + selected + String(afterPathRunes)
                             // Set cursor to end of inserted path (in rune/character count)
@@ -497,7 +495,6 @@ public class Readline {
             case r'\u{1B}' => // ESC
                 return None // Could be used to cancel completion or exit
 
-
             case _ => // Regular character
                 inputState.insertChar(rune)
 
@@ -528,18 +525,18 @@ public class Readline {
         let isShellMode = inputState.isShellMode()
 
         // Use different colors for shell mode
-        let boxColor = if (isShellMode) { BRIGHT_YELLOW } else { BRIGHT_BLACK }
-        let textColor = if (isShellMode) { BRIGHT_GREEN } else { "" }
+        let boxColor = if (isShellMode) { AnsiColor.BRIGHT_YELLOW } else { AnsiColor.BRIGHT_BLACK }
+        let textColor = if (isShellMode) { AnsiColor.BRIGHT_GREEN } else { "" }
 
         // Apply colors to both prompt and text in shell mode
         let displayPrompt = if (isShellMode) {
-            "${textColor}${displayContext.prompt}${RESET}"
+            "${textColor}${displayContext.prompt}${AnsiColor.RESET}"
         } else {
             displayContext.prompt
         }
 
         let displayText = if (isShellMode) {
-            "${textColor}${currentText}${RESET}"
+            "${textColor}${currentText}${AnsiColor.RESET}"
         } else {
             currentText
         }
@@ -575,7 +572,7 @@ public class Readline {
             if (!completionText.isEmpty()) {
                 let completionLines = completionText.lines().count() - 1
                 PrintUtils.printString(completionText)
-                // Move cursor up by completion lines (like original colomShift)
+                // Move cursor up by completion lines
                 if (completionLines > 0) {
                     moveCursor(completionLines, direction: Direction.Up)
                 }
@@ -604,18 +601,18 @@ public class Readline {
         let isShellMode = inputState.isShellMode()
 
         // Use different colors for shell mode
-        let boxColor = if (isShellMode) { BRIGHT_YELLOW } else { BRIGHT_BLACK }
-        let textColor = if (isShellMode) { BRIGHT_GREEN } else { "" }
+        let boxColor = if (isShellMode) { AnsiColor.BRIGHT_YELLOW } else { AnsiColor.BRIGHT_BLACK }
+        let textColor = if (isShellMode) { AnsiColor.BRIGHT_GREEN } else { "" }
 
         // Apply colors to both prompt and text in shell mode
         let displayPrompt = if (isShellMode) {
-            "${textColor}${displayContext.prompt}${RESET}"
+            "${textColor}${displayContext.prompt}${AnsiColor.RESET}"
         } else {
             displayContext.prompt
         }
 
         let displayText = if (isShellMode) {
-            "${textColor}${currentText}${RESET}"
+            "${textColor}${currentText}${AnsiColor.RESET}"
         } else {
             currentText
         }
@@ -641,7 +638,7 @@ public class Readline {
      */
     public func readline(prompt: String): Option<String> {
         try {
-            RawInputUtils.rawEnter()
+            // RawInputUtils.rawEnter()
 
             let inputState = InputState()
             let completionState = CompletionState()
@@ -672,7 +669,7 @@ public class Readline {
 
             return None
         } finally {
-            RawInputUtils.rawExit()
+            // RawInputUtils.rawExit()
         }
     }
 
