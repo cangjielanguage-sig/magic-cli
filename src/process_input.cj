@@ -1,6 +1,6 @@
 package cli
 
-import magic.core.agent.{AgentRequest, AgentResponseStatus, AsyncAgentResponse}
+import magic.core.agent.{Agent,AgentRequest, AgentResponseStatus, AsyncAgentResponse}
 import magic.log.LogUtils
 
 import cli.core.config.CliConfig
@@ -145,41 +145,129 @@ private func initMagicFile(): Unit {
     }
 }
 
+/**
+ * Check if an exception should trigger model fallback
+ */
+private func shouldFallback(ex: Exception): Bool {
+    if (!CliConfig.enableFallback) {
+        return false
+    }
+    let message = ex.message.toAsciiLower()
+    
+    // HTTP and model errors that should trigger fallback
+    return message.contains("timeout") || 
+           message.contains("5") ||  // 5xx server errors
+           message.contains("connection") ||
+           message.contains("network") ||
+           message.contains("429") ||  // Rate limiting
+           message.contains("401") ||  // Unauthorized
+           message.contains("rate limit") ||
+           message.contains("quota") ||
+           message.contains("api key") ||
+           message.contains("unauthorized") ||
+           message.contains("authentication")
+}
+
+// Session-level successful model memory (resets on restart)
+private var sessionSuccessfulModel: Option<String> = None
+
 private func executeAgentTask(context: CliContext, input: String): Unit {
     LogUtils.debug("Handle user input `${input}`")
-    // Start agent execution
-    let response = context.agent.asyncChat(AgentRequest(input, conversation: context.conversationManager.conversation))
-
-    // Spawn a thread to check for ESC cancellation
-    let cancelled = AtomicBool(false)
-    let escPressed = AtomicBool(false)
-
-    let escChecker = spawn {
-        while (!cancelled.load() && !Thread.currentThread.hasPendingCancellation) {
-            // Don't check for ESC when agent is requesting user input
-            if (!InputUtils.isRequestingInput() && InputUtils.checkEsc()) {
-                // ESC was pressed, cancel the agent response
-                if (escPressed.compareAndSwap(false, true)) {  // Ensure only one cancellation
-                    response.cancel()
-                    PrintUtils.printInterrupt()
+    
+    let models = ArrayList<String>()
+    if (let Some(successModel) <- sessionSuccessfulModel) {
+        // Use last successful model first
+        models.add(successModel)
+        if (successModel != CliConfig.model) {
+            models.add(CliConfig.model)
+        }
+        if (CliConfig.enableFallback) {
+            for (fallback in CliConfig.fallbackModels) {
+                if (fallback != successModel) {
+                    models.add(fallback)
                 }
-                return
             }
-            sleep(Duration.millisecond * 50) // Poll every 50ms
+        }
+    } else {
+        // First execution, use original order
+        models.add(CliConfig.model)
+        if (CliConfig.enableFallback) {
+            models.add(all: CliConfig.fallbackModels)
         }
     }
-
-    try {
-        handleAgentResponse(context, response, escPressed)
-    } finally {
-        // Properly shutdown ESC checker
-        cancelled.store(true)
-        escChecker.cancel()
+    
+    let maxAttempts = if (models.size > CliConfig.maxFallbackAttempts) {
+        CliConfig.maxFallbackAttempts
+    } else {
+        models.size
+    }
+    
+    // Try models in sequence
+    for (i in 0..maxAttempts) {
+        let currentModel = models[i]
+        
         try {
-            escChecker.get()
-        } catch (e: Exception) {
-            LogUtils.error("ESC checker thread ended with exception: ${e}")
-            // Ignore cancellation exceptions during cleanup
+            // Switch to fallback model if needed
+            if (i > 0) {
+                // Only show user message on first fallback in this session
+                if (sessionSuccessfulModel.isNone()) {
+                    PrintUtils.printTool("Model Fallback", "Switching to: ${currentModel}")
+                }
+                context.switchToFallbackModel(currentModel)
+            }
+            
+            LogUtils.info("Using model: ${currentModel}")
+            
+            // Execute with current model
+            let response = context.agent.asyncChat(AgentRequest(input, conversation: context.conversationManager.conversation))
+
+            // Spawn a thread to check for ESC cancellation
+            let cancelled = AtomicBool(false)
+            let escPressed = AtomicBool(false)
+
+            let escChecker = spawn {
+                while (!cancelled.load() && !Thread.currentThread.hasPendingCancellation) {
+                    // Don't check for ESC when agent is requesting user input
+                    if (!InputUtils.isRequestingInput() && InputUtils.checkEsc()) {
+                        // ESC was pressed, cancel the agent response
+                        if (escPressed.compareAndSwap(false, true)) {  // Ensure only one cancellation
+                            response.cancel()
+                            PrintUtils.printInterrupt()
+                        }
+                        return
+                    }
+                    sleep(Duration.millisecond * 50) // Poll every 50ms
+                }
+            }
+
+            try {
+                handleAgentResponse(context, response, escPressed)
+            } finally {
+                // Properly shutdown ESC checker
+                cancelled.store(true)
+                escChecker.cancel()
+                try {
+                    escChecker.get()
+                } catch (e: Exception) {
+                    LogUtils.error("ESC checker thread ended with exception: ${e}")
+                    // Ignore cancellation exceptions during cleanup
+                }
+            }
+            
+            // Compact is called once per successful execution, not per retry attempt
+            context.conversationManager.compact()
+            sessionSuccessfulModel = Some(currentModel)
+            break // Success, exit retry loop
+        } catch (ex: Exception) {
+            if (i == maxAttempts - 1) {
+                throw ex
+            }
+            if (shouldFallback(ex)) {
+                LogUtils.info("Model ${currentModel} failed, trying fallback")
+                continue
+            } else {
+                throw ex
+            }
         }
     }
 }
@@ -201,7 +289,6 @@ private func handleAgentResponse(context: CliContext,
                     PrintUtils.printAgentResponse(response)
                 }
                 context.conversationManager.conversation.addChatRound(response.execution.chatRound)
-                context.conversationManager.compact()
             }
         case AgentResponseStatus.Cancelled =>
             if (content == "__USER_CLARIFY__") {
