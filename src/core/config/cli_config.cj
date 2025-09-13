@@ -91,6 +91,21 @@ protected class CliConfig {
     public static var model: String = "ark:kimi-k2-250711"
 
     /**
+     * Fallback models to use when primary model fails
+     */
+    public static var fallbackModels: Array<String> = ["moonshot:kimi-k2-0905-preview", "zhipuai:glm-4.5"]
+    
+    /**
+     * Enable model fallback functionality
+     */
+    public static var enableFallback: Bool = true
+
+    /**
+     * Maximum number of models to try
+     */
+    public static var maxFallbackAttempts: Int64 = 3
+
+    /**
      * The prompt when running magic-cli in detach mode
      */
     public static var detach: Bool = false

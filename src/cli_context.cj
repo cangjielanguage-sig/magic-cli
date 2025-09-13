@@ -9,6 +9,7 @@ import magic.core.interaction.EventResponse
 import magic.interaction.*
 import magic.config.Config
 import magic.tool.AgentAsTool
+import magic.model.ModelManager
 
 import cli.core.mcp.MCPConfigManager
 import cli.core.conversation.ConversationManager
@@ -100,5 +101,12 @@ protected class CliContext {
             => conversationManager.autoSave()
             InputUtils.exitRawMode()
         })
+    }
+
+    /**
+     * Switch agent to fallback model
+     */
+    public func switchToFallbackModel(fallbackModel: String): Unit {
+        this.agent.model = ModelManager.createChatModel(fallbackModel)
     }
 }

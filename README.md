@@ -11,6 +11,7 @@
 - 💾 **对话持久化** - 支持保存和恢复对话会话，项目切换无缝衔接
 - 📝 **用户记忆** - 通过 MAGIC.md 文件自定义项目规则和上下文
 - ⚡ **自定义命令** - 支持用户定义 prompt 模板，固化常用工作流程
+- 🔄 **模型容错** - 智能模型切换，主模型失败时自动使用备用模型，确保服务连续性
 - 🚀 **一键构建** - 自动化项目构建和依赖管理
 - 🔌 **MCP 集成** - 支持 Model Context Protocol，扩展外部工具和服务能力
 
@@ -300,6 +301,23 @@ Prompt template: 请基于当前的代码改动生成一个规范的 commit mess
 | `MAGIC.md` | `.magic-cli/` | 用户自定义规则和上下文|
 | `settings.json` | `.magic-cli/` | MCP 服务器配置 |
 | `*.history` | `.magic-cli/conversation-history/` | 保存的对话记录 |
+
+### 模型配置
+
+Magic-CLI 支持配置主模型和备用模型来确保服务稳定性：
+
+```cangjie
+// src/core/config/cli_config.cj
+public static var model: String = "ark:kimi-k2-250711"  // 主模型
+public static var fallbackModels: Array<String> = [     // 备用模型列表
+    "moonshot:kimi-k2-0905-preview", 
+    "zhipuai:glm-4.5"
+]
+public static var enableFallback: Bool = true           // 启用模型切换
+public static var maxFallbackAttempts: Int64 = 3        // 最大重试次数
+```
+
+> ⚠️ **重要提醒**：请确保在 `.env` 文件中配置了所有使用模型对应的 API 密钥，否则模型切换可能无法正常工作。
 
 ## 🎯 使用示例
 
