@@ -346,6 +346,56 @@ public class Readline {
     }
 
     /**
+     * Apply selected completion to input state
+     */
+    private func applyCompletion(
+        inputState: InputState,
+        completionState: CompletionState,
+        selected: String
+    ) {
+        let currentText = inputState.getText()
+        var newText = ""
+        var newCursor: Int64 = inputState.cursor
+
+        // Handle @path completion
+        if (let Some((atIndex, pathStart, pathEnd, pathPrefix)) <- extractPathContext(currentText, inputState.cursor)) {
+            // Replace the path part with selected path
+            // Use rune-based operations to handle multi-byte characters correctly
+            let runes = currentText.toRuneArray()
+            let beforePathRunes = runes[0..pathStart]
+            let afterPathRunes = runes[pathEnd..]
+            let selectedRunes = selected.toRuneArray()
+            
+            // Reconstruct text using rune arrays
+            newText = String(beforePathRunes) + selected + String(afterPathRunes)
+            // Set cursor to end of inserted path (in rune/character count)
+            newCursor = beforePathRunes.size + selectedRunes.size
+        }
+        // Handle /command completion
+        else if (currentText.startsWith("/")) {
+            newText = selected
+            newCursor = selected.toRuneArray().size
+        }
+        else {
+            newText = selected
+            newCursor = selected.toRuneArray().size
+        }
+
+        // Replace buffer with new text
+        inputState.clear()
+        for (char in newText.toRuneArray()) {
+            inputState.buffer.addLast(char)
+        }
+        inputState.cursor = newCursor
+        completionState.clear()
+
+        // Update completion list for further completions
+        if (let Some(newCompletions) <- buildCompletionList(newText, inputState.cursor, isShellMode: inputState.isShellMode())) {
+            completionState.setCompletions(newCompletions)
+        }
+    }
+
+    /**
      * Handle key input and return result
      */
     private func handleInput(
@@ -356,9 +406,17 @@ public class Readline {
     ): Option<String> {
         match (rune) {
             case r'\r' | r'\n' => // Enter
+                // If completion is active, accept it first
+                if (completionState.isActive) {
+                    if (let Some(selected) <- completionState.getSelected()) {
+                        this.applyCompletion(inputState, completionState, selected)
+                        return None
+                    }
+                }
+
+                // Otherwise, finalize input
                 let text = inputState.getText()
 
-                // Always finalize input on Enter, don't auto-complete
                 if (text.size > 0) {
                     this.history.add(text)
                     this.appendHistoryFile(text)
@@ -399,46 +457,7 @@ public class Readline {
             case r'\t' => // Tab
                 if (completionState.isActive) {
                     if (let Some(selected) <- completionState.getSelected()) {
-                        let currentText = inputState.getText()
-                        var newText = ""
-                        var newCursor: Int64 = inputState.cursor
-
-                        // Handle @path completion
-                        if (let Some((atIndex, pathStart, pathEnd, pathPrefix)) <- extractPathContext(currentText, inputState.cursor)) {
-                            // Replace the path part with selected path
-                            // Use rune-based operations to handle multi-byte characters correctly
-                            let runes = currentText.toRuneArray()
-                            let beforePathRunes = runes[0..pathStart]
-                            let afterPathRunes = runes[pathEnd..]
-                            let selectedRunes = selected.toRuneArray()
-
-                            // Reconstruct text using rune arrays
-                            newText = String(beforePathRunes) + selected + String(afterPathRunes)
-                            // Set cursor to end of inserted path (in rune/character count)
-                            newCursor = beforePathRunes.size + selectedRunes.size
-                        }
-                        // Handle /command completion
-                        else if (currentText.startsWith("/")) {
-                            newText = selected
-                            newCursor = selected.toRuneArray().size
-                        }
-                        else {
-                            newText = selected
-                            newCursor = selected.toRuneArray().size
-                        }
-
-                        // Replace buffer with new text
-                        inputState.clear()
-                        for (char in newText.toRuneArray()) {
-                            inputState.buffer.addLast(char)
-                        }
-                        inputState.cursor = newCursor
-                        completionState.clear()
-
-                        // Update completion list for further completions
-                        if (let Some(newCompletions) <- buildCompletionList(newText, inputState.cursor, isShellMode: inputState.isShellMode())) {
-                            completionState.setCompletions(newCompletions)
-                        }
+                        this.applyCompletion(inputState, completionState, selected)
                     }
                 }
                 return None
