@@ -174,6 +174,14 @@ static int parseEscapeSequence(unsigned char* bytes) {
                 bytes[2] = 0x90;
                 return 3;
 
+            case 'H': // Home → Ctrl+A
+                bytes[0] = 0x01;
+                return 1;
+
+            case 'F': // End → Ctrl+E
+                bytes[0] = 0x05;
+                return 1;
+
             case '3': // DELETE
                 n = read(STDIN_FILENO, &c, 1);
                 if (n <= 0) return -1;

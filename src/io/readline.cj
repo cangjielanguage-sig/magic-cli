@@ -511,6 +511,30 @@ public class Readline {
                 }
                 return None
 
+            case r'\u{1}' => // Home (Ctrl+A) / Home key
+                // Move cursor to beginning of line
+                inputState.cursor = 0
+                // Update completion list after cursor movement
+                let newText = inputState.getText()
+                if (let Some(completions) <- buildCompletionList(newText, inputState.cursor, isShellMode: inputState.isShellMode())) {
+                    completionState.setCompletions(completions)
+                } else {
+                    completionState.clear()
+                }
+                return None
+
+            case r'\u{5}' => // End (Ctrl+E) / End key
+                // Move cursor to end of line
+                inputState.cursor = inputState.buffer.size
+                // Update completion list after cursor movement
+                let newText = inputState.getText()
+                if (let Some(completions) <- buildCompletionList(newText, inputState.cursor, isShellMode: inputState.isShellMode())) {
+                    completionState.setCompletions(completions)
+                } else {
+                    completionState.clear()
+                }
+                return None
+
             case r'\u{1B}' => // ESC
                 return None // Could be used to cancel completion or exit
 
