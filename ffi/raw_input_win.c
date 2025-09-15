@@ -12,6 +12,8 @@
 #define VK_DOWN 0x28
 #define VK_LEFT 0x25
 #define VK_RIGHT 0x27
+#define VK_HOME 0x24
+#define VK_END 0x23
 #define INFINITE 0xFFFFFFFF
 
 // Static storage for original terminal settings
@@ -28,6 +30,8 @@ const BYTE VK_RIGHT_UTF8[] = {0x1B, 0x5B, 0x43};  // ESC [ C
 const BYTE VK_ESCAPE_UTF8[]= {0x1B};              // ESC
 const BYTE VK_BACK_UTF8[]  = {0x08};              // Backspace
 const BYTE VK_DELETE_UTF8[]= {0x1B, 0x5B, 0x33, 0x7E};  // ESC [ 3 ~
+const BYTE VK_HOME_UTF8[]  = {0x1B, 0x5B, 0x48};        // ESC [ H
+const BYTE VK_END_UTF8[]   = {0x1B, 0x5B, 0x46};        // ESC [ F
 const BYTE VK_TAB_UTF8[]   = {0x09};              // Tab
 const BYTE VK_ENTER_UTF8[] = {0x0A};              // LF
 
@@ -47,6 +51,8 @@ const VkToUtf8Map vk_utf8_map[] = {
     {VK_TAB,   VK_TAB_UTF8,   sizeof(VK_TAB_UTF8)},
     {VK_ESCAPE,VK_ESCAPE_UTF8,sizeof(VK_ESCAPE_UTF8)},
     {VK_DELETE,VK_DELETE_UTF8,sizeof(VK_DELETE_UTF8)},
+    {VK_HOME,  VK_HOME_UTF8,  sizeof(VK_HOME_UTF8)},
+    {VK_END,   VK_END_UTF8,   sizeof(VK_END_UTF8)},
     {VK_ENTER, VK_ENTER_UTF8, sizeof(VK_ENTER_UTF8)},
 };
 
@@ -64,6 +70,8 @@ BOOL isCommonVirtualKey(WORD vkCode) {
         case VK_DOWN:
         case VK_LEFT:
         case VK_RIGHT:
+        case VK_HOME:
+        case VK_END:
             return TRUE;
         default:
             return 0;
@@ -348,6 +356,14 @@ int getRawUtf8(BYTE *bytes) {
                 bytes[1] = 0x86;
                 bytes[2] = 0x90;
                 return 3;
+
+            case 'H': // Home → Ctrl+A (0x01)
+                bytes[0] = 0x01;
+                return 1;
+
+            case 'F': // End → Ctrl+E (0x05)
+                bytes[0] = 0x05;
+                return 1;
 
             default:
                 return 0; // Unknown CSI
