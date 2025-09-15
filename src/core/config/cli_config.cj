@@ -106,6 +106,16 @@ protected class CliConfig {
     public static var maxFallbackAttempts: Int64 = 3
 
     /**
+     * Fast model for auxiliary tasks in hybrid mode
+     */
+    public static var hybridFastModel: String = "ark:doubao-1-5-pro-32k-250115"
+
+    /**
+     * Enable hybrid mode (use fast model for auxiliary tasks)
+     */
+    public static var hybridMode: Bool = false
+
+    /**
      * The prompt when running magic-cli in detach mode
      */
     public static var detach: Bool = false

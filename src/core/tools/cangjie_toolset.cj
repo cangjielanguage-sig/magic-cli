@@ -10,6 +10,7 @@ import std.fs.*
 import magic.dsl.*
 import magic.prelude.*
 import magic.jsonable.*
+import magic.model.ModelManager
 
 import cli.core.tools.cjpm_utils.*
 import cli.core.config.CliConfig
@@ -112,7 +113,11 @@ public class CangjieToolset {
                 responseData.toJsonString()
         }
         let docSummaryAssistant = DocSummaryAssistant()
-        docSummaryAssistant.model = this.model
+        docSummaryAssistant.model = if (CliConfig.hybridMode) {
+            ModelManager.createChatModel(CliConfig.hybridFastModel)
+        } else {
+            this.model
+        }
         let promptForSummarizer = """
             Original User Query: "${query}"
 

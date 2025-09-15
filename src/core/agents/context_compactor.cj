@@ -7,6 +7,7 @@ import magic.core.message.ConversationCompactor
 import magic.core.message.{Message, MessageRole, MessageList}
 import magic.log.LogUtils
 import magic.tokenizer.Cl100kTokenizer
+import magic.model.ModelManager
 
 import cli.core.config.CliConfig
 
@@ -103,6 +104,10 @@ public class Compactor <: ConversationCompactor {
             toBeCompactedContent.append(conversation[i].toString())
         }
         let agent = CompactContextAgent()
+        // Use fast model for context compaction in hybrid mode
+        if (CliConfig.hybridMode) {
+            agent.model = ModelManager.createChatModel(CliConfig.hybridFastModel)
+        }
         return agent.chat(toBeCompactedContent.toString())
     }
 
