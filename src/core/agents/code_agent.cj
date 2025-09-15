@@ -43,7 +43,6 @@ public class GeneralCodeAgent {
         PlanToolset(),
         // GitToolset(),
         fixCangjieProjectCompileError,
-        // analyzeCode
         AgentAsTool(CodeAnalyzer(), mode: SubAgentMode.WithContext)
     ]
 ]

@@ -18,17 +18,11 @@ import std.sort.sort
 protected class ConversationManager {
     public static let AUTO_SAVE_NAME = "last-conversation"
 
-    public ConversationManager(var _agent: ConversationAgent, let compactor: Compactor) {
+    protected let conversation = Conversation()
+    private let compactor: Compactor
 
-    }
-
-    public mut prop agent: ConversationAgent {
-        get() {
-            this._agent
-        }
-        set(agent) {
-            this._agent = agent
-        }
+    public init(compactor: Compactor) {
+        this.compactor = compactor
     }
 
     public func handleCommand(args: Array<String>): Unit {
@@ -74,7 +68,7 @@ protected class ConversationManager {
         ensureHistoryDirectory()
         let filePath = getConversationPath(AUTO_SAVE_NAME)
         try {
-            agent.conversation.save(filePath)
+            this.conversation.save(filePath)
         } catch (e: Exception) {
             LogUtils.error("Failed to auto-save conversation: ${e.message}")
         }
@@ -84,7 +78,7 @@ protected class ConversationManager {
      * Clear current conversation
      */
     public func clearConversation(): Unit {
-        agent.conversation.clear()
+        this.conversation.clear()
         PrintUtils.printLine("✅ Conversation history cleared")
     }
 
@@ -126,7 +120,7 @@ protected class ConversationManager {
         try {
             ensureHistoryDirectory()
             let filePath = getConversationPath(name)
-            agent.conversation.save(filePath)
+            this.conversation.save(filePath)
             PrintUtils.printLine("✅ Conversation saved as '${name}'")
         } catch (e: Exception) {
             PrintUtils.printLine("❌ Failed to save conversation '${name}': ${e.message}")
@@ -148,9 +142,9 @@ protected class ConversationManager {
 
         try {
             let loadedConversation = Conversation.load(filePath)
-            agent.conversation.clear()
+            this.conversation.clear()
             for (chatRound in loadedConversation) {
-                agent.conversation.addChatRound(chatRound)
+                this.conversation.addChatRound(chatRound)
             }
 
             if (name == AUTO_SAVE_NAME) {
@@ -216,9 +210,9 @@ protected class ConversationManager {
     }
 
     public func compact(manual!: Bool = false): Unit {
-        if (let Some(index) <- compactor.calculateCompactIndex(agent.conversation)) {
+        if (let Some(index) <- this.compactor.calculateCompactIndex(this.conversation)) {
             PrintUtils.printTool("Compacting conversation...", "🚀 Working on it...")
-            agent.conversation.compactBy(compactor, firstN: index, keepOrigin: false)
+            this.conversation.compactBy(compactor, firstN: index, keepOrigin: false)
             PrintUtils.printTool("Compacting conversation...", "🥳 Compacted successfully!")
         } else if (manual) {
             PrintUtils.printTool("Compacting conversation...",

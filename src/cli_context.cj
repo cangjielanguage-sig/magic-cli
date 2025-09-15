@@ -1,21 +1,22 @@
-package cli.core.context
+package cli
 
 import magic.dsl.*
 import magic.prelude.*
 import magic.log.LogUtils
 import magic.core.message.Conversation
-import magic.agent.{ConversationAgent}
+import magic.core.agent.Agent
 import magic.core.interaction.EventResponse
 import magic.interaction.*
 import magic.config.Config
 import magic.tool.AgentAsTool
+import magic.model.ModelManager
 
 import cli.core.mcp.MCPConfigManager
 import cli.core.conversation.ConversationManager
 import cli.core.commands.CustomCommandManager
 import cli.core.config.CliConfig
 import cli.core.agents.*
-import cli.io.{PrintUtils, WorkingIndicator, moveCursor, clearScreen, ClearMode}
+import cli.io.{InputUtils, PrintUtils, WorkingIndicator}
 
 import std.collection.ArrayList
 import std.fs.Path
@@ -24,21 +25,18 @@ import std.sync.*
 import std.env.atExit
 
 protected class CliContext {
-    private var _agent: AtomicReference<ConversationAgent>
-    private let mtx: Mutex = Mutex()
+    protected let agent: Agent
     private let thinkIndicator = AtomicOptionReference<WorkingIndicator>()
     protected let conversationManager: ConversationManager
     protected let customCommandManager: CustomCommandManager
     protected let mcpManager: MCPConfigManager
 
     protected init() {
-        let codeAgent = if (CliConfig.language.toAsciiLower() == 'cangjie') {
+        this.agent = if (CliConfig.language.toAsciiLower() == 'cangjie') {
             CangjieCodeAgent()
         } else {
             GeneralCodeAgent()
         }
-        let agent = ConversationAgent(codeAgent)
-        this._agent = AtomicReference(agent)
         // Load MCP servers and add their tools to the agent
         this.mcpManager = MCPConfigManager()
         try {
@@ -48,13 +46,17 @@ protected class CliContext {
             PrintUtils.printTool("MCP Loading", "Warning: Failed to load MCP servers, continuing without MCP tools")
         }
 
-        this.conversationManager = ConversationManager(agent, Compactor())
+        this.conversationManager = ConversationManager(Compactor())
         this.customCommandManager = CustomCommandManager()
+
+        // Initialize event handlers and callbacks
+        this.registerHooks()
     }
 
-    protected func registerHooks() {
-        // Collect all subAgents as allowed agent that is able to print the thinking indicator
-        let allowedAgentName = ArrayList<String>([this.agent.name])
+    private func registerHooks() {
+        // Collect all subAgents as allowed agents that is able to print the thinking indicator
+        // CompileErrorFixer is special which is not added as a subAgent
+        let allowedAgentName = ArrayList<String>([this.agent.name, "CompileErrorFixer"])
         for (tool in this.agent.toolManager.tools) {
             if (tool is AgentAsTool) {
                 allowedAgentName.add(tool.name)
@@ -94,24 +96,17 @@ protected class CliContext {
             PrintUtils.printLine("🎉 SubAgent ${evt.agent.name} completed 🍻", withIndent: true)
             PrintUtils.endSubAgent()
         }
-        // Register uncaught exception handler to avoid ugly stack traces
-        // Note that agent.asyncChat will spawn a thread and throw exceptions there
-        // A bug in Cangjie std.core.Thread?
-        // If we use Thread.handleUncaughtExceptionBy here, it will not affect threads spawn in Magic
-        Config.threadExceptionHandler = { thread: Thread, ex: Exception =>
-            LogUtils.error("Uncaught exception in thread ${thread.name}: ${ex}")
-        }
         // Register the callback to auto-save conversation when exiting the program
         atExit({
             => conversationManager.autoSave()
+            InputUtils.exitRawMode()
         })
     }
 
-    public prop agent: ConversationAgent {
-        get() {
-            synchronized(mtx) {
-                return _agent.load()
-            }
-        }
+    /**
+     * Switch agent to fallback model
+     */
+    public func switchToFallbackModel(fallbackModel: String): Unit {
+        this.agent.model = ModelManager.createChatModel(fallbackModel)
     }
 }

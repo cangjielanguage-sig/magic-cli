@@ -4,28 +4,6 @@ import std.collection.*
 
 // Magic CLI logo implementation in Cangjie
 
-// Initialize color mappings with ANSI escape codes
-private let COLORS = HashMap([
-    ("reset", "\u{1b}[0m"),
-    ("purple", "\u{1b}[95m"),
-    ("light_purple", "\u{1b}[38;5;141m"),
-    ("dark_purple", "\u{1b}[38;5;53m"),
-    ("violet", "\u{1b}[38;5;99m"),
-    ("lavender", "\u{1b}[38;5;183m"),
-    ("plum", "\u{1b}[38;5;96m"),
-    ("indigo", "\u{1b}[38;5;54m"),
-    ("orchid", "\u{1b}[38;5;170m"),
-    ("magenta", "\u{1b}[38;5;201m"),
-    ("pink_purple", "\u{1b}[38;5;213m"),
-    ("royal_purple", "\u{1b}[38;5;57m"),
-    ("amethyst", "\u{1b}[38;5;135m"),
-    ("periwinkle", "\u{1b}[38;5;147m"),
-    ("lilac", "\u{1b}[38;5;182m"),
-    ("mauve", "\u{1b}[38;5;139m"),
-    ("white", "\u{1b}[97m"),
-    ("gray", "\u{1b}[90m")
-])
-
 // Initialize block characters
 private let BLOCKS = HashMap([
     ("solid", "█"),
@@ -106,10 +84,9 @@ private let PATTERNS = HashMap([
 ])
 
 // Apply 3D effect by adding shadow and depth
-private func apply3dEffect(pattern: Array<String>, colorName: String): Array<String> {
-    let color = COLORS[colorName]
-    let reset = COLORS["reset"]
-    let gray = COLORS["gray"]
+private func apply3dEffect(pattern: Array<String>, color: AnsiColor): Array<String> {
+    let reset = AnsiColor.RESET
+    let gray = AnsiColor.BRIGHT_BLACK
     let solidBlock = BLOCKS["solid"]
     let mediumBlock = BLOCKS["medium"]
 
@@ -124,14 +101,14 @@ private func apply3dEffect(pattern: Array<String>, colorName: String): Array<Str
             let char = runes[j]
             if (char == r'█') {
                 // Main block with color
-                newLine = newLine + color + solidBlock + reset
+                newLine = newLine + solidBlock.withColor(color)
             } else if (char == r' ') {
                 // Check if we need shadow effect
                 if (i < pattern.size - 1 && j < runes.size - 1) {
                     let nextLineRunes = pattern[i + 1].toRuneArray()
                     if (j + 1 < nextLineRunes.size && nextLineRunes[j + 1] == r'█') {
                         // Add gradient shadow effect
-                        newLine = newLine + gray + mediumBlock + reset
+                        newLine = newLine + mediumBlock.withColor(gray)
                     } else {
                         newLine = newLine + " "
                     }
@@ -153,8 +130,8 @@ public func printMagicCliLogo() {
     let text = "MAGIC CLI"
     // Stunning rainbow-purple gradient for maximum beauty
     let colorsCycle = [
-        "pink_purple", "orchid", "amethyst", "violet",
-        "periwinkle", "lilac", "lavender", "mauve"
+        AnsiColor.PINK_PURPLE, AnsiColor.ORCHID, AnsiColor.AMETHYST, AnsiColor.VIOLET,
+        AnsiColor.PERIWINKLE, AnsiColor.LILAC, AnsiColor.LAVENDER, AnsiColor.MAUVE
     ]
 
     // Get 3D patterns for each character with gradient effect
@@ -163,30 +140,24 @@ public func printMagicCliLogo() {
 
     for (char in text.runes()) {
         if (PATTERNS.contains(char)) {
-            let colorName = if (char != r' ') {
+            let color = if (char != r' ') {
                 let color = colorsCycle[letterIndex]
                 letterIndex = letterIndex + 1
                 color
             } else {
-                "white"  // Space color
+                AnsiColor.WHITE  // Space color
             }
-            let pattern3d = apply3dEffect(PATTERNS[char], colorName)
+            let pattern3d = apply3dEffect(PATTERNS[char], color)
             charPatterns.add(pattern3d)
         }
     }
 
     // Print elegant header with purple theme
     let headerLine = "━" * 100
-    let purple = COLORS["purple"]
-    let lightPurple = COLORS["light_purple"]
-    let lavender = COLORS["lavender"]
-    let indigo = COLORS["indigo"]
-    let violet = COLORS["violet"]
-    let reset = COLORS["reset"]
 
-    PrintUtils.printLine("\n${purple}${headerLine}${reset}")
-    PrintUtils.printLine("${' ' * 40}✨ ${lavender}MAGIC CLI${lightPurple} ✨${reset}")
-    PrintUtils.printLine("${purple}${headerLine}${reset}\n")
+    PrintUtils.printLine("\n${AnsiColor.PURPLE}${headerLine}${AnsiColor.RESET}")
+    PrintUtils.printLine("${' ' * 40}✨ ${AnsiColor.LAVENDER}MAGIC CLI${AnsiColor.LIGHT_PURPLE} ✨${AnsiColor.RESET}")
+    PrintUtils.printLine("${AnsiColor.PURPLE}${headerLine}${AnsiColor.RESET}\n")
 
     // Print each row of the logo
     for (row in 0..7) {
@@ -198,8 +169,8 @@ public func printMagicCliLogo() {
     }
 
     // Print elegant footer with purple theme
-    PrintUtils.printLine("\n${purple}${headerLine}${reset}")
-    PrintUtils.printLine("${' ' * 28} 🌟 ${lightPurple}Welcome to the Magic Experience!${lavender} 🌟${reset}")
-    PrintUtils.printLine("${' ' * 33} ${violet}✨ Powered by Cangjie Magic ✨${reset}")
-    PrintUtils.printLine("${purple}${headerLine}${reset}\n")
+    PrintUtils.printLine("\n${headerLine.withColor(AnsiColor.PURPLE)}")
+    PrintUtils.printLine("${' ' * 28} 🌟 ${AnsiColor.LIGHT_PURPLE}Welcome to the Magic Experience!${AnsiColor.LAVENDER} 🌟${AnsiColor.RESET}")
+    PrintUtils.printLine("${' ' * 33} ${AnsiColor.VIOLET}✨ Powered by Cangjie Magic ✨${AnsiColor.RESET}")
+    PrintUtils.printLine("${AnsiColor.PURPLE}${headerLine}${AnsiColor.RESET}\n")
 }

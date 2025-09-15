@@ -283,13 +283,11 @@ private func calculateCursorPosition(text: String, cursor: Int64, prefix: String
     return calculateCursorPos(wrappedContent, cursor, prefix: prefix)
 }
 
-// Removed wrapText function, use wrapBox instead
-
 /**
  * Render completion list using existing wrapShowList function
  */
 private func renderCompletionList(completions: Array<String>, selectedIndex: Int64): String {
-    return wrapShowList(completions, selectedIndex)
+    return wrapOptionList(completions, selectedIndex)
 }
 
 /**
@@ -348,6 +346,56 @@ public class Readline {
     }
 
     /**
+     * Apply selected completion to input state
+     */
+    private func applyCompletion(
+        inputState: InputState,
+        completionState: CompletionState,
+        selected: String
+    ) {
+        let currentText = inputState.getText()
+        var newText = ""
+        var newCursor: Int64 = inputState.cursor
+
+        // Handle @path completion
+        if (let Some((atIndex, pathStart, pathEnd, pathPrefix)) <- extractPathContext(currentText, inputState.cursor)) {
+            // Replace the path part with selected path
+            // Use rune-based operations to handle multi-byte characters correctly
+            let runes = currentText.toRuneArray()
+            let beforePathRunes = runes[0..pathStart]
+            let afterPathRunes = runes[pathEnd..]
+            let selectedRunes = selected.toRuneArray()
+            
+            // Reconstruct text using rune arrays
+            newText = String(beforePathRunes) + selected + String(afterPathRunes)
+            // Set cursor to end of inserted path (in rune/character count)
+            newCursor = beforePathRunes.size + selectedRunes.size
+        }
+        // Handle /command completion
+        else if (currentText.startsWith("/")) {
+            newText = selected
+            newCursor = selected.toRuneArray().size
+        }
+        else {
+            newText = selected
+            newCursor = selected.toRuneArray().size
+        }
+
+        // Replace buffer with new text
+        inputState.clear()
+        for (char in newText.toRuneArray()) {
+            inputState.buffer.addLast(char)
+        }
+        inputState.cursor = newCursor
+        completionState.clear()
+
+        // Update completion list for further completions
+        if (let Some(newCompletions) <- buildCompletionList(newText, inputState.cursor, isShellMode: inputState.isShellMode())) {
+            completionState.setCompletions(newCompletions)
+        }
+    }
+
+    /**
      * Handle key input and return result
      */
     private func handleInput(
@@ -358,9 +406,17 @@ public class Readline {
     ): Option<String> {
         match (rune) {
             case r'\r' | r'\n' => // Enter
+                // If completion is active, accept it first
+                if (completionState.isActive) {
+                    if (let Some(selected) <- completionState.getSelected()) {
+                        this.applyCompletion(inputState, completionState, selected)
+                        return None
+                    }
+                }
+
+                // Otherwise, finalize input
                 let text = inputState.getText()
 
-                // Always finalize input on Enter, don't auto-complete
                 if (text.size > 0) {
                     this.history.add(text)
                     this.appendHistoryFile(text)
@@ -401,46 +457,7 @@ public class Readline {
             case r'\t' => // Tab
                 if (completionState.isActive) {
                     if (let Some(selected) <- completionState.getSelected()) {
-                        let currentText = inputState.getText()
-                        var newText = ""
-                        var newCursor: Int64 = inputState.cursor
-
-                        // Handle @path completion
-                        if (let Some((atIndex, pathStart, pathEnd, pathPrefix)) <- extractPathContext(currentText, inputState.cursor)) {
-                            // Replace the path part with selected path
-                            // Use rune-based operations to handle multi-byte characters correctly
-                            let runes = currentText.toRuneArray()
-                            let beforePathRunes = runes[0..pathStart]
-                            let afterPathRunes = runes[pathEnd..]
-                            let selectedRunes = selected.toRuneArray()
-                            
-                            // Reconstruct text using rune arrays
-                            newText = String(beforePathRunes) + selected + String(afterPathRunes)
-                            // Set cursor to end of inserted path (in rune/character count)
-                            newCursor = beforePathRunes.size + selectedRunes.size
-                        }
-                        // Handle /command completion
-                        else if (currentText.startsWith("/")) {
-                            newText = selected
-                            newCursor = selected.toRuneArray().size
-                        }
-                        else {
-                            newText = selected
-                            newCursor = selected.toRuneArray().size
-                        }
-
-                        // Replace buffer with new text
-                        inputState.clear()
-                        for (char in newText.toRuneArray()) {
-                            inputState.buffer.addLast(char)
-                        }
-                        inputState.cursor = newCursor
-                        completionState.clear()
-
-                        // Update completion list for further completions
-                        if (let Some(newCompletions) <- buildCompletionList(newText, inputState.cursor, isShellMode: inputState.isShellMode())) {
-                            completionState.setCompletions(newCompletions)
-                        }
+                        this.applyCompletion(inputState, completionState, selected)
                     }
                 }
                 return None
@@ -497,7 +514,6 @@ public class Readline {
             case r'\u{1B}' => // ESC
                 return None // Could be used to cancel completion or exit
 
-
             case _ => // Regular character
                 inputState.insertChar(rune)
 
@@ -528,18 +544,18 @@ public class Readline {
         let isShellMode = inputState.isShellMode()
 
         // Use different colors for shell mode
-        let boxColor = if (isShellMode) { BRIGHT_YELLOW } else { BRIGHT_BLACK }
-        let textColor = if (isShellMode) { BRIGHT_GREEN } else { "" }
+        let boxColor = if (isShellMode) { AnsiColor.BRIGHT_YELLOW } else { AnsiColor.BRIGHT_BLACK }
+        let textColor = if (isShellMode) { AnsiColor.BRIGHT_GREEN } else { "" }
 
         // Apply colors to both prompt and text in shell mode
         let displayPrompt = if (isShellMode) {
-            "${textColor}${displayContext.prompt}${RESET}"
+            "${textColor}${displayContext.prompt}${AnsiColor.RESET}"
         } else {
             displayContext.prompt
         }
 
         let displayText = if (isShellMode) {
-            "${textColor}${currentText}${RESET}"
+            "${textColor}${currentText}${AnsiColor.RESET}"
         } else {
             currentText
         }
@@ -575,7 +591,7 @@ public class Readline {
             if (!completionText.isEmpty()) {
                 let completionLines = completionText.lines().count() - 1
                 PrintUtils.printString(completionText)
-                // Move cursor up by completion lines (like original colomShift)
+                // Move cursor up by completion lines
                 if (completionLines > 0) {
                     moveCursor(completionLines, direction: Direction.Up)
                 }
@@ -604,18 +620,18 @@ public class Readline {
         let isShellMode = inputState.isShellMode()
 
         // Use different colors for shell mode
-        let boxColor = if (isShellMode) { BRIGHT_YELLOW } else { BRIGHT_BLACK }
-        let textColor = if (isShellMode) { BRIGHT_GREEN } else { "" }
+        let boxColor = if (isShellMode) { AnsiColor.BRIGHT_YELLOW } else { AnsiColor.BRIGHT_BLACK }
+        let textColor = if (isShellMode) { AnsiColor.BRIGHT_GREEN } else { "" }
 
         // Apply colors to both prompt and text in shell mode
         let displayPrompt = if (isShellMode) {
-            "${textColor}${displayContext.prompt}${RESET}"
+            "${textColor}${displayContext.prompt}${AnsiColor.RESET}"
         } else {
             displayContext.prompt
         }
 
         let displayText = if (isShellMode) {
-            "${textColor}${currentText}${RESET}"
+            "${textColor}${currentText}${AnsiColor.RESET}"
         } else {
             currentText
         }
@@ -641,7 +657,7 @@ public class Readline {
      */
     public func readline(prompt: String): Option<String> {
         try {
-            RawInputUtils.rawEnter()
+            // RawInputUtils.rawEnter()
 
             let inputState = InputState()
             let completionState = CompletionState()
@@ -672,7 +688,7 @@ public class Readline {
 
             return None
         } finally {
-            RawInputUtils.rawExit()
+            // RawInputUtils.rawExit()
         }
     }
 

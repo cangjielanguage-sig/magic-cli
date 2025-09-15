@@ -54,55 +54,6 @@ class RawInputUtils {
         return r
     }
 
-    // Backup
-    static func rawGetRune2(): Option<Rune> {
-        let byte = unsafe { getRawByte() }
-        if (byte == 0x04) {  // Ctrl-D
-            return None
-        } else if (byte == b'\r'){
-            return r'\n'
-        } else if (byte == b'\n') { // enter
-            return r'\n'
-        } else if (byte == 0x7F) { // delete
-            return r'\u{7F}'
-        } else if (byte == b'\b') {  // backspace
-            return r'\b'
-        }
-        // Escape arrows
-        if (byte == 0x1B) { // ESC byte
-            let byte2 = unsafe { getRawByte() }
-            let byte3 = unsafe { getRawByte() }
-            if (byte2 != b'[') {
-                eprintln("Unknown escaped ascii")
-                return None
-            }
-            return match (byte3) {
-                case b'A' => r'\u{2191}' // Up
-                case b'B' => r'\u{2193}' // Down
-                case b'C' => r'\u{2192}' // Right
-                case b'D' => r'\u{2190}' // Left
-                case _ =>
-                    eprintln("Unknown escaped ascii")
-                    None
-            }
-        }
-
-        let utf8ByteSize = nextUtf8ByteSize(byte)
-        let bytes = Array<Byte>(utf8ByteSize, repeat: 0)
-        bytes[0] = byte
-        // Read the rest bytes of the current rune
-        for (i in 1..utf8ByteSize) {
-            bytes[i] = unsafe { getRawByte() }
-        }
-        // Convert to a rune
-        let (r, size) = Rune.fromUtf8(bytes, 0)
-        // Assert
-        if (size != utf8ByteSize) {
-            throw Exception("Read bytes != Expected bytes")
-        }
-        return r
-    }
-
     static func checkReadByte(bytes: Array<Byte>, infinite!: Bool = false): Bool {
         var keyCode: UInt16 = 0
         let waitTimeMs: UInt32
