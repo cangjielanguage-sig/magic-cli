@@ -13,7 +13,7 @@ func printHelp(): Unit {
     PrintUtils.printLine("  --auto            The agent runs autonomously")
     PrintUtils.printLine("  --language, -l    Specify languages in [Cangjie, General(Default)]")
     PrintUtils.printLine("  --model <model>   Set the chat model")
-    PrintUtils.printLine("  --prompt <prompt>, -p <prompt>  Set the prompt and run magic-cli in the detach mode")
+    PrintUtils.printLine("  --prompt <prompt>, -p <prompt>  Set the prompt and run magic-cli in the noninteractive mode")
     PrintUtils.printLine("  --help, -h        Print this help message")
 }
 
@@ -45,9 +45,9 @@ func parseArgs(args: Array<String>): Bool {
     }
     if (result.options.contains("prompt") || result.options.contains("p")) {
         let prompt = result.options.get("prompt").getOrDefault { result.options.get("p").getOrThrow() }
-        CliConfig.detach = true
+        CliConfig.noninteractive = true
         CliConfig.auto = true
-        CliConfig.detachPrompt = prompt
+        CliConfig.noninteractivePrompt = prompt
         CliConfig.printInfoSavingDir = Path("test").join(DateTime.now().toUnixTimeStamp().toMilliseconds().toString())
     }
     if (let Some(language) <- result.options.get("language") && language.toAsciiUpper() == 'CANGJIE') {

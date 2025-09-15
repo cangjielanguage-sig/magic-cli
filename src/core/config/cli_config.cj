@@ -91,7 +91,7 @@ protected class CliConfig {
     public static var model: String = "ark:kimi-k2-250711"
 
     /**
-     * The prompt when running magic-cli in detach mode
+     * The prompt when running magic-cli in noninteractive mode
      */
     public static var noninteractive: Bool = false
     public static var noninteractivePrompt: String = ""
