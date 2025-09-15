@@ -13,6 +13,7 @@ func printHelp(): Unit {
     PrintUtils.printLine("  --auto            The agent runs autonomously")
     PrintUtils.printLine("  --language, -l    Specify languages in [Cangjie, General(Default)]")
     PrintUtils.printLine("  --model <model>   Set the chat model")
+    PrintUtils.printLine("  --hybrid          Enable hybrid mode (use fast model for auxiliary tasks)")
     PrintUtils.printLine("  --prompt <prompt>, -p <prompt>  Set the prompt and run magic-cli in the detach mode")
     PrintUtils.printLine("  --help, -h        Print this help message")
 }
@@ -24,6 +25,7 @@ func parseArgs(args: Array<String>): Bool {
     let argSpecs = [
         Long("auto", NoValue),
         Long("model", RequiredValue),
+        Long("hybrid", NoValue),
         Full("language", r"l", RequiredValue),
         Full("help", r"h", NoValue),
         Full("prompt", r"p", RequiredValue)
@@ -39,6 +41,9 @@ func parseArgs(args: Array<String>): Bool {
     }
     if (result.options.contains("auto")) {
         CliConfig.auto = true
+    }
+    if (result.options.contains("hybrid")) {
+        CliConfig.hybridMode = true
     }
     if (let Some(model) <- result.options.get("model")) {
         CliConfig.model = model
