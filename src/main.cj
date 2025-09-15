@@ -39,7 +39,7 @@ main(args: Array<String>): Int64 {
 
     // Initialize the global context
     let context = CliContext()
-    if (CliConfig.noninteractive)
+    if (CliConfig.noninteractive) {
         if (!exists(CliConfig.printInfoSavingDir)) {
             Directory.create(CliConfig.printInfoSavingDir, recursive: true)
         }
