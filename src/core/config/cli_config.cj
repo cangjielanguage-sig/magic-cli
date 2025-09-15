@@ -116,10 +116,10 @@ protected class CliConfig {
     public static var hybridMode: Bool = false
 
     /**
-     * The prompt when running magic-cli in detach mode
+     * The prompt when running magic-cli in noninteractive mode
      */
-    public static var detach: Bool = false
-    public static var detachPrompt: String = ""
+    public static var noninteractive: Bool = false
+    public static var noninteractivePrompt: String = ""
     public static var printInfoSavingDir: Path = Path("")
 
     /**

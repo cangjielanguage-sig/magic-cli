@@ -39,13 +39,13 @@ main(args: Array<String>): Int64 {
 
     // Initialize the global context
     let context = CliContext()
-    if (CliConfig.detach) {
+    if (CliConfig.noninteractive) {
         if (!exists(CliConfig.printInfoSavingDir)) {
             Directory.create(CliConfig.printInfoSavingDir, recursive: true)
         }
         let commandSavingPath = CliConfig.printInfoSavingDir.join("command_args.txt")
         writeFileBasic(commandSavingPath, String.join(args, delimiter: " "))
-        let input = CliConfig.detachPrompt
+        let input = CliConfig.noninteractivePrompt
         processInput(input, context)
         return 0
     }
