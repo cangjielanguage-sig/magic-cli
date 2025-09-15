@@ -93,8 +93,8 @@ protected class CliConfig {
     /**
      * The prompt when running magic-cli in detach mode
      */
-    public static var detach: Bool = false
-    public static var detachPrompt: String = ""
+    public static var noninteractive: Bool = false
+    public static var noninteractivePrompt: String = ""
     public static var printInfoSavingDir: Path = Path("")
 
     /**
