@@ -249,12 +249,15 @@ public class MCPConfigManager {
                 }
                 // parts[2] is server name
                 removeServer(parts[2])
+            case "list" =>
+                showLoadedMCPTools(agent)
             case _ =>
                 PrintUtils.printLine("Unknown MCP command: ${parts[1]}")
                 PrintUtils.printLine("Available commands:")
                 PrintUtils.printLine("  add      - Add a new stdio MCP server")
                 PrintUtils.printLine("  add-sse  - Add a new SSE MCP server")
                 PrintUtils.printLine("  remove   - Remove an existing MCP server")
+                PrintUtils.printLine("  list     - List all loaded MCP servers")
         }
     }
 
