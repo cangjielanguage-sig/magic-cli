@@ -153,9 +153,9 @@ private func shouldFallback(ex: Exception): Bool {
         return false
     }
     let message = ex.message.toAsciiLower()
-    
+
     // HTTP and model errors that should trigger fallback
-    return message.contains("timeout") || 
+    return message.contains("timeout") ||
            message.contains("5") ||  // 5xx server errors
            message.contains("connection") ||
            message.contains("network") ||
@@ -173,7 +173,7 @@ private var sessionSuccessfulModel: Option<String> = None
 
 private func executeAgentTask(context: CliContext, input: String): Unit {
     LogUtils.debug("Handle user input `${input}`")
-    
+
     let models = ArrayList<String>()
     if (let Some(successModel) <- sessionSuccessfulModel) {
         // Use last successful model first
@@ -195,17 +195,17 @@ private func executeAgentTask(context: CliContext, input: String): Unit {
             models.add(all: CliConfig.fallbackModels)
         }
     }
-    
+
     let maxAttempts = if (models.size > CliConfig.maxFallbackAttempts) {
         CliConfig.maxFallbackAttempts
     } else {
         models.size
     }
-    
+
     // Try models in sequence
     for (i in 0..maxAttempts) {
         let currentModel = models[i]
-        
+
         try {
             // Switch to fallback model if needed
             if (i > 0) {
@@ -215,9 +215,9 @@ private func executeAgentTask(context: CliContext, input: String): Unit {
                 }
                 context.switchToFallbackModel(currentModel)
             }
-            
+
             LogUtils.info("Using model: ${currentModel}")
-            
+
             // Execute with current model
             let response = context.agent.asyncChat(AgentRequest(input, conversation: context.conversationManager.conversation))
 
@@ -231,6 +231,7 @@ private func executeAgentTask(context: CliContext, input: String): Unit {
                     if (!InputUtils.isRequestingInput() && InputUtils.checkEsc()) {
                         // ESC was pressed, cancel the agent response
                         if (escPressed.compareAndSwap(false, true)) {  // Ensure only one cancellation
+                            context.thinkIndicator.load()?.cancel()
                             response.cancel()
                             PrintUtils.printInterrupt()
                         }
@@ -253,7 +254,7 @@ private func executeAgentTask(context: CliContext, input: String): Unit {
                     // Ignore cancellation exceptions during cleanup
                 }
             }
-            
+
             // Compact is called once per successful execution, not per retry attempt
             context.conversationManager.compact()
             sessionSuccessfulModel = Some(currentModel)
