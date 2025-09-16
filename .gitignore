@@ -38,3 +38,6 @@ test_examples/
 
 # External modules
 CangjieMagic/
+
+# OHOS related
+ohos/
