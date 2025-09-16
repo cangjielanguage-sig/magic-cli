@@ -207,7 +207,7 @@ private let COMMANDS: Array<(String, Array<String>)> = [
     ("/memory", []),
     ("/init", []),
     ("/exit", []),
-    ("/mcp", ["add", "add-sse", "remove"]),
+    ("/mcp", ["add", "add-sse", "remove", "list"]),
     ("/conversation", ["list", "save", "load", "delete", "rename"]),
     ("/cmd", ["list", "add", "remove", "edit"])
 ]
