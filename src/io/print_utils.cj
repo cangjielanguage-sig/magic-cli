@@ -206,12 +206,22 @@ protected class PrintUtils {
     static public func printWorkingIndicator(message!: String = "Working"): WorkingIndicator {
         let future = spawn {
             var idx = 0
+
+            // Print message once (with space for spinner)
+            PrintUtils.printString(
+                "  ${message}...".withColor(Theme.MUTED), withIndent: true
+            )
+
             while (!Thread.currentThread.hasPendingCancellation) {
                 let spinner = INDICATORS[idx % INDICATORS.size]
-                clearScreen(mode: ClearMode.EntireLine)
-                PrintUtils.printString(
-                    "${spinner} ${message}...".withColor(Theme.MUTED), withIndent: true
-                )
+
+                // Overwrite just the first character (spinner position)
+                PrintUtils.printString("\r")
+                if (CURRENT_INDENT > 0) {
+                    PrintUtils.printString(" " * CURRENT_INDENT)
+                }
+                PrintUtils.printString("${spinner}".withColor(Theme.MUTED))
+
                 sleep(Duration.millisecond * 100)
                 idx = (idx + 1) % INDICATORS.size
             }
