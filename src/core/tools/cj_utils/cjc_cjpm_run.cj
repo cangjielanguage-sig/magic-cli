@@ -1,4 +1,4 @@
-package cli.core.tools.cjpm_utils
+package cli.core.tools.cj_utils
 
 import std.fs.Path
 import std.process.{executeWithOutput, ProcessException}

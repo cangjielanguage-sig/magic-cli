@@ -5,7 +5,7 @@ import magic.prelude.*
 import magic.config.Config
 
 import cli.core.tools.*
-import cli.core.tools.cjpm_utils.cjpmRun
+import cli.core.tools.cj_utils.cjpmRun
 import cli.core.config.CliConfig
 import cli.io.PrintUtils
 
@@ -33,7 +33,7 @@ Follow this iterative, disciplined process to achieve a clean build:
    For each unique error class:
    - Classify it: syntax error, undefined symbol, type mismatch, incorrect API usage, etc.
    - If the fix is clear and you are confident, proceed to editing.
-   - **If uncertain about syntax, APIs, or language features, do not guess.** Use `retrieveCangjieDocuments(query)` with a precise, targeted query (e.g., `"Cangjie optional type syntax"`, `"how to implement trait X"`).
+   - **If uncertain about syntax, APIs, or language features, do not guess.** Use `${CANGJIE_DOC_RETRIEVE_TOOL_NAME}(query)` with a precise, targeted query (e.g., `"Cangjie optional type syntax"`, `"how to implement trait X"`).
 
 4. **Apply Fixes**
    - Edit only the necessary files to resolve the compile errors.
@@ -74,7 +74,7 @@ Follow this iterative, disciplined process to achieve a clean build:
   - **NEVER add backticks (`) around identifiers or function names** - backticks are not part of normal Cangjie syntax and will cause compilation errors.
 
 - **No Guessing**
-  - If you are unsure about Cangjie syntax, APIs, or semantics, **always use** `retrieveCangjieDocuments` before making changes.
+  - If you are unsure about Cangjie syntax, APIs, or semantics, **always use** `${CANGJIE_DOC_RETRIEVE_TOOL_NAME}` before making changes.
   - Never assume—verify with official documentation.
 
 - **Batch-Fix Recurring Errors**
@@ -94,6 +94,7 @@ Follow this iterative, disciplined process to achieve a clean build:
 
 @agent[
     model: "${CliConfig.model}",
+    temperature: 0.0,
     executor: "tool-loop:1000",
     tools: [
         FSToolset(),

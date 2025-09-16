@@ -63,7 +63,8 @@ public func catRange(filePath: String, startLine: Int64, endLine!: Int64 = Int64
     }
 
     try(file = File(filePath, Read)) {
-        return readFile(path, withLineNumber: true, startLine: startLine, endLine: endLine)
+        // Not read file with line number because it's prone to make the LLM mistake
+        return readFile(path, withLineNumber: false, startLine: startLine, endLine: endLine)
     } catch (e: FSException) {
         return "Failed to read file: ${e}"
     } catch (e: Exception) {

@@ -1,35 +1,20 @@
 package cli.core.tools
 
-import std.env.*
-import std.collection.*
-import stdx.encoding.json.*
-import std.io.*
-import std.process.*
-import std.fs.*
-
 import magic.dsl.*
 import magic.prelude.*
 import magic.jsonable.*
-import magic.model.ModelManager
+import magic.config.Config
 
-import cli.core.tools.cjpm_utils.*
+import cli.core.tools.cj_utils.*
 import cli.core.config.CliConfig
 import cli.io.PrintUtils
 import cli.utils.*
 
-@agent[
-    executor: "naive"
-]
-private class DocSummaryAssistant {
-    @prompt("""
-        You are an expert programming assistant.
-        Your task is to distill technical documentation for another AI agent that will write Cangjie code.
-        Based on the user's original query, extract ONLY the most relevant information from the provided documents.
-        Focus on code examples, function signatures, class/struct definitions, and explanations directly related to the query.
-        Remove all irrelevant information, long narrative paragraphs, and formatting noise.
-        The output must be concise and directly usable for code generation.
-    """)
-}
+import std.collection.*
+import stdx.encoding.json.*
+import std.fs.*
+
+protected const CANGJIE_DOC_RETRIEVE_TOOL_NAME = "retrieveCangjieDocuments"
 
 @toolset
 public class CangjieToolset {
@@ -77,83 +62,28 @@ public class CangjieToolset {
     }
 
     @tool[
-        description: "Retrieve Cangjie programming language development documentation with AI-powered semantic search and summarization",
+        description: "An tool specialized in the Cangjie programming language, capable of retrieving Cangjie language documentation based on user queries. ",
         parameters: {
-            query: "Development requirements or documentation content to query",
-            numToRetrieve: "Expected number of documents to retrieve. If omitted, default value 5."
+            query: "Input user query: Topics to focus documentation on (e.g., 'hooks', 'routing')"
         }
     ]
-    public func retrieveCangjieDocuments(query: String, numToRetrieve: Option<Int64>): String {
-        let message = query
-        PrintUtils.printTool("Retrieve Cangjie Documents", message)
-
-        let url = "http://119.3.125.66:5384/retrieve"
-        let header = HashMap<String, String>([
-            ("Content-Type", "application/json")
-        ])
-        let requestMap = HashMap<String, JsonValue>()
-        requestMap.add("query",JsonString(query))
-        requestMap.add("nums_docs_to_retrive", (numToRetrieve ?? 5).toJsonValue())
-        let requestBody = JsonObject(requestMap)
-        let rawResponseOpt = ApiClient.post(url, header, requestBody)
-        let rawResponse = match (rawResponseOpt) {
-            case Some(resp) => resp
-            case None => return "Request failed, no server response received"
-        }
-        let responseData: JsonValue
-        try {
-            responseData = JsonValue.fromStr(rawResponse)
-        } catch (e: Exception) {
-            return "JSON parsing failed: ${e.message}. Server raw response: ${rawResponse}"
-        }
-        let resultJson = match (responseData) {
-            case jsonObj: JsonObject =>
-                filterChunks(jsonObj).toJsonString()
-            case _ =>
-                responseData.toJsonString()
-        }
-        let docSummaryAssistant = DocSummaryAssistant()
-        docSummaryAssistant.model = if (CliConfig.hybridMode) {
-            ModelManager.createChatModel(CliConfig.hybridFastModel)
-        } else {
-            this.model
-        }
-        let promptForSummarizer = """
-            Original User Query: "${query}"
-
-            --- Retrieved Documents ---
-            ${resultJson}
-            --- End of Documents ---
-        """
-        let summary = docSummaryAssistant.chat(promptForSummarizer)
-        return summary
+    public func retrieveCangjieDocuments(query: String): String {
+        PrintUtils.printTool("Retrieve Cangjie Documents via Context7", "query: ${query}")
+        let agent = CangjieContext7Agent()
+        return agent.chat(query)
     }
 
-    private func filterChunks(jsonObj: JsonObject): JsonObject {
-        let filteredChunks = ArrayList<JsonValue>()
-
-        if (let Some(docsValue) <- jsonObj.get("docs")) {
-            let chunksArrays = docsValue as JsonArray
-
-            if (let Some(chunksArray) <- chunksArrays) {
-                for (i in 0..chunksArray.size()) {
-                    let chunk = chunksArray[i]
-                    match (chunk) {
-                        case jsonStr: JsonString =>
-                            if (jsonStr.getValue().contains("```cangjie")) {
-                                filteredChunks.add(chunk)
-                            }
-                        case _ =>
-                            ()
-                    }
-                }
-            }
-        }
-
-        let resultMap = HashMap<String, JsonValue>()
-        resultMap.add("docs", JsonArray(filteredChunks))
-        return JsonObject(resultMap)
-    }
+    // @tool[
+    //     description: "Retrieve Cangjie programming language development documentation with AI-powered semantic search and summarization",
+    //     parameters: {
+    //         query: "Development requirements or documentation content to query",
+    //         numToRetrieve: "Expected number of documents to retrieve. If omitted, default value 5."
+    //     }
+    // ]
+    // public func retrieveCangjieDocuments(query: String, numToRetrieve: Option<Int64>): String {
+    //     PrintUtils.printTool("Retrieve Cangjie Documents", query)
+    //     return retrieveCangjieDocumentsInternal(query, numToRetrieve)
+    // }
 
     @tool[
         description: "Initialize a new Cangjie project in the specified directory.",
@@ -166,7 +96,8 @@ public class CangjieToolset {
         let args: Array<String> = ["init", "--name", packageName]
 
         PrintUtils.printTool("cjpm init", projectDir.toString())
-        return cjpmRun(args, projectDir)
+        let result = cjpmRun(args, projectDir)
+        return "${result}\n\nThe root package name of the new project is: ${packageName}"
     }
 
     @tool[

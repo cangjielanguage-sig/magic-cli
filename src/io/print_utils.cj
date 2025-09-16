@@ -8,23 +8,71 @@ import cli.core.tools.fs_utils.writeFileBasic
 
 import std.collection.{map, enumerate, collectArray}
 import std.time.DateTime
-import std.process.executeWithOutput
-import std.env.getVariable
 import std.fs.OpenMode
-
+import std.sync.AtomicBool
 
 /**
  * The working indicator is printed by another thread
  * We need a data structure to hold the thread future and stop the thread
  */
-protected class WorkingIndicator {
-    WorkingIndicator(
-        private let future: Future<Unit>
-    ) { }
+protected class StatusIndicator {
+    private var future: Option<Future<Unit>> = None
+    private let cancelFlag = AtomicBool(false) // Whether the agent execution is cancelled
+    private let message: String
+
+    init(message: String) {
+        this.message = message
+    }
+
+    protected func start(): Unit {
+        this.future = spawn {
+            this.work()
+        }
+    }
+
+    static let INDICATORS = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"]
+
+    private func work(): Unit {
+        var idx = 0
+
+        // Print message once (with space for spinner)
+        PrintUtils.printString(
+            "  ${message}...".withColor(Theme.MUTED), withIndent: true
+        )
+
+        var messageChanged = false
+        while (!Thread.currentThread.hasPendingCancellation) {
+            let spinner = INDICATORS[idx % INDICATORS.size]
+            if (this.cancelFlag.load() && !messageChanged) {
+                // Change the message to display (with space for spinner)
+                PrintUtils.printString("\r") // Move cursor to the start of the line
+                PrintUtils.printString(
+                    "  ${message}... (Interrupted)".withColor(Theme.MUTED), withIndent: true
+                )
+                messageChanged = true
+            }
+
+            // Overwrite just the first character (spinner position)
+            PrintUtils.printString("\r") // Move cursor to the start of the line
+            if (PrintUtils.CURRENT_INDENT > 0) {
+                PrintUtils.printString(" " * PrintUtils.CURRENT_INDENT)
+            }
+            PrintUtils.printString("${spinner}".withColor(Theme.MUTED))
+            moveCursor(50, direction: Direction.Right)
+
+            sleep(Duration.millisecond * 100)
+            idx = (idx + 1) % INDICATORS.size
+        }
+        clearScreen(mode: ClearMode.EntireLine)
+    }
+
+    protected func cancel(): Unit {
+        this.cancelFlag.store(true)
+    }
 
     protected func stop(): Unit {
-        future.cancel()
-        future.get()
+        this.future?.cancel()
+        this.future?.get()
     }
 }
 
@@ -46,7 +94,7 @@ protected class PrintUtils {
     //---------------------------------------------------
     // Two fundamental print methods
     static public func printLine(line: String, withIndent!: Bool = false): Unit {
-        // do not print anything if noninteractive, but saving the print info to a file 
+        // do not print anything if noninteractive, but saving the print info to a file
         if (!CliConfig.noninteractive) {
             if (withIndent && CURRENT_INDENT > 0) {
                 print(" " * CURRENT_INDENT)
@@ -62,7 +110,7 @@ protected class PrintUtils {
     }
 
     static public func printString(str: String, withIndent!: Bool = false): Unit {
-        // do not print anything if noninteractive, but saving the print info to a file 
+        // do not print anything if noninteractive, but saving the print info to a file
         if (!CliConfig.noninteractive) {
             if (withIndent && CURRENT_INDENT > 0) {
                 print(" " * CURRENT_INDENT)
@@ -183,6 +231,16 @@ protected class PrintUtils {
         }
     }
 
+    static public func printToolFailure(toolInfo: String, failureInfo!: String = "Failed ...") {
+        if (CURRENT_INDENT == 0) {
+            PrintUtils.printLine("○ ${toolInfo}".withColor(Theme.MUTED))
+            PrintUtils.printLine("└─ ✖ ${failureInfo}".withColor(Theme.MUTED))
+        } else {
+            PrintUtils.printLine("${' ' * (CURRENT_INDENT - 2)}○ ${toolInfo}".withColor(Theme.MUTED))
+            PrintUtils.printLine("${' ' * (CURRENT_INDENT - 2)}└─ ✖ ${failureInfo}".withColor(Theme.MUTED))
+        }
+    }
+
     //----------------------------------------------------------------------------------
 
     static public func printAgentResponse(response: AgentResponse) {
@@ -201,33 +259,10 @@ protected class PrintUtils {
         printLine(output)
     }
 
-    static let INDICATORS = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"]
-
-    static public func printWorkingIndicator(message!: String = "Working"): WorkingIndicator {
-        let future = spawn {
-            var idx = 0
-
-            // Print message once (with space for spinner)
-            PrintUtils.printString(
-                "  ${message}...".withColor(Theme.MUTED), withIndent: true
-            )
-
-            while (!Thread.currentThread.hasPendingCancellation) {
-                let spinner = INDICATORS[idx % INDICATORS.size]
-
-                // Overwrite just the first character (spinner position)
-                PrintUtils.printString("\r")
-                if (CURRENT_INDENT > 0) {
-                    PrintUtils.printString(" " * CURRENT_INDENT)
-                }
-                PrintUtils.printString("${spinner}".withColor(Theme.MUTED))
-
-                sleep(Duration.millisecond * 100)
-                idx = (idx + 1) % INDICATORS.size
-            }
-            clearScreen(mode: ClearMode.EntireLine)
-        }
-        return WorkingIndicator(future)
+    static public func printStatusIndicator(message!: String = "Working"): StatusIndicator {
+        let indicator = StatusIndicator(message)
+        indicator.start()
+        return indicator
     }
 
     static public func renderDiff(content: String): String {

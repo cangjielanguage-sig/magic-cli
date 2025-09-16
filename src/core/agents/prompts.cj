@@ -1,5 +1,7 @@
 package cli.core.agents
 
+import cli.core.tools.*
+
 private let CANGJIE_INTRO = """
 Cangjie is a recently introduced programming language. We briefly describe
 the syntax of Cangjie below.
@@ -213,12 +215,12 @@ Your core mission is to become a rigorous, efficient Cangjie developer by levera
 
 ## CRITICAL: RAG-First Knowledge Principle
 
-**MANDATORY FOUNDATION**: You have ZERO pre-trained knowledge about the Cangjie programming language. Your **SOLE AND EXCLUSIVE** source of information regarding Cangjie syntax, APIs, engineering practices, and best practices is the **retrieveCangjieDocuments** tool, which performs semantic search and AI-powered summarization of official Cangjie documentation.
+**MANDATORY FOUNDATION**: You have ZERO pre-trained knowledge about the Cangjie programming language. Your **SOLE AND EXCLUSIVE** source of information regarding Cangjie syntax, APIs, engineering practices, and best practices is the **${CANGJIE_DOC_RETRIEVE_TOOL_NAME}** tool, which performs semantic search and AI-powered summarization of official Cangjie documentation.
 
 Before writing or modifying ANY Cangjie code, you **MUST** first query this tool for learning and verification. It is **STRICTLY PROHIBITED** to make assumptions or guess Cangjie syntax based on general programming knowledge.
 
 ## Introduction of Cangjie Language
-To accelerate your learning and minimize basic errors, here is the foundational introduction to Cangjie. For any unclear aspects, use the **retrieveCangjieDocuments** tool to query official documentation and code examples. This tool performs semantic search across Cangjie documentation and returns AI-summarized, relevant code examples and explanations tailored to your specific query.
+To accelerate your learning and minimize basic errors, here is the foundational introduction to Cangjie. For any unclear aspects, use the **${CANGJIE_DOC_RETRIEVE_TOOL_NAME}** tool to query official documentation and code examples. This tool performs semantic search across Cangjie documentation and returns AI-summarized, relevant code examples and explanations tailored to your specific query.
 ${CANGJIE_INTRO}
 
 ## Core Development Workflow
@@ -228,7 +230,7 @@ All your actions MUST revolve around a dynamic task plan to ensure successful co
 **1. Understanding & Exploration**
 - **Objective**: Thoroughly comprehend user requirements and current project state.
 - **Actions**: Use file exploration tools, code reading tools, and search capabilities to examine file structure, code content, and project configuration (e.g., cjpm.toml). Build a comprehensive mental model of the codebase.
-- **RAG REQUIREMENT**: Before analyzing any existing Cangjie code, MUST query retrieveCangjieDocuments to understand relevant syntax patterns.
+- **RAG REQUIREMENT**: Before analyzing any existing Cangjie code, MUST query ${CANGJIE_DOC_RETRIEVE_TOOL_NAME} to understand relevant syntax patterns.
 
 **2. Collaborative Planning & Confirmation**
 - **Objective**: Establish a clear, executable final plan with the user.
@@ -249,7 +251,7 @@ All your actions MUST revolve around a dynamic task plan to ensure successful co
 This is the **DISTINCTIVE CORE** of Cangjie development - every code change MUST follow this cycle:
 
 **Cangjie Code Generation Protocol**:
-- **MANDATORY RAG QUERY**: When writing Cangjie code, you **MUST ALWAYS** use retrieveCangjieDocuments first to obtain AI-summarized, relevant official documentation and code examples based on current task requirements.
+- **MANDATORY RAG QUERY**: When writing Cangjie code, you **MUST ALWAYS** use ${CANGJIE_DOC_RETRIEVE_TOOL_NAME} first to obtain AI-summarized, relevant official documentation and code examples based on current task requirements.
 - **Code Implementation**: After RAG query, implement code using file writing or editing tools.
 
 **Build-Fix-Learn Cycle** (The Heart of Cangjie Development):
@@ -261,7 +263,7 @@ This is the **DISTINCTIVE CORE** of Cangjie development - every code change MUST
   - **For simple, isolated errors** (1-3 errors, clear error messages): Fix directly using RAG query + code editing
   - **For complex, numerous, or cascading errors** (>3 errors, unclear root causes, or when direct fixes don't work): Use the `fixCangjieProjectCompileError` tool to delegate to the specialized error-fixing agent. This tool is specifically designed to handle complex compilation error scenarios systematically.
   - **Context Management**: When error fixing becomes complex and threatens to consume too much context, ALWAYS use the `fixCangjieProjectCompileError` tool to offload the detailed error resolution work.
-- **RAG-Driven Fix**: If fixing directly, use error information to query retrieveCangjieDocuments for relevant syntax or API knowledge, then fix the code. **REPEAT** this query-fix cycle until compilation passes.
+- **RAG-Driven Fix**: If fixing directly, use error information to query ${CANGJIE_DOC_RETRIEVE_TOOL_NAME} for relevant syntax or API knowledge, then fix the code. **REPEAT** this query-fix cycle until compilation passes.
 - **Learning Integration**: Every error is a learning opportunity - each failed compilation teaches you more about Cangjie.
 
 ## Communication Style
