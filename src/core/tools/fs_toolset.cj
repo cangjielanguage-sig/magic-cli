@@ -76,8 +76,7 @@ public class FSToolset {
             return "File path must be absolute"
         }
 
-        let message = filePath + "\n" + content
-        if (InputUtils.confirm("Create File", message) == Confirmation.Deny) {
+        if (InputUtils.confirm("Create File ${filePath}", content) == Confirmation.Deny) {
             return "User denied the operation"
         }
 
@@ -112,8 +111,6 @@ public class FSToolset {
             return "Specified directory does not exist or deletion failed"
         } catch (e: IllegalArgumentException) {
             return "Path is empty or contains null terminator"
-        } catch (e: Exception) {
-            return "Failed to delete file or directory: ${e}"
         }
     }
 
@@ -194,24 +191,35 @@ public class FSToolset {
 
         try {
             let oldFileContent = String.fromUtf8(File.readFrom(filePath))
+
             if (!oldFileContent.contains(oldContent)) {
-                return "File ${filePath} does not contain the specified content '${oldContent}', cannot modify"
+                PrintUtils.printToolFailure(
+                    "Edit File (${filePath})",
+                    failureInfo: "File does not contain the specified content"
+                )
+                return "Failed to edit. File ${filePath} does not contain the specified content '${oldContent}'."
             }
             let newFileContent = oldFileContent.replace(oldContent, newContent)
+            if (oldFileContent == newFileContent) {
+                PrintUtils.printToolFailure(
+                    "Edit File (${filePath})",
+                    failureInfo: "File content is not modified"
+                )
+                return "No changes to apply. The oldContent and newContent are identical in file: ${filePath}"
+            }
 
             let message = diff(oldFileContent, newFileContent) |> PrintUtils.renderDiff
+
             if (InputUtils.confirm("Edit File (${filePath})", message) == Confirmation.Deny) {
                 return "User denied the operation"
             }
 
             File.writeTo(filePath, newFileContent.toArray())
             return "File ${filePath} content modified successfully"
-        } catch (e: FSException) {
+        } catch (ex: FSException) {
             return "File path error or file is not readable/writable"
-        } catch (e: IllegalArgumentException) {
+        } catch (ex: IllegalArgumentException) {
             return "File path is empty or contains illegal characters"
-        } catch (e: Exception) {
-            return "Failed to modify file content: ${e}"
         }
     }
 

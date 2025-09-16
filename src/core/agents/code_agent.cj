@@ -10,6 +10,7 @@ import cli.core.config.CliConfig
 
 @agent[
     model: "${CliConfig.model}",
+    temperature: 0.0,
     executor: "tool-loop:1000",
     tools: [
         FSToolset(),
@@ -35,6 +36,7 @@ public class GeneralCodeAgent {
 
 @agent[
     model: "${CliConfig.model}",
+    temperature: 0.0,
     executor: "tool-loop:1000",
     tools: [
         FSToolset(),

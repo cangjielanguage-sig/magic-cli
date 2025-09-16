@@ -207,7 +207,7 @@ private let COMMANDS: Array<(String, Array<String>)> = [
     ("/memory", []),
     ("/init", []),
     ("/exit", []),
-    ("/mcp", ["add", "add-sse", "remove"]),
+    ("/mcp", ["add", "add-sse", "remove", "list"]),
     ("/conversation", ["list", "save", "load", "delete", "rename"]),
     ("/cmd", ["list", "add", "remove", "edit"])
 ]
@@ -502,6 +502,30 @@ public class Readline {
 
             case r'\u{2192}' => // Right →
                 inputState.moveCursorRight()
+                // Update completion list after cursor movement
+                let newText = inputState.getText()
+                if (let Some(completions) <- buildCompletionList(newText, inputState.cursor, isShellMode: inputState.isShellMode())) {
+                    completionState.setCompletions(completions)
+                } else {
+                    completionState.clear()
+                }
+                return None
+
+            case r'\u{1}' => // Home (Ctrl+A) / Home key
+                // Move cursor to beginning of line
+                inputState.cursor = 0
+                // Update completion list after cursor movement
+                let newText = inputState.getText()
+                if (let Some(completions) <- buildCompletionList(newText, inputState.cursor, isShellMode: inputState.isShellMode())) {
+                    completionState.setCompletions(completions)
+                } else {
+                    completionState.clear()
+                }
+                return None
+
+            case r'\u{5}' => // End (Ctrl+E) / End key
+                // Move cursor to end of line
+                inputState.cursor = inputState.buffer.size
                 // Update completion list after cursor movement
                 let newText = inputState.getText()
                 if (let Some(completions) <- buildCompletionList(newText, inputState.cursor, isShellMode: inputState.isShellMode())) {

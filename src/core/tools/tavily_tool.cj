@@ -6,6 +6,7 @@ import magic.jsonable.*
 import magic.log.LogUtils
 
 import cli.io.PrintUtils
+import cli.utils.ApiClient
 
 import std.env.getVariable
 import std.collection.*

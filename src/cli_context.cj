@@ -16,7 +16,7 @@ import cli.core.conversation.ConversationManager
 import cli.core.commands.CustomCommandManager
 import cli.core.config.CliConfig
 import cli.core.agents.*
-import cli.io.{InputUtils, PrintUtils, WorkingIndicator}
+import cli.io.{InputUtils, PrintUtils, StatusIndicator}
 
 import std.collection.ArrayList
 import std.fs.Path
@@ -26,7 +26,7 @@ import std.env.atExit
 
 protected class CliContext {
     protected let agent: Agent
-    private let thinkIndicator = AtomicOptionReference<WorkingIndicator>()
+    protected let thinkIndicator = AtomicOptionReference<StatusIndicator>()
     protected let conversationManager: ConversationManager
     protected let customCommandManager: CustomCommandManager
     protected let mcpManager: MCPConfigManager
@@ -68,7 +68,7 @@ protected class CliContext {
             // There may be other agents during the execution.
             // Only show the indicator of the allowed agents
             if (allowedAgentName.contains(evt.agent.name)) {
-                this.thinkIndicator.store(PrintUtils.printWorkingIndicator(message: "💭 (${evt.agent.name}) Thinking"))
+                this.thinkIndicator.store(PrintUtils.printStatusIndicator(message: "💭 (${evt.agent.name}) Thinking"))
             }
             EventResponse.Continue
         }
@@ -79,6 +79,15 @@ protected class CliContext {
             }
         }
         EventHandlerManager.global.addHandler { evt: ChatModelFailureEvent =>
+            // If the model context is too long and is truncated, compact the conversation
+            if (evt.error == "length") {
+                try {
+                    this.conversationManager.compact()
+                    return Continue(this.agent.model.create(evt.chatRequest))
+                } catch (ex: Exception) {
+                    LogUtils.error("Failed to compact the conversation or call chat model: ${ex.message}")
+                }
+            }
             if (evt.agent.name == this.agent.name && let Some(i) <- this.thinkIndicator.load()) {
                 i.stop()
                 this.thinkIndicator.store(None)
