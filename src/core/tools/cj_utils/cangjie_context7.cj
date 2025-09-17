@@ -92,4 +92,20 @@ protected class CangjieContext7Agent {
         ])
         return docs.content
     }
+
+    // @tool[
+    //     description: "Queries the OpenHarmony development documentation for application development, system APIs, framework features, and platform-specific capabilities.",
+    //     parameters: {
+    //         query: "Topic to focus documentation on (e.g., 'ArkUI', 'ArkTS', 'application lifecycle')."
+    //     },
+    //     terminal: true
+    // ]
+    // func queryOpenHarmony(query: String): String {
+    //     let docs = client.callTool("get-library-docs", [
+    //         ("context7CompatibleLibraryID", "/openharmony/docs"),
+    //         ("topic", query),
+    //         ("tokens", 3000)
+    //     ])
+    //     return docs.content
+    // }
 }
