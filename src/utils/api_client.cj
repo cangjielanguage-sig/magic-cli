@@ -36,7 +36,7 @@ protected class ApiClient {
         logHttpInfo(method, url, header, body, async: false)
         let args = prepareCurlArgs(method, url, header, body, verify)
         let subProcess = newProcess("curl", args)
-        let outReader = StringReader<InputStream>(subProcess.stdOut)
+        let outReader = StringReader<InputStream>(subProcess.stdOutPipe)
         let out = outReader.readToEnd()
         subProcess.wait(timeout: Duration.minute * 1)
         if (body.isSome() && !Config.saveModelRequest) {

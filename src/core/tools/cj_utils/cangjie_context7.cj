@@ -48,23 +48,12 @@ Do not call both tools. Choose the most appropriate one based on the content of 
 ]
 protected class CangjieContext7Agent {
     private static func startContext7(): MCPClient {
-        if (InfoUtils.os == "windows") {
-            StdioMCPClient("cmd", [
-                "/c",
-                "npx",
-                "-y",
-                "@upstash/context7-mcp",
-                "--api-key",
-                Config.env["CONTEXT7_API_KEY"].getOrThrow({ => Exception("CONTEXT7_API_KEY is not set")})
-            ])
-        } else {
-            StdioMCPClient("npx", [
-                "-y",
-                "@upstash/context7-mcp",
-                "--api-key",
-                Config.env["CONTEXT7_API_KEY"].getOrThrow({ => Exception("CONTEXT7_API_KEY is not set")})
-            ])
-        }
+        HttpMCPClient("https://mcp.context7.com/mcp", headers: [
+            (
+                "CONTEXT7_API_KEY",
+                Config.env["CONTEXT7_API_KEY"].getOrThrow({ => Exception("CONTEXT7_API_KEY is not set") })
+            )
+        ])
     }
 
     private let client = CangjieContext7Agent.startContext7()
