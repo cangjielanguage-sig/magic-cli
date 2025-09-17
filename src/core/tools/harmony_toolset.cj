@@ -9,39 +9,6 @@ import magic.prelude.*
 @toolset
 public class HarmonyToolset {
     @tool[
-        description: "Create a new HarmonyOS/OpenHarmony application project using ohpm (OpenHarmony Package Manager). This is the preferred way to start a new project, automatically generating standard project structure and configuration files.",
-        parameters: {
-            project_name: "Name of the project to create",
-            bundle_id: "Bundle identifier for the application (e.g., com.example.app)"
-        }
-    ]
-    func ohpm_create_project(project_name: String, bundle_id: String): String {
-        try {
-            let cmd = "ohpm"
-            let args: Array<String> = ["create", "-t=application", "-n=${project_name}", "-b=${bundle_id}"]
-
-            eprintln("Executing command: ${cmd} ${args}")
-            let (exitCode, stdOutData, stdErrData) = executeWithOutput(cmd, args)
-
-            if (exitCode == 0) {
-                let outputString = String.fromUtf8(stdOutData)
-                if (outputString.trimAscii().size == 0) {
-                    return "Task executed successfully"
-                } else {
-                    return outputString
-                }
-            } else {
-                let errorString = String.fromUtf8(stdErrData)
-                return "Error: " + errorString
-            }
-        } catch (e: ProcessException) {
-            return "Process execution error: ${e}"
-        } catch (e: Exception) {
-            return "Unknown error occurred: ${e}"
-        }
-    }
-
-    @tool[
         description: "Install third-party library dependencies for the project and its modules. This command needs to be executed in the project and each module directory before building from command line.",
         parameters: {}
     ]
@@ -49,37 +16,6 @@ public class HarmonyToolset {
         try {
             let cmd = "ohpm"
             let args: Array<String> = ["install", "--all"]
-
-            eprintln("Executing command: ${cmd} ${args}")
-            let (exitCode, stdOutData, stdErrData) = executeWithOutput(cmd, args)
-
-            if (exitCode == 0) {
-                let outputString = String.fromUtf8(stdOutData)
-                if (outputString.trimAscii().size == 0) {
-                    return "Task executed successfully"
-                } else {
-                    return outputString
-                }
-            } else {
-                let errorString = String.fromUtf8(stdErrData)
-                return "Error: " + errorString
-            }
-        } catch (e: ProcessException) {
-            return "Process execution error: ${e}"
-        } catch (e: Exception) {
-            return "Unknown error occurred: ${e}"
-        }
-    }
-
-
-    @tool[
-        description: "List all available hvigorw build tasks in the current project. This is useful for discovering executable operations, such as module-specific build tasks or check tasks.",
-        parameters: {}
-    ]
-    func hvigorw_list_tasks(): String {
-        try {
-            let cmd = "hvigorw"
-            let args: Array<String> = ["tasks"]
 
             eprintln("Executing command: ${cmd} ${args}")
             let (exitCode, stdOutData, stdErrData) = executeWithOutput(cmd, args)
@@ -178,74 +114,6 @@ public class HarmonyToolset {
             let cmd = "hvigorw"
             let args: Array<String> = ["assembleApp", "--mode project", "-p product=${product}",
                 "-p buildMode=${build_mode}", "--no-daemon"]
-
-            eprintln("Executing command: ${cmd} ${args}")
-            let (exitCode, stdOutData, stdErrData) = executeWithOutput(cmd, args)
-
-            if (exitCode == 0) {
-                let outputString = String.fromUtf8(stdOutData)
-                if (outputString.trimAscii().size == 0) {
-                    return "Task executed successfully"
-                } else {
-                    return outputString
-                }
-            } else {
-                let errorString = String.fromUtf8(stdErrData)
-                return "Error: " + errorString
-            }
-        } catch (e: ProcessException) {
-            return "Process execution error: ${e}"
-        } catch (e: Exception) {
-            return "Unknown error occurred: ${e}"
-        }
-    }
-
-    @tool[
-        description: "Build Hsp (HarmonyOS Shared Package). Hsp is a shared package on HarmonyOS that can be used by multiple Hap packages.",
-        parameters: {
-            module: "Module name to build as Hsp",
-            product: "Product name for the build (e.g., default, phone, tablet)"
-        }
-    ]
-    func hvigorw_assemble_hsp(module: String, product: String): String {
-        try {
-            let cmd = "hvigorw"
-            let args: Array<String> = ["assembleHsp", "--mode module", "-p module=${module}", "-p product=${product}",
-                "--no-daemon"]
-
-            eprintln("Executing command: ${cmd} ${args}")
-            let (exitCode, stdOutData, stdErrData) = executeWithOutput(cmd, args)
-
-            if (exitCode == 0) {
-                let outputString = String.fromUtf8(stdOutData)
-                if (outputString.trimAscii().size == 0) {
-                    return "Task executed successfully"
-                } else {
-                    return outputString
-                }
-            } else {
-                let errorString = String.fromUtf8(stdErrData)
-                return "Error: " + errorString
-            }
-        } catch (e: ProcessException) {
-            return "Process execution error: ${e}"
-        } catch (e: Exception) {
-            return "Unknown error occurred: ${e}"
-        }
-    }
-
-    @tool[
-        description: "Build Har (HarmonyOS Archive) package. Har is a static shared package where compiled code and resources are merged into the referencing Hap.",
-        parameters: {
-            module: "Module name to build as Har",
-            product: "Product name for the build (e.g., default, phone, tablet)"
-        }
-    ]
-    func hvigorw_assemble_har(module: String, product: String): String {
-        try {
-            let cmd = "hvigorw"
-            let args: Array<String> = ["assembleHar", "--mode module", "-p module=${module}", "-p product=${product}",
-                "--no-daemon"]
 
             eprintln("Executing command: ${cmd} ${args}")
             let (exitCode, stdOutData, stdErrData) = executeWithOutput(cmd, args)
@@ -508,38 +376,6 @@ public class HarmonyToolset {
         try {
             let cmd = "hdc"
             let args: Array<String> = ["-t", device_sn, "hilog", "-T", tag]
-
-            eprintln("Executing command: ${cmd} ${args}")
-            let (exitCode, stdOutData, stdErrData) = executeWithOutput(cmd, args)
-
-            if (exitCode == 0) {
-                let outputString = String.fromUtf8(stdOutData)
-                if (outputString.trimAscii().size == 0) {
-                    return "Task executed successfully"
-                } else {
-                    return outputString
-                }
-            } else {
-                let errorString = String.fromUtf8(stdErrData)
-                return "Error: " + errorString
-            }
-        } catch (e: ProcessException) {
-            return "Process execution error: ${e}"
-        } catch (e: Exception) {
-            return "Unknown error occurred: ${e}"
-        }
-    }
-
-    @tool[
-        description: "Publish a compiled package (such as .har) to the ohpm repository so others can depend on and use it. Usually requires login first.",
-        parameters: {
-            path_to_package_file: "Path to the package file to publish (e.g., .har file)"
-        }
-    ]
-    func ohpm_publish(path_to_package_file: String): String {
-        try {
-            let cmd = "ohpm"
-            let args: Array<String> = ["publish", path_to_package_file]
 
             eprintln("Executing command: ${cmd} ${args}")
             let (exitCode, stdOutData, stdErrData) = executeWithOutput(cmd, args)

@@ -10,6 +10,7 @@ import magic.tokenizer.Cl100kTokenizer
 import magic.model.ModelManager
 
 import cli.core.config.CliConfig
+import cli.core.config.ModelTokenLimits
 
 import std.fs.{canonicalize, Path}
 
@@ -81,8 +82,6 @@ private class CompactContextAgent {
         """
     )
 }
-// default model (ark:kimi-k2) context token limit
-const DEFAULT_TOKEN_LIMIT = 131072
 // If the total token of conversation is less than 70% of the model context token limit, then no need to compact
 const COMPACT_TOKEN_THRESHOLD = 0.7
 // The last 30% of the conversation will be preserved during compact
@@ -113,14 +112,15 @@ public class Compactor <: ConversationCompactor {
 
     public func calculateCompactIndex(conversation: Conversation): Option<Int64> {
         let (totalTokens, roundTokens) = this.calculateToken(conversation)
+        let modelContextLimit = ModelTokenLimits.getContextLimit(CliConfig.model)
         // If the total token of conversation is less than 70% of the model context token limit, then no need to compact
-        let threshold = Int64(Float64(DEFAULT_TOKEN_LIMIT) * COMPACT_TOKEN_THRESHOLD)
+        let threshold = Int64(Float64(modelContextLimit) * COMPACT_TOKEN_THRESHOLD)
         if (totalTokens <= threshold) {
             LogUtils.debug("Calculate compact index: Not to compact")
             return None
         }
         // Calculate the number of chat rounds to be compacted based on the token count
-        var compactTokens = totalTokens - Int64(Float64(DEFAULT_TOKEN_LIMIT) * COMPACT_PRESERVE_THRESHOLD)
+        var compactTokens = totalTokens - Int64(Float64(modelContextLimit) * COMPACT_PRESERVE_THRESHOLD)
         var index = 0
         for (i in 0..roundTokens.size) {
             if (compactTokens <= 0) {
