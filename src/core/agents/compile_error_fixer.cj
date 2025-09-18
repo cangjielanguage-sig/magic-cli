@@ -94,7 +94,7 @@ Follow this iterative, disciplined process to achieve a clean build:
 
 @agent[
     model: "${CliConfig.model}",
-    temperature: 0.0,
+    temperature: CliConfig.temperature,
     executor: "tool-loop:1000",
     tools: [
         FSToolset(),
@@ -107,6 +107,8 @@ class CompileErrorFixer {
     @prompt(
         """
         ${COMPILE_ERROR_FIXER_PROMPT}
+
+        ${CliConfig.userRules}
 
         The current Cangjie project directory: ${this.projectDir}。
         The current project build status:\n${cjpmRun(["build", "-i"], this.projectDir)}

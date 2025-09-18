@@ -52,8 +52,8 @@ protected func retrieveCangjieDocumentsInternal(query: String, numToRetrieve: Op
             responseData.toJsonString()
     }
     let docSummaryAssistant = DocSummaryAssistant()
-    if (CliConfig.hybridMode) {
-        docSummaryAssistant.model = ModelManager.createChatModel(CliConfig.hybridFastModel)
+    if (let Some(model) <- CliConfig.fastModel) {
+        docSummaryAssistant.model = ModelManager.createChatModel(model)
     }
     let promptForSummarizer = """
         Original User Query: "${query}"

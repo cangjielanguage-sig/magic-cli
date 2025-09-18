@@ -86,15 +86,25 @@ protected class CliConfig {
     public static var auto: Bool = false
 
     /**
+     * Temperature agents will use
+     */
+    public static var temperature: Float64 = 1.0
+
+    /**
      * The chat model to use
      */
     public static var model: String = "ark:kimi-k2-250711"
 
     /**
+     * Fast model for auxiliary tasks in hybrid mode
+     */
+    public static var fastModel: Option<String> = "ark:doubao-1-5-pro-32k-250115"
+
+    /**
      * Fallback models to use when primary model fails
      */
     public static var fallbackModels: Array<String> = ["moonshot:kimi-k2-0905-preview", "zhipuai:glm-4.5"]
-    
+
     /**
      * Enable model fallback functionality
      */
@@ -104,16 +114,6 @@ protected class CliConfig {
      * Maximum number of models to try
      */
     public static var maxFallbackAttempts: Int64 = 3
-
-    /**
-     * Fast model for auxiliary tasks in hybrid mode
-     */
-    public static var hybridFastModel: String = "ark:doubao-1-5-pro-32k-250115"
-
-    /**
-     * Enable hybrid mode (use fast model for auxiliary tasks)
-     */
-    public static var hybridMode: Bool = false
 
     /**
      * The prompt when running magic-cli in noninteractive mode
@@ -131,7 +131,7 @@ protected class CliConfig {
         get() {
             let ruleFile = uerRuleFile
             if (exists(ruleFile)) {
-                String.fromUtf8(readToEnd(File(ruleFile, OpenMode.Read)))    
+                String.fromUtf8(readToEnd(File(ruleFile, OpenMode.Read)))
             } else {
                 ""
             }

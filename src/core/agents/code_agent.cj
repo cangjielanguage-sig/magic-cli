@@ -10,7 +10,7 @@ import cli.core.config.CliConfig
 
 @agent[
     model: "${CliConfig.model}",
-    temperature: 0.0,
+    temperature: CliConfig.temperature,
     executor: "tool-loop:1000",
     tools: [
         FSToolset(),
@@ -36,7 +36,7 @@ public class GeneralCodeAgent {
 
 @agent[
     model: "${CliConfig.model}",
-    temperature: 0.0,
+    temperature: CliConfig.temperature,
     executor: "tool-loop:1000",
     tools: [
         FSToolset(),
@@ -55,9 +55,9 @@ public class CangjieCodeAgent {
         Your current working directory: ${CliConfig.cwd}。
         Reply in the same language as the user's input. If unsure, reply in Chinese.
 
-        Finally, you are an agent - please keep going until the user's query is completely resolved.
-
         ${CliConfig.userRules}
+
+        Finally, you are an agent - please keep going until the user's query is completely resolved.
         """
     )
 }
