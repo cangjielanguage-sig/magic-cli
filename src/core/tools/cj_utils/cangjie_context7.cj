@@ -65,8 +65,8 @@ protected class CangjieContext7Agent {
         description: "Queries the official Cangjie language documentation for general language features, syntax, and core standard library information.",
         parameters: {
             query: "Topic to focus documentation on (e.g., 'hooks', 'routing')."
-        },
-        terminal: true
+        }
+        // terminal: true
     ]
     func queryCangjie(query: String): String {
         let docs = client.callTool("get-library-docs", [
@@ -81,8 +81,8 @@ protected class CangjieContext7Agent {
         description: "Queries the Cangjie stdx (Standard Library Extension) documentation for specific extended packages such as JSON, TLS, logging, compression, and cryptography. Use this only when the query involves one of the stdx packages.",
         parameters: {
             query: "Topic to focus documentation on (e.g., 'hooks', 'routing')."
-        },
-        terminal: true
+        }
+        // terminal: true
     ]
     func queryCangjieStdExtension(query: String): String {
         let docs = client.callTool("get-library-docs", [
