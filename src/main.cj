@@ -19,9 +19,6 @@ private func setConfig(): Unit {
     Config.logLevel = "DEBUG"
     Config.modelRequestDir = CliConfig.dotDir.join("model-requests").toString()
     Config.enableModelToolCall = true
-    // Tokenizer needs the tiktoken file in the Magic directory
-    let magicPath = Path(Config.env['MAGIC_PATH'].getOrThrow({=> Exception("MAGIC_PATH not set")}))
-    Config.resourceDir = magicPath.join("resource").toString()
     // Set your API key in the .env file
     let envInfo = Config.env.load(Path("./.env"))
     LogUtils.info(envInfo)
