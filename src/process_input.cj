@@ -231,6 +231,7 @@ private func executeAgentTask(context: CliContext, input: String): Unit {
                     if (!InputUtils.isRequestingInput() && InputUtils.checkEsc()) {
                         // ESC was pressed, cancel the agent response
                         if (escPressed.compareAndSwap(false, true)) {  // Ensure only one cancellation
+                            LogUtils.info("ESC pressed, cancelling")
                             context.thinkIndicator.load()?.cancel()
                             response.cancel()
                             PrintUtils.printInterrupt()
