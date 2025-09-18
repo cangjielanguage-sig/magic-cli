@@ -22,15 +22,15 @@ import cli.core.config.CliConfig
 ]
 public class GeneralCodeAgent {
     @prompt(
-        """
-        ${GENERAL_CODE_AGENT_PROMPT}
-        Your current working directory: ${CliConfig.cwd}。
-        Reply in the same language as the user's input. If unsure, reply in Chinese.
+"""
+${GENERAL_CODE_AGENT_PROMPT}
+Your current working directory: ${CliConfig.cwd}。
+Reply in the same language as the user's input. If unsure, reply in Chinese.
 
-        Finally, you are an agent - please keep going until the user's query is completely resolved.
+Finally, you are an agent - please keep going until the user's query is completely resolved.
 
-        ${CliConfig.userRules}
-        """
+${CliConfig.userRules}
+"""
     )
 }
 
@@ -50,14 +50,14 @@ public class GeneralCodeAgent {
 ]
 public class CangjieCodeAgent {
     @prompt(
-        """
-        ${CANGJIE_CODE_AGENT_PROMPT}
-        Your current working directory: ${CliConfig.cwd}。
-        Reply in the same language as the user's input. If unsure, reply in Chinese.
+"""
+${CANGJIE_CODE_AGENT_PROMPT}
+Your current working directory: ${CliConfig.cwd}。
+Reply in the same language as the user's input. If unsure, reply in Chinese.
 
-        ${CliConfig.userRules}
+${CliConfig.userRules}
 
-        Finally, you are an agent - please keep going until the user's query is completely resolved.
-        """
+Finally, you are an agent - please keep going until the user's query is completely resolved.
+"""
     )
 }
