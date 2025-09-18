@@ -11,6 +11,7 @@ import magic.model.ModelManager
 
 import cli.core.config.CliConfig
 import cli.core.config.ModelTokenLimits
+import cli.utils.CL100K_BASE_TIKTOKEN
 
 import std.fs.{canonicalize, Path}
 
@@ -92,9 +93,7 @@ public class Compactor <: ConversationCompactor {
     private let tokenizer: Cl100kTokenizer
 
     protected init() {
-        let magicResourceDir = Config.resourceDir
-        let tiktokenPath = Path(magicResourceDir).join("mini_rag/tiktoken/cl100k_base.tiktoken")
-        this.tokenizer = Cl100kTokenizer(canonicalize(tiktokenPath).toString())
+        this.tokenizer = Cl100kTokenizer(CL100K_BASE_TIKTOKEN)
     }
 
     override public func compact(conversation: Conversation): String {

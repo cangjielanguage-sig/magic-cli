@@ -250,16 +250,16 @@ public class FSToolset {
         }
     }
 
-    @tool[
-        description: "Lists the directory structure recursively from the given path, showing files and subdirectories in a tree-like format. Useful for understanding the overall layout and hierarchy of a project or folder.",
-        parameters: {
-            path: "The absolute path to the directory to visualize."
-        }
-    ]
-    public func tree(path: String): String {
-        PrintUtils.printTool("Tree", "path: ${path}")
-        return listTree(path)
-    }
+    // @tool[
+    //     description: "Lists the directory structure recursively from the given path, showing files and subdirectories in a tree-like format. Useful for understanding the overall layout and hierarchy of a project or folder.",
+    //     parameters: {
+    //         path: "The absolute path to the directory to visualize."
+    //     }
+    // ]
+    // public func tree(path: String): String {
+    //     PrintUtils.printTool("Tree", "path: ${path}")
+    //     return listTree(path)
+    // }
 
     @tool[
         description: "Efficiently finds files matching specific extensions patterns (e.g., `src/**/*.ts`, `**/*.md`), returning absolute paths. Ideal for quickly locating files based on their extension name, especially in large codebases.",
