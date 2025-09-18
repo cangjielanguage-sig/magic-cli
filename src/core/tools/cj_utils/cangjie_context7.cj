@@ -51,7 +51,7 @@ protected class CangjieContext7Agent {
         HttpMCPClient("https://mcp.context7.com/mcp", headers: [
             (
                 "CONTEXT7_API_KEY",
-                Config.env["CONTEXT7_API_KEY"].getOrThrow({ => Exception("CONTEXT7_API_KEY is not set") })
+                Config.env["CONTEXT7_API_KEY"].getOrThrow({ => AgentCancelException(reason: "CONTEXT7_API_KEY is not set") })
             )
         ])
     }

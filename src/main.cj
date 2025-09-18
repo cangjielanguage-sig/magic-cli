@@ -16,9 +16,9 @@ import cli.core.tools.FSToolset
 
 private func setConfig(): Unit {
     Config.logFile = CliConfig.logFile.toString()
-    Config.logLevel = "DEBUG"
     Config.modelRequestDir = CliConfig.dotDir.join("model-requests").toString()
     Config.enableModelToolCall = true
+    Config.httpReadWriteTimeout = 600000 // ms
     // Set your API key in the .env file
     let envInfo = Config.env.load(Path("./.env"))
     LogUtils.info(envInfo)

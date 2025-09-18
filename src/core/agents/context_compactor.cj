@@ -103,8 +103,8 @@ public class Compactor <: ConversationCompactor {
         }
         let agent = CompactContextAgent()
         // Use fast model for context compaction in hybrid mode
-        if (CliConfig.hybridMode) {
-            agent.model = ModelManager.createChatModel(CliConfig.hybridFastModel)
+        if (let Some(model) <- CliConfig.fastModel) {
+            agent.model = ModelManager.createChatModel(model)
         }
         return agent.chat(toBeCompactedContent.toString())
     }

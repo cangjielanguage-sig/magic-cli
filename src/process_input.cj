@@ -298,6 +298,8 @@ private func handleAgentResponse(context: CliContext,
                 // Change the answer that wil be added to the chat round
                 response.execution.setAnswer("The user denied the last tool and will guide the execution.")
                 context.conversationManager.conversation.addChatRound(response.execution.chatRound)
+            } else {
+                PrintUtils.printLine(response.content.withColor(AnsiColor.color256(100)))
             }
             // Otherwise, user denied the execution
     }

@@ -1,5 +1,7 @@
 package cli
 
+import magic.config.Config
+
 import cli.core.config.CliConfig
 import cli.io.PrintUtils
 
@@ -7,15 +9,18 @@ import std.collection.ArrayList
 import std.argopt.{parseArguments, ArgumentSpec, ArgumentMode, ArgumentParseException}
 import std.time.*
 import std.fs.*
+import std.convert.Parsable
 
 func printHelp(): Unit {
     PrintUtils.printLine("Magic Cli")
     PrintUtils.printLine("  --auto            The agent runs autonomously")
     PrintUtils.printLine("  --language, -l    Specify languages in [Cangjie, General(Default)]")
     PrintUtils.printLine("  --model <model>   Set the chat model")
-    PrintUtils.printLine("  --hybrid          Enable hybrid mode (use fast model for auxiliary tasks)")
+    PrintUtils.printLine("  --fast-model      Set the fast model, which also enables hybrid mode (use fast model for auxiliary tasks)")
+    PrintUtils.printLine("  --temperature, -t Set the temperature for the model (default: 1.0)")
     PrintUtils.printLine("  --prompt <prompt>, -p <prompt>  Set the prompt and run magic-cli in the noninteractive mode")
-    PrintUtils.printLine("  --help, -h        Print this help message")
+    PrintUtils.printLine("  --log-level <level>  Set the log level (default: DEBUG)")
+    PrintUtils.printLine("  --help, -h           Print this help message")
 }
 
 /**
@@ -25,10 +30,12 @@ func parseArgs(args: Array<String>): Bool {
     let argSpecs = [
         Long("auto", NoValue),
         Long("model", RequiredValue),
-        Long("hybrid", NoValue),
+        Long("fast-model", RequiredValue),
         Full("language", r"l", RequiredValue),
         Full("help", r"h", NoValue),
-        Full("prompt", r"p", RequiredValue)
+        Full("prompt", r"p", RequiredValue),
+        Full("temperature", r"t", RequiredValue),
+        Long("log-level", RequiredValue)
     ]
     let result = try {
         parseArguments(args, argSpecs)
@@ -42,11 +49,19 @@ func parseArgs(args: Array<String>): Bool {
     if (result.options.contains("auto")) {
         CliConfig.auto = true
     }
-    if (result.options.contains("hybrid")) {
-        CliConfig.hybridMode = true
-    }
     if (let Some(model) <- result.options.get("model")) {
         CliConfig.model = model
+    }
+    if (let Some(model) <- result.options.get("fast-model")) {
+        CliConfig.fastModel = model
+    }
+    if (let Some(temperature) <- result.options.get("temperature")) {
+        try {
+            CliConfig.temperature = Float64.parse(temperature)
+        } catch (ex: IllegalArgumentException) {
+            PrintUtils.printLine("Failed to parse temperature: ${ex.message}")
+            return false
+        }
     }
     if (result.options.contains("prompt") || result.options.contains("p")) {
         let prompt = result.options.get("prompt").getOrDefault { result.options.get("p").getOrThrow() }
@@ -61,6 +76,12 @@ func parseArgs(args: Array<String>): Bool {
         CliConfig.language = 'Cangjie'
     } else {
         CliConfig.language = 'General'
+    }
+
+    if (let Some(level) <- result.options.get("log-level")) {
+        Config.logLevel = level
+    } else {
+        Config.logLevel = "DEBUG"
     }
     return true
 }
