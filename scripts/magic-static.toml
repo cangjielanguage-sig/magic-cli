@@ -28,7 +28,7 @@
 
 [package]
   cjc-version = "1.0.0"
-  compile-option = "-Woff unused -Woff deprecated --static-libs --static-std --static --cfg \"faiss=disable,sqlite=disable,llamacpp=disable,http=cj\" "
+  compile-option = "-Woff unused -Woff deprecated --static-libs --static-std --static --cfg \"faiss=disable,sqlite=disable,llamacpp=disable,http=curl\" "
   description = "nothing here"
   link-option = ""
   name = "magic"
