@@ -88,7 +88,7 @@ protected class CliContext {
                     LogUtils.error("Failed to compact the conversation or call chat model: ${ex.message}")
                 }
             }
-            if (evt.agent.name == this.agent.name && let Some(i) <- this.thinkIndicator.load()) {
+            if (allowedAgentName.contains(evt.agent.name) && let Some(i) <- this.thinkIndicator.load()) {
                 i.stop()
                 this.thinkIndicator.store(None)
             }
