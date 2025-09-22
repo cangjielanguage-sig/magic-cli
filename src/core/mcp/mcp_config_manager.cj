@@ -1,13 +1,13 @@
 package cli.core.mcp
 
 import magic.dsl.jsonable
-import magic.mcp.{MCPClient, StdioMCPClient, SseMCPClient, StdioMCPInitParams, SseMCPInitParams}
+import magic.mcp.*
 import magic.log.LogUtils
 import magic.core.tool.Tool
 import magic.core.agent.Agent
 import magic.jsonable.*
 
-import cli.core.config.CliConfig
+import cli.core.config.{CliConfig, CliSetting, CliSettingManager}
 import cli.io.{InputUtils, PrintUtils}
 import cli.utils.InfoUtils
 
@@ -16,40 +16,30 @@ import std.collection.{HashMap, ArrayList, filter, collectArray}
 import std.env.getVariable
 import stdx.encoding.json.*
 
-@jsonable
-private class Setting {
-    let mcpServers: Option<JsonObject>
-}
-
-private enum MCPServerType {
+private enum MCPServerConfig <: FromJsonValue<MCPServerConfig> & ToJsonValue {
     | Stdio(StdioMCPInitParams)
     | Sse(SseMCPInitParams)
 
     /**
      * Check and parse the server type from the initial parameters
      */
-    static func parse(initParams: JsonObject): MCPServerType {
-        if (let Some(_) <- initParams.get("url")) {
-            return MCPServerType.Sse(SseMCPInitParams.fromJsonValue(initParams))
+    redef public static func fromJsonValue(initParams: JsonValue): MCPServerConfig {
+        if (let Some(_) <- initParams.asObject().get("url")) {
+            return MCPServerConfig.Sse(SseMCPInitParams.fromJsonValue(initParams))
         } else {
-            return MCPServerType.Stdio(StdioMCPInitParams.fromJsonValue(initParams))
+            return MCPServerConfig.Stdio(StdioMCPInitParams.fromJsonValue(initParams))
+        }
+    }
+
+    override public func toJsonValue(): JsonValue {
+        return match (this) {
+            case Stdio(params) => params.toJsonValue()
+            case Sse(params) => params.toJsonValue()
         }
     }
 }
 
-private struct MCPServerConfig {
-    public let name: String
-    public let serverType: MCPServerType
-
-    public init(name: String, serverType: MCPServerType) {
-        this.name = name
-        this.serverType = serverType
-    }
-}
-
 public class MCPConfigManager {
-    private let configPath: Path
-
     /**
      * Server name -> Server init configs
      */
@@ -61,97 +51,56 @@ public class MCPConfigManager {
     private var mcpClients: HashMap<String, MCPClient> = HashMap<String, MCPClient>()
 
     public init() {
-        this.configPath = CliConfig.dotDir.join("settings.json")
-    }
-
-    /**
-     * Standard Json does not support comments,
-     * we add // as Json comment.
-     */
-    private func loadJsonFile(path: Path): String {
-        return String.join(
-            String.fromUtf8(File.readFrom(configPath)).split("\n") |>
-                filter { line => !line.trimAscii().startsWith("//") } |>
-                collectArray,
-            delimiter: "\n"
-        )
-    }
-
-    private func loadMCPConfigs(): HashMap<String, MCPServerConfig> {
-        let configs = HashMap<String, MCPServerConfig>()
-
-        if (!exists(configPath)) {
-            LogUtils.info("MCP config file not found at ${configPath}, skipping MCP server loading")
-            return configs
-        }
-
-        try {
-            let content = this.loadJsonFile(configPath)
-            let jsonValue = JsonValue.fromStr(content)
-            let setting = Setting.fromJsonValue(jsonValue)
-            if (let Some(jo) <- setting.mcpServers) {
-                for ((serverName, initParams) in jo.getFields()) {
-                    if (let Some(config) <- this.parseServerConfig(serverName, initParams)) {
-                        configs[serverName] = config
-                    }
+        if (let Some(jo) <- CliSettingManager.setting.mcpServers) {
+            for ((serverName, initParams) in jo.getFields()) {
+                try {
+                    let config = MCPServerConfig.fromJsonValue(initParams)
+                    this.mcpServers[serverName] = config
+                } catch (ex: JsonException) {
+                    LogUtils.info("Invalid server config format for: ${serverName}")
+                } catch (ex: JsonableException) {
+                    LogUtils.info("Invalid server config format for: ${serverName}")
                 }
             }
-        } catch (ex: JsonableException) {
-            LogUtils.info("mcpServers is not a valid JSON object")
-        } catch (ex: JsonException) {
-            LogUtils.info("Config file is not a valid JSON object")
-        } catch (ex: Exception) {
-            LogUtils.error("Failed to load MCP config: ${ex}")
-        }
-
-        return configs
-    }
-
-    private func parseServerConfig(serverName: String, serverInitParams: JsonValue): Option<MCPServerConfig> {
-        try {
-            let jo = serverInitParams.asObject()
-            return MCPServerConfig(serverName, MCPServerType.parse(jo))
-        } catch (ex: JsonException) {
-            LogUtils.info("Invalid server config format for: ${serverName}")
-            return None
-        } catch (ex: JsonableException) {
-            LogUtils.info("Invalid MCP server config: ${serverName}")
-            return None
         }
     }
 
     public func loadMCPServers(): Array<Tool> {
-        this.mcpServers = loadMCPConfigs()
-        let clients = ArrayList<MCPClient>()
         let tools = ArrayList<Tool>()
 
         for ((serverName, config) in this.mcpServers) {
-            let client: MCPClient = match (config.serverType) {
-                case Stdio(initParam) =>
-                    var fullCommand = initParam.command
-                    if (!initParam.args.isEmpty()) {
-                        fullCommand = "${initParam.command} ${String.join(initParam.args, delimiter: " ")}"
-                    }
-                    // Windows use cmd /c to wrap the command
-                    let finalCommand = if (InfoUtils.os == "windows") {
-                        "cmd /c \"${fullCommand}\""
-                    } else {
-                        fullCommand
-                    }
-                    LogUtils.info("Creating Stdio MCP client for ${serverName} with command: ${finalCommand}")
-                    StdioMCPClient(finalCommand, env: initParam.env.toArray())
-                case Sse(initParam) =>
-                    LogUtils.info("Creating SSE MCP client for ${serverName} with URL: ${initParam.url}")
-                    SseMCPClient(initParam.url)
-            }
-
-            clients.add(client)
-            for (tool in client.tools) {
-                tools.add(MCPToolWrapper(serverName, tool))
-            }
-            this.mcpClients[serverName] = client
-            LogUtils.info("Successfully loaded SSE MCP server: ${serverName}")
+            tools.add(all: this.loadMCPServer(serverName, config))
         }
+
+        return tools.toArray()
+    }
+
+    private func loadMCPServer(serverName: String, serverConfig: MCPServerConfig): Array<Tool> {
+        let client: MCPClient = match (serverConfig) {
+            case Stdio(initParam) =>
+                var fullCommand = initParam.command
+                if (!initParam.args.isEmpty()) {
+                    fullCommand = "${initParam.command} ${String.join(initParam.args, delimiter: " ")}"
+                }
+                // Windows use cmd /c to wrap the command
+                let finalCommand = if (InfoUtils.os == "windows") {
+                    "cmd /c \"${fullCommand}\""
+                } else {
+                    fullCommand
+                }
+                LogUtils.info("Creating Stdio MCP client for ${serverName} with command: ${finalCommand}")
+                StdioMCPClient(finalCommand, env: initParam.env.toArray())
+            case Sse(initParam) =>
+                LogUtils.info("Creating SSE MCP client for ${serverName} with URL: ${initParam.url}")
+                SseMCPClient(initParam.url)
+        }
+
+        let tools = ArrayList<Tool>()
+        for (tool in client.tools) {
+            tools.add(MCPToolWrapper(serverName, tool))
+        }
+        this.mcpClients[serverName] = client
+        LogUtils.info("Successfully loaded MCP server: ${serverName}")
 
         return tools.toArray()
     }
@@ -167,7 +116,7 @@ public class MCPConfigManager {
         var totalMcpTools = 0
         for ((serverName, client) in this.mcpClients) {
             let serverType = match (this.mcpServers.get(serverName)) {
-                case Some(config) => match (config.serverType) {
+                case Some(config) => match (config) {
                     case Stdio(_) => "Stdio"
                     case Sse(_) => "SSE"
                 }
@@ -268,22 +217,16 @@ public class MCPConfigManager {
         try {
             PrintUtils.printLine("🔧 Adding SSE MCP server '${name}' with URL '${url}'")
 
-            let (config, mcpServers) = loadMcpServersConfig()
-
-            if (serverExists(mcpServers, name)) {
+            if (serverExists(name)) {
                 PrintUtils.printLine("❌ MCP server '${name}' already exists. Use '/mcp remove ${name}' first to replace it.")
                 return false
             }
 
-            // Create SSE server configuration
-            let serverConfig = JsonObject()
-            serverConfig.put("url", JsonString(url))
-
             // Add to mcpServers
-            mcpServers.put(name, serverConfig)
-
-            // Save configuration
-            if (saveConfig(config)) {
+            let config = MCPServerConfig.Sse(
+                SseMCPInitParams(url: url)
+            )
+            if (this.addServer(name, config)) {
                 PrintUtils.printLine("✅ Added SSE MCP server: ${name}")
                 PrintUtils.printLine("   URL: ${url}")
                 PrintUtils.printLine("Note: Restart the CLI to load the new SSE MCP server")
@@ -304,38 +247,16 @@ public class MCPConfigManager {
         try {
             PrintUtils.printLine("🔧 Adding stdio MCP server '${name}' with command '${command}'")
 
-            let (config, mcpServers) = loadMcpServersConfig()
-
-            if (serverExists(mcpServers, name)) {
+            if (serverExists(name)) {
                 PrintUtils.printLine("❌ MCP server '${name}' already exists. Use '/mcp remove ${name}' first to replace it.")
                 return false
             }
 
-            // Create stdio server configuration
-            let serverConfig = JsonObject()
-            serverConfig.put("command", JsonString(command))
-
-            // Add args
-            if (!args.isEmpty()) {
-                let argsArray = JsonArray()
-                for (arg in args) {
-                    argsArray.add(JsonString(arg))
-                }
-                serverConfig.put("args", argsArray)
-            }
-
-            // Add env
-            if (!env.isEmpty()) {
-                let envObject = JsonObject()
-                for ((key, value) in env) {
-                    envObject.put(key, JsonString(value))
-                }
-                serverConfig.put("env", envObject)
-            }
-
-            mcpServers.put(name, serverConfig)
-
-            if (saveConfig(config)) {
+            // Add to mcpServers
+            let config = MCPServerConfig.Stdio(
+                StdioMCPInitParams(command: command, args: args, env: HashMap(env))
+            )
+            if (this.addServer(name, config)) {
                 PrintUtils.printLine("✅ Added stdio MCP server: ${name}")
                 PrintUtils.printLine("   Command: ${command}")
                 if (!args.isEmpty()) {
@@ -365,31 +286,17 @@ public class MCPConfigManager {
         try {
             PrintUtils.printLine("🔧 Removing MCP server '${name}'")
 
-            if (!exists(configPath)) {
-                PrintUtils.printLine("❌ No MCP servers configured")
-                return false
-            }
-
-            let (config, mcpServers) = loadMcpServersConfig()
-
             // Check if server exists
-            if (!serverExists(mcpServers, name)) {
+            if (!serverExists(name)) {
                 PrintUtils.printLine("❌ MCP server '${name}' not found")
                 return false
             }
 
-            // Create new mcpServers object without the target server
-            let newMcpServers = JsonObject()
-            for ((serverName, serverConfig) in mcpServers.getFields()) {
-                if (serverName != name) {
-                    newMcpServers.put(serverName, serverConfig)
-                }
-            }
-
             // Update config
-            config.put("mcpServers", newMcpServers)
+            this.mcpServers.remove(name)
+            CliSettingManager.setting.mcpServers = this.mcpServers.toJsonValue().asObject()
 
-            if (saveConfig(config)) {
+            if (CliSettingManager.save()) {
                 PrintUtils.printLine("✅ Removed MCP server: ${name}")
                 PrintUtils.printLine("Note: Restart the CLI to unload the removed MCP server")
                 return true
@@ -402,47 +309,11 @@ public class MCPConfigManager {
         }
     }
 
-    private func loadMcpServersConfig(): (JsonObject, JsonObject) {
-        let config = if (exists(configPath)) {
-            try {
-                let content = this.loadJsonFile(configPath)
-                let jsonValue = JsonValue.fromStr(content)
-                jsonValue.asObject()
-            } catch (ex: Exception) {
-                LogUtils.error("Failed to parse existing config: ${ex}")
-                let newConfig = JsonObject()
-                newConfig.put("mcpServers", JsonObject())
-                newConfig
-            }
-        } else {
-            let newConfig = JsonObject()
-            newConfig.put("mcpServers", JsonObject())
-            newConfig
-        }
-
-        let mcpServers = if (let Some(mcpServersValue) <- config.get("mcpServers")) {
-            try {
-                mcpServersValue.asObject()
-            } catch (ex: Exception) {
-                LogUtils.error("Failed to parse mcpServers object: ${ex}")
-                let newMcpServers = JsonObject()
-                config.put("mcpServers", newMcpServers)
-                newMcpServers
-            }
-        } else {
-            let newMcpServers = JsonObject()
-            config.put("mcpServers", newMcpServers)
-            newMcpServers
-        }
-
-        return (config, mcpServers)
-    }
-
     /**
      * Check if a server with given name exists
      */
-    private func serverExists(mcpServers: JsonObject, name: String): Bool {
-        for ((serverName, _) in mcpServers.getFields()) {
+    private func serverExists(name: String): Bool {
+        for ((serverName, _) in this.mcpServers) {
             if (serverName == name) {
                 return true
             }
@@ -450,17 +321,10 @@ public class MCPConfigManager {
         return false
     }
 
-    /**
-     * Save configuration to file
-     */
-    private func saveConfig(config: JsonObject): Bool {
-        try {
-            let jsonStr = config.toJsonValue().toJsonString()
-            File.writeTo(configPath, jsonStr.toArray())
-            return true
-        } catch (ex: Exception) {
-            LogUtils.error("Failed to save config: ${ex}")
-            return false
-        }
+    private func addServer(name: String, config: MCPServerConfig): Bool {
+        this.mcpServers.add(name, config)
+        CliSettingManager.setting.mcpServers = this.mcpServers.toJsonValue().asObject()
+        // this.loadMCPServer(config)
+        return CliSettingManager.save()
     }
 }

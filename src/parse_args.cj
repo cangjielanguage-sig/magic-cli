@@ -2,7 +2,7 @@ package cli
 
 import magic.config.Config
 
-import cli.core.config.CliConfig
+import cli.core.config.{CliConfig, CliSettingManager}
 import cli.io.PrintUtils
 
 import std.collection.ArrayList
@@ -65,17 +65,17 @@ func parseArgs(args: Array<String>): Bool {
     }
     if (result.options.contains("prompt") || result.options.contains("p")) {
         let prompt = result.options.get("prompt").getOrDefault { result.options.get("p").getOrThrow() }
-        CliConfig.noninteractive = true
+        CliConfig.nonInteractive = true
         CliConfig.auto = true
-        CliConfig.noninteractivePrompt = prompt
+        CliConfig.nonInteractivePrompt = prompt
         CliConfig.printInfoSavingDir = Path("test").join(DateTime.now().toUnixTimeStamp().toMilliseconds().toString())
     }
-    if (let Some(language) <- result.options.get("language") && language.toAsciiUpper() == 'CANGJIE') {
-        CliConfig.language = 'Cangjie'
-    } else if (let Some(language) <- result.options.get("l") && language.toAsciiUpper() == 'CANGJIE') {
-        CliConfig.language = 'Cangjie'
+    if (let Some(language) <- result.options.get("language") && language.toAsciiLower() == 'cangjie') {
+        CliConfig.language = 'cangjie'
+    } else if (let Some(language) <- result.options.get("l") && language.toAsciiLower() == 'cangjie') {
+        CliConfig.language = 'cangjie'
     } else {
-        CliConfig.language = 'General'
+        CliConfig.language = CliSettingManager.setting.language
     }
 
     if (let Some(level) <- result.options.get("log-level")) {

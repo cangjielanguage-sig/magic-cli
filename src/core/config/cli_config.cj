@@ -118,8 +118,8 @@ protected class CliConfig {
     /**
      * The prompt when running magic-cli in noninteractive mode
      */
-    public static var noninteractive: Bool = false
-    public static var noninteractivePrompt: String = ""
+    public static var nonInteractive: Bool = false
+    public static var nonInteractivePrompt: String = ""
     public static var printInfoSavingDir: Path = Path("")
 
     /**

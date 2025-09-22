@@ -56,7 +56,11 @@ protected class CliContext {
     private func registerHooks() {
         // Collect all subAgents as allowed agents that is able to print the thinking indicator
         // CompileErrorFixer is special which is not added as a subAgent
-        let allowedAgentName = ArrayList<String>([this.agent.name, "CompileErrorFixer"])
+        let allowedAgentName = ArrayList<String>([
+            this.agent.name,
+            "CompileErrorFixer",
+            "CangjieContext7Agent"
+        ])
         for (tool in this.agent.toolManager.tools) {
             if (tool is AgentAsTool) {
                 allowedAgentName.add(tool.name)
