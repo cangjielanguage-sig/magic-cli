@@ -95,7 +95,7 @@ protected class PrintUtils {
     // Two fundamental print methods
     static public func printLine(line: String, withIndent!: Bool = false): Unit {
         // do not print anything if noninteractive, but saving the print info to a file
-        if (!CliConfig.noninteractive) {
+        if (!CliConfig.nonInteractive) {
             if (withIndent && CURRENT_INDENT > 0) {
                 print(" " * CURRENT_INDENT)
             }
@@ -110,8 +110,8 @@ protected class PrintUtils {
     }
 
     static public func printString(str: String, withIndent!: Bool = false): Unit {
-        // do not print anything if noninteractive, but saving the print info to a file
-        if (!CliConfig.noninteractive) {
+        // do not print anything if nonInteractive, but saving the print info to a file
+        if (!CliConfig.nonInteractive) {
             if (withIndent && CURRENT_INDENT > 0) {
                 print(" " * CURRENT_INDENT)
             }

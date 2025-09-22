@@ -234,7 +234,7 @@ private func executeAgentTask(context: CliContext, input: String): Unit {
                             LogUtils.info("ESC pressed, cancelling")
                             context.thinkIndicator.load()?.cancel()
                             response.cancel()
-                            PrintUtils.printInterrupt()
+                            // PrintUtils.printInterrupt() // Cancellation info will be printed in handleAgentResponse
                         }
                         return
                     }
