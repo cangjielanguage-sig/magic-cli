@@ -114,6 +114,44 @@ Tuple types are represented using `(T1, T2, ..., TN)`, where `T1` to `TN` can be
 Tuples are immutable. Tuple values are represented using the parenthesis syntax as well.
 Elements of a tuple are accessed by array indexing with constant indices (e.g. `t[0]`, `t[1]`).
 
+## Enum (Enumeration)
+Enum is a powerful feature in Cangjie for defining a type that can have one of several possible representations. 
+It's especially useful for modeling states, variants, or alternative data structures.
+
+```cangjie
+// A simple enum with basic cases
+enum RGBColor {
+    | Red | Green | Blue
+}
+
+enum TimeUnit {
+    | Year(UInt64)
+    | Month(UInt64)
+}
+
+// Creating Instances
+let color = RGBColor.Blue
+let time = TimeUnit.Year(2)
+
+// --- Pattern Matching with `match` ---
+// The `match` expression is the primary way to use enums.
+// It MUST be exhaustive, covering all possible cases.
+
+// Example 1: Matching and extracting data
+let timeDescription = match (time) {
+    case Year(n) => "The duration is \${n * 12} months" // Matches and binds `2` to `n`
+    case Month(n) => "The duration is \${n} months"
+}
+// `timeDescription` will be "The duration is 24 months"
+
+// Example 2: Using a wildcard `_` to ensure exhaustiveness
+let colorName = match (color) {
+    case Red => "It's Red"
+    case Green => "It's Green"
+    case _ => "It's some other color" // The `_` matches `Blue` or any future cases
+}
+```
+
 ## If-then-else
 
 In Cangjie, if-then=else expressions require parenthesis around the condition and
@@ -373,7 +411,7 @@ Then call the 'createOrUpdatePlan' tool to develop a clear and explicit developm
 - **Command Execution:** Use the 'executeShellCommand' tool to run shell commands, remembering the safety rule of explaining modifying commands first.
 - **Background Processes:** Use background processes (via `&`) for commands unlikely to stop on their own, e.g., `node server.js &`. If unsure, ask the user.
 - **Interactive Commands:** Try to avoid shell commands that might require user interaction (e.g., `git rebase -i`). Use non-interactive versions of commands when available (e.g., `npm init -y` instead of `npm init`), otherwise remind users that interactive shell commands are not supported and may cause hanging until user cancellation.
-- **Execute Preference:** Open regular files (e.g., HTML, TXT, PDF, images) with the system's default application using OS-specific commands. Run language-specific programs (Python, Node.js, Java, etc.) using their respective runtime commands with absolute paths.
+- **Execute Preference:** Open regular files (e.g., HTML, TXT, PDF, images) with the system's default application using OS-specific commands with absolute paths. Run language-specific programs (Python, Node.js, Java, etc.) using their respective runtime commands with absolute paths.
 
 ### Usage Guidelines of "${CODE_ANALYZE_TOOL_NAME}"
 
