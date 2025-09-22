@@ -56,54 +56,44 @@ Set-ExecutionPolicy Bypass -Scope CurrentUser
 
 脚本会自动将当前目录添加到用户的 PATH 环境变量中。
 
-## 第三步：安装依赖环境
 
-### 3.1 安装 Node.js
-
-由于 Cangjie Agent 功能需要 Node.js 运行环境，请从官网下载安装：
-https://nodejs.org/
-
-推荐安装 LTS 版本。安装完成后验证：
-```cmd
-node --version
-npm --version
-```
-如果访问nodejs官方源失败，请设置npm镜像源：
-```
- npm config set registry https://registry.npmmirror.com
-```
-
-
-## 第四步：设置 API 密钥
+## 第三步：设置 API 密钥
 
 本例子中设置的 API KEY 以火山为例子，我们主要推荐的模型为火山部署的 Kimi-K2 模型，具体为`ark:kimi-k2-250711`。
 此处可以根据[Cangjie Magic的文档](https://gitcode.com/Cangjie-TPC/CangjieMagic/blob/dev/docs/tutorial.md#%E6%A8%A1%E5%9E%8B%E9%85%8D%E7%BD%AE)自行配置模型和对应的 API KEY。
 
-### 4.1 临时设置（当前会话有效）
+⚠️ 注意：如果您需要使用 magic-cli 来生成 Cangjie 代码，还需要设置 `CONTEXT7_API_KEY` 环境变量。
+Context7 用于查询仓颉语言文档，提供更准确的语法和功能参考。在该网站注册账号即可获取 API KEY： https://context7.com/dashboard，该平台并不收费。
+
+### 3.1 临时设置（当前会话有效）
 
 **命令提示符：**
 ```cmd
 set ARK_API_KEY=your_api_key_here
+set CONTEXT7_API_KEY=your_api_key_here
 ```
 
 **PowerShell：**
 ```powershell
 $env:ARK_API_KEY="your_api_key_here"
+$env:CONTEXT7_API_KEY=your_api_key_here
 ```
 
-### 4.2 永久设置（推荐）
+### 3.2 永久设置（推荐）
 
 **命令提示符：**
 ```cmd
 setx ARK_API_KEY your_api_key_here
+setx CONTEXT7_API_KEY your_api_key_here
 ```
 
 **PowerShell：**
 ```powershell
 [Environment]::SetEnvironmentVariable("ARK_API_KEY", "your_api_key_here", "User")
+[Environment]::SetEnvironmentVariable("CONTEXT7_API_KEY", "your_api_key_here", "User")
 ```
 
-### 4.3 通过配置文件设置
+### 3.3 通过配置文件设置
 
 您也可以在项目根目录创建 `.env` 文件，并配置多个API KEY,利用 magic-cli 的 model fallback 特性在一个模型访问出错的时候快速切换到另外一个模型，并继续您的任务（默认的后备模型提供商为月之暗面及智谱）：
 ```
@@ -114,16 +104,16 @@ MOONSHOT_API_KEY=your_api_key_here
 ZHIPU_API_KEY=your_api_key_here
 ```
 
-## 第五步：启动和使用
+## 第四步：启动和使用
 
-### 5.1 基本启动
+### 4.1 基本启动
 
 重新打开命令提示符或PowerShell（以加载新的PATH），然后运行：
 ```cmd
 magic-cli
 ```
 
-### 5.2 命令行参数说明
+### 4.2 命令行参数说明
 
 Magic CLI 支持多种启动参数：
 
@@ -138,26 +128,29 @@ Magic CLI 支持多种启动参数：
 - `--log-level <level>`：设置日志级别（默认：DEBUG）
 - `--help, -h`：显示帮助信息
 
-### 5.3 使用示例
+### 4.3 使用示例
+magic-cli 初次打开某个目录时会让用户选择语言模式，之后该目录下再次启动 magic-cli 会沿用初次配置的语言模式。
+也可以通过 `--language` 参数选择语言模式，如：
 
-**启动仓颉专用模式：**
+**启动仓颉模式：**
 ```cmd
 magic-cli --language cangjie
 ```
 
 **自主模式运行：**
+该模式无需用户手动批准工具调用。
 ```cmd
 magic-cli --auto
 ```
 
 **非交互模式执行任务：**
 ```cmd
-magic-cli -p "帮我分析这个代码的性能问题" --auto
+magic-cli -p "帮我分析这个代码的性能问题"
 ```
 
 **设置特定模型和温度：**
 ```cmd
-magic-cli --model openai:gpt-4 --temperature 0.7
+magic-cli --model zhipuai:glm-4.5 --temperature 0.7
 ```
 
 ## 故障排除
@@ -190,4 +183,4 @@ magic-cli --model openai:gpt-4 --temperature 0.7
 
 ---
 
-🎉 **安装完成！** Enjoy :(
+🎉 **安装完成！** Enjoy ~
