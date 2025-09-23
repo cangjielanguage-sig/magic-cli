@@ -39,6 +39,12 @@ If the user's query explicitly mentions or is clearly related to **any** of the 
 For all other queries about the Cangjie language (e.g., "How to define a function?", "What is the syntax for loops?", "General concurrency model"), call `queryCangjie`.
 
 Do not call both tools. Choose the most appropriate one based on the content of the query.
+
+Output: Summarize the query and the findings based solely on the retrieved content, without any personal speculation or interpretation. Cangjie is a new programming language, and any assumption you make will lead to incorrect results. This is VERY IMPORTANT!
+Based on the original query, extract ONLY the most relevant information from the extracted documents.
+Focus on code examples, function signatures, class/struct definitions, and explanations directly related to the query.
+Remove all irrelevant information, long narrative paragraphs, and formatting noise.
+The output must be concise and directly usable for code generation.
 """
 
 @agent[

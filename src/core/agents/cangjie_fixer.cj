@@ -1,0 +1,292 @@
+package cli.core.agents
+
+import magic.dsl.*
+import magic.prelude.*
+import magic.config.Config
+import magic.log.LogUtils
+
+import cli.core.tools.*
+import cli.core.tools.cj_utils.cjpmBuild
+import cli.core.config.CliConfig
+import cli.io.PrintUtils
+
+import std.fs.{File, Path, OpenMode}
+
+const CANGJIE_FIX_TOOL_NAME = "fixCangjieProjectCompileError"
+
+@agent[
+    model: "${CliConfig.fastModel ?? CliConfig.model}",
+    executor: "naive"
+]
+class CodeFixSummarizer {
+    @prompt(
+"""
+Summarizes the compilation error fixes in Markdown format after all errors have been resolved.
+The summary includes the error description, the fix applied, and optionally example code to document the solution for future reference.
+This serves as a knowledge base entry for common Cangjie language issues.
+
+Output: A Markdown-formatted string containing the detailed summary of the compilation errors that were fixed. This should include sections for each error type (The title does not need numbering), the cause, the solution, and code examples showing the incorrect and correct syntax. The content is saved locally for future reference and learning.
+
+Example:
+
+### `enum` cannot be used with `==` or `!=` operators
+
+`enum` types cannot be used with `==` or `!=` operators unless they implement `Equatable`.
+`std.deriving.Derive` helps to implement `Equatable` for `enum` types quickly.
+
+Example:
+
+```cangjie
+import std.deriving.Derive
+
+@Derive[Equatable]
+enum E {
+    | A
+    | B
+}
+```
+
+### Fix `match` case expression
+
+The `match` case clause does not require curly braces `{ }`. Using them may cause compile errors such as: `expected '=>' in lambda expression`.
+
+### Incorrect
+
+```cangjie
+match (someOption) {
+    case None => { foo() }
+    case Some(_) => { bar() }
+}
+
+```cangjie
+match (someOption) {
+    case None => foo()
+    case Some(_) => bar()
+}
+```
+"""
+    )
+}
+
+private let FIX_RULES = """
+### Cangjie Fix Rules
+
+Here are some valuable error-fixing rules to help you resolve errors.
+
+### `enum` cannot be used with `==` or `!=` operators
+
+`enum` types cannot be used with `==` or `!=` operators unless they implement `Equatable`.
+`std.deriving.Derive` helps to implement `Equatable` for `enum` types quickly.
+
+Example:
+
+```cangjie
+import std.deriving.Derive
+
+@Derive[Equatable]
+enum E {
+    | A
+    | B
+}
+```
+
+### Fix `match` case expression
+
+The `match` case clause does not require curly braces `{ }`. Using them may cause compile errors such as: `expected '=>' in lambda expression`.
+
+### Incorrect
+
+```cangjie
+match (someOption) {
+    case None => { foo() }
+    case Some(_) => { bar() }
+}
+
+```cangjie
+match (someOption) {
+    case None => foo()
+    case Some(_) => bar()
+}
+```
+"""
+
+private let COMPILE_ERROR_FIXER_PROMPT = """
+You are an expert Cangjie expert tasked with resolving **all compile-time errors** in a Cangjie project.
+Your **only objective** is to make the project compile successfully by diagnosing and fixing compile errors—**you must not alter the intended behavior, architecture, or design of the software**.
+
+## Introduction of Cangjie Language
+
+<important>
+Cangjie is a new programming language and differs to other languages, NEVER make assumptions or guess Cangjie syntax based on other programming languages.
+</important>
+
+Here is the quick introduction to Cangjie.
+
+${CANGJIE_INTRO}
+
+${FIX_RULES}
+
+- For any unclear aspects, use the **${CANGJIE_DOC_RETRIEVE_TOOL_NAME}** tool to query documentation and code examples.
+- "### Cangjie Fix Rules" list rules you can use to fix compile errors.
+
+**MANDATORY FOUNDATION**: Cangjie is a new programming language and differs to other languages, so your MUST use tool **${CANGJIE_DOC_RETRIEVE_TOOL_NAME}** to lookup Cangjie syntax, APIs, engineering practices, its best practices, etc.
+It is **STRICTLY PROHIBITED** to make assumptions or guess Cangjie syntax based on other programming languages.
+
+## Compile Error Fixing Process
+
+Follow this iterative, disciplined process to fix compile errors:
+
+### Iterative Fix Process
+
+1. **Build the Project**
+   Always begin and verify with the `buildCangjieProject` tool. Use its output as the **authoritative source** of all compile errors. Never assume the state of the build without calling this tool.
+
+2. **Diagnose Error**
+   For each unique error:
+   - Classify it: syntax error, undefined symbol, type mismatch, incorrect API usage, etc.
+   - If the fix is clear and you are confident, proceed to editing.
+   - **If uncertain about syntax, APIs, or language features, do not guess. Use `${CANGJIE_DOC_RETRIEVE_TOOL_NAME}` with a precise, targeted query (e.g., "Cangjie optional type syntax", "how to implement interface X")
+
+3. **Apply Fixes**
+   - Edit only the necessary files to resolve the compile errors.
+   - Changes must be: Minimal, Correct, and Consistent with Cangjie best practices
+   - **Never** modify working code that is unrelated to a compile error.
+
+4. **Verify Progress**
+   After each change:
+   - Re-run `buildCangjieProject` to get updated feedback.
+   - If other errors appear, iterate to analyze and fix them.
+   - If an error persists despite your fix, re-evaluate the root cause and use the `${CANGJIE_DOC_RETRIEVE_TOOL_NAME}` tool if needed.
+  - Never assume you have fixed all errors unless you have called `buildCangjieProject` and it reported zero compile errors. This is VERY IMPORTANT.
+
+5. **Repeat Until Success**
+   Continue iterating until `buildCangjieProject` reports **zero compile errors**.
+
+## Tool Usage
+
+### Usage Guidelines of `readFile`
+
+- Read the entire file first. If the file is too large, then proceed to read it incrementally by specifying line numbers.
+- Avoid redundant reads: Before using `readFile`, think about all previously read content in the current execution. If the required content is already read (e.g., requiring lines 50-60 when 10-100 was previously read), skip the read and reuse the earlier result.
+
+### Hard Rules You Must Follow
+
+- **Preserve Project Structure**
+  - Never delete, rename, or add any files.
+  - Never modify the project directory layout or module structure.
+
+- **Never Modify Configuration Files**
+  - **ABSOLUTE PROHIBITION**: Under no circumstances should you edit `cjpm.toml`.
+  - Do not change dependencies, version pins, build settings, or any project metadata.
+  - **Compiler errors relating to configuration should be reported as blocking issues, not fixed by editing config files.**
+  - If a compilation error suggests changing `cjpm.toml`, **DO NOT** follow that suggestion. Instead, find an alternative code-only solution or report the issue.
+
+- **No Behavior Changes**
+  - Fixes must not alter runtime behavior, logic, or functionality.
+  - Do not refactor, optimize, or "clean up" code unless it directly resolves a compile error.
+  - **NEVER add backticks (`) around identifiers or function names** - backticks are not part of normal Cangjie syntax and will cause compilation errors.
+
+- **No Guessing**
+  - If you are unsure about Cangjie syntax, APIs, or semantics, **always use** `${CANGJIE_DOC_RETRIEVE_TOOL_NAME}` before making changes.
+  - Never assume—verify with official documentation.
+
+- **Transparency on Blockers**
+  - If an error cannot be resolved even after consulting documentation, clearly explain:
+    - The nature of the error
+    - What you've tried
+    - What information is missing
+    - Your recommended next steps
+
+**Final Goal**: A successfully compiling Cangjie project—**nothing more, nothing less**.
+"""
+
+@agent[
+    model: "${CliConfig.model}",
+    temperature: CliConfig.temperature,
+    executor: "tool-loop:1000",
+    tools: [
+        FSToolset(),
+        CangjieToolset()
+    ]
+]
+class CangjieFixer {
+    CangjieFixer(private let projectDir: Path) { }
+
+    @prompt(
+        """
+        ${COMPILE_ERROR_FIXER_PROMPT}
+
+        ${CliConfig.userRules}
+
+        The current Cangjie project directory: ${this.projectDir}。
+        The current project build status:\n${cjpmBuild(this.projectDir)}
+        """
+    )
+
+    // @tool[
+    //     description: "${EDIT_FILE_DESCRIPTION}",
+    //     parameters: {
+    //         thought: "Reasoning and thought process for the fix",
+    //         filePath: "File path, must be an absolute path",
+    //         oldContent: "The exact literal text to replace, preferably unescaped. For single replacements (default), include at least 3 lines of context BEFORE and AFTER the target text, matching whitespace and indentation precisely. For multiple replacements, specify expected_replacements parameter. If this string is not the exact literal text (i.e. you escaped it) or does not match exactly, the tool will fail.",
+    //         newContent: "The exact literal text to replace `oldContent` with, preferably unescaped. Provide the EXACT text. Ensure the resulting code is correct and idiomatic."
+    //     }
+    // ]
+    // public func generatePatch(thought: String, filePath: String, oldContent: String, newContent: String): String {
+
+    // }
+}
+
+private const FIX_TOOL_DESCRIPTION = """
+Designed to fix compilation errors in the Cangjie project.
+
+#### When to Use
+- Use **only when necessary** and **only when real compilation error exists, i.e., code-level errors (e.g., syntax issues, missing declarations, type errors).
+- You have already verified that project structure and dependencies are correct.
+
+#### Limitations and Guidelines
+- **Purpose**: Fixes *only* compilation errors.
+- **Not for**: Code refactoring, performance optimization, feature implementation, formatting, or linting.
+- **Do not call** if there are no compilation errors. This is not a general code improvement tool.
+"""
+
+@tool[
+    description: "${FIX_TOOL_DESCRIPTION}",
+    parameters: {
+        path: "Path to the Cangjie project, must be an absolute path. If omitted, the current working directory will be used."
+   }
+]
+func fixCangjieProjectCompileError(path: String): String {
+    try {
+        PrintUtils.printTool("CangjieFixer", "path: ${path}")
+        PrintUtils.beginSubAgent()
+
+        let fixer = CangjieFixer(Path(path))
+        let response = fixer.chat(AgentRequest("Now, start to work"))
+        if (response.status == AgentResponseStatus.Cancelled) {
+            throw AgentCancelException(reason: response.content)
+        }
+        spawn { // Spawn a new background thread to write the fix rules to a file
+            saveFixingRules(response)
+        }
+        return response.content
+    } finally {
+        PrintUtils.endSubAgent()
+    }
+}
+
+private func saveFixingRules(response: AgentResponse): Unit {
+    try(file = File(CliConfig.dotDir.join("magic-fix-rules.md"), OpenMode.Append)) {
+        let summary = CodeFixSummarizer().chat(
+            AgentRequest(
+                "Summarize the compilation error fixes in Markdown format.",
+                conversation: Conversation(response.execution.chatRound)
+            )
+        )
+        if (summary.status == AgentResponseStatus.Success) {
+            file.write(summary.content.toArray())
+        }
+    } catch (ex: Exception) {
+        LogUtils.error("Failed to write summary file: ${ex}")
+    }
+}
