@@ -18,10 +18,6 @@ protected const CANGJIE_DOC_RETRIEVE_TOOL_NAME = "retrieveCangjieDocuments"
 
 @toolset
 public class CangjieToolset {
-    public CangjieToolset(
-        private let model: ChatModel
-    ) { }
-
     // @tool[
     //     description: "Repair or optimize generated Cangjie code based on original requirements",
     //     parameters: { query: "Original code generation requirements", code: "Code that needs to be repaired or optimized" }
@@ -123,16 +119,16 @@ public class CangjieToolset {
         let projectDir = path.map { p => Path(p) } ?? CliConfig.cwd
 
         PrintUtils.printTool("cjpm build", projectDir.toString())
-        return cjpmRun(["build", "-i"], projectDir)
+        return cjpmBuild(projectDir)
     }
 
-    @tool[
-        description: "Compile and run an executable artifact with the specified name.",
-        parameters: {
-            path: "Path to the Cangjie project, must be an absolute path. If omitted, the current working directory will be used.",
-            name: "Name of the executable artifact to run. If omitted, the default `main.exe` will be run."
-        }
-    ]
+    // @tool[
+    //     description: "Compile and run an executable artifact with the specified name.",
+    //     parameters: {
+    //         path: "Path to the Cangjie project, must be an absolute path. If omitted, the current working directory will be used.",
+    //         name: "Name of the executable artifact to run. If omitted, the default `main.exe` will be run."
+    //     }
+    // ]
     public func runCangjieProject(path: Option<String>, name: Option<String>): String {
         let projectDir = path.map { p => Path(p) } ?? CliConfig.cwd
         let execName = name ?? "main"

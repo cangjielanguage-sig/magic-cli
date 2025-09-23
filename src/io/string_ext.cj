@@ -2,7 +2,7 @@ package cli.io
 
 import std.regex.Regex
 
-func removeAnsiEscape(str: String): String {
+protected func removeAnsiEscape(str: String): String {
     let regex = Regex("\u{1B}\\[[\\d;]*[a-zA-Z]")
     regex.replaceAll(str, "")
 }
