@@ -59,7 +59,7 @@ Set-ExecutionPolicy Bypass -Scope CurrentUser
 
 ## 第三步：设置 API 密钥
 
-本例子中设置的 API KEY 以火山为例子，我们主要推荐的模型为火山部署的 Kimi-K2 模型，具体为`ark:kimi-k2-250711`。
+本例子中设置的 API KEY 以火山为例子，我们主要推荐的模型为火山部署的 Kimi-K2 模型，具体为`ark:kimi-k2-250905`。
 此处可以根据[Cangjie Magic的文档](https://gitcode.com/Cangjie-TPC/CangjieMagic/blob/dev/docs/tutorial.md#%E6%A8%A1%E5%9E%8B%E9%85%8D%E7%BD%AE)自行配置模型和对应的 API KEY。
 
 ⚠️ 注意：如果您需要使用 magic-cli 来生成 Cangjie 代码，还需要设置 `CONTEXT7_API_KEY` 环境变量。

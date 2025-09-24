@@ -72,6 +72,7 @@ protected class InputUtils {
         try {
             let options = [
                 "Yes, proceed",
+                "Yes, allow all edits during this session",
                 "No, stop",
                 "Wait, input guidelines"
             ]
@@ -81,6 +82,10 @@ protected class InputUtils {
                         PrintUtils.printApproval()
                         return Confirmation.Approve
                     } else if (index == 1) {
+                        PrintUtils.printApproval()
+                        CliConfig.auto = true
+                        return Confirmation.Approve
+                    } else if (index == 2) {
                         PrintUtils.printCancellation()
                         return Confirmation.Deny
                     } else {

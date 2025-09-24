@@ -150,7 +150,8 @@ private func initMagicFile(): Unit {
  * Check if an exception should trigger model fallback
  */
 private func shouldFallback(ex: Exception): Bool {
-    if (!CliConfig.enableFallback) {
+    // Only fallback if we have fallback models configured
+    if (CliConfig.fallbackModels.size == 0) {
         return false
     }
     let message = ex.message.toAsciiLower()
@@ -182,29 +183,19 @@ private func executeAgentTask(context: CliContext, input: String): Unit {
         if (successModel != CliConfig.model) {
             models.add(CliConfig.model)
         }
-        if (CliConfig.enableFallback) {
-            for (fallback in CliConfig.fallbackModels) {
-                if (fallback != successModel) {
-                    models.add(fallback)
-                }
+        for (fallback in CliConfig.fallbackModels) {
+            if (fallback != successModel) {
+                models.add(fallback)
             }
         }
     } else {
         // First execution, use original order
         models.add(CliConfig.model)
-        if (CliConfig.enableFallback) {
-            models.add(all: CliConfig.fallbackModels)
-        }
+        models.add(all: CliConfig.fallbackModels)
     }
 
-    let maxAttempts = if (models.size > CliConfig.maxFallbackAttempts) {
-        CliConfig.maxFallbackAttempts
-    } else {
-        models.size
-    }
-
-    // Try models in sequence
-    for (i in 0..maxAttempts) {
+    // Try all available models in sequence
+    for (i in 0..models.size) {
         let currentModel = models[i]
 
         try {
@@ -262,7 +253,7 @@ private func executeAgentTask(context: CliContext, input: String): Unit {
             sessionSuccessfulModel = Some(currentModel)
             break // Success, exit retry loop
         } catch (ex: Exception) {
-            if (i == maxAttempts - 1) {
+            if (i == models.size - 1) {
                 throw ex
             }
             if (shouldFallback(ex)) {
