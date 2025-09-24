@@ -9,6 +9,7 @@ import cli.core.conversation.ConversationManager
 import cli.core.agents.CodeAnalyzer
 import cli.io.{InputUtils, PrintUtils, WithColor, AnsiColor, Confirmation}
 import cli.utils.TerminalUtils
+import cli.telemetry.DataCollector
 
 import std.collection.ArrayList
 import std.fs.{exists, File, FSException, Path}
@@ -291,6 +292,9 @@ private func handleAgentResponse(context: CliContext,
                     PrintUtils.printAgentResponse(response)
                 }
                 context.conversationManager.conversation.addChatRound(response.execution.chatRound)
+                spawn {
+                    DataCollector.collectChatRound(response.execution.chatRound)
+                }
             }
         case AgentResponseStatus.Cancelled =>
             if (content == "__USER_CLARIFY__") {
