@@ -58,7 +58,9 @@ protected class StatusIndicator {
                 PrintUtils.printString(" " * PrintUtils.CURRENT_INDENT)
             }
             PrintUtils.printString("${spinner}".withColor(Theme.MUTED))
-            moveCursor(50, direction: Direction.Right)
+            // Move cursor to end of the message line
+            let remainingLength = "  ${message}...".size - 1
+            moveCursor(remainingLength, direction: Direction.Right)
 
             sleep(Duration.millisecond * 100)
             idx = (idx + 1) % INDICATORS.size

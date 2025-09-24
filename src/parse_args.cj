@@ -5,7 +5,7 @@ import magic.config.Config
 import cli.core.config.{CliConfig, CliSettingManager}
 import cli.io.PrintUtils
 
-import std.collection.ArrayList
+import std.collection.{ArrayList, map, collectArray}
 import std.argopt.{parseArguments, ArgumentSpec, ArgumentMode, ArgumentParseException}
 import std.time.*
 import std.fs.*
@@ -17,6 +17,7 @@ func printHelp(): Unit {
     PrintUtils.printLine("  --language, -l    Specify languages in [Cangjie, General(Default)]")
     PrintUtils.printLine("  --model <model>   Set the chat model")
     PrintUtils.printLine("  --fast-model      Set the fast model, which also enables hybrid mode (use fast model for auxiliary tasks)")
+    PrintUtils.printLine("  --fallback-models <models>  Set fallback models (comma-separated)")
     PrintUtils.printLine("  --temperature, -t Set the temperature for the model (default: 1.0)")
     PrintUtils.printLine("  --prompt <prompt>, -p <prompt>  Set the prompt and run magic-cli in the noninteractive mode")
     PrintUtils.printLine("  --log-level <level>  Set the log level (default: DEBUG)")
@@ -31,6 +32,7 @@ func parseArgs(args: Array<String>): Bool {
         Long("auto", NoValue),
         Long("model", RequiredValue),
         Long("fast-model", RequiredValue),
+        Long("fallback-models", RequiredValue),
         Full("language", r"l", RequiredValue),
         Full("help", r"h", NoValue),
         Full("prompt", r"p", RequiredValue),
@@ -54,6 +56,10 @@ func parseArgs(args: Array<String>): Bool {
     }
     if (let Some(model) <- result.options.get("fast-model")) {
         CliConfig.fastModel = model
+    }
+    if (let Some(modelsStr) <- result.options.get("fallback-models")) {
+        let models = modelsStr.split(",") |> map({model => model.trimAscii()}) |> collectArray
+        CliConfig.fallbackModels = models
     }
     if (let Some(temperature) <- result.options.get("temperature")) {
         try {
@@ -83,5 +89,19 @@ func parseArgs(args: Array<String>): Bool {
     } else {
         Config.logLevel = "DEBUG"
     }
+
+    if (result.options.contains("model") ||
+        result.options.contains("fast-model") ||
+        result.options.contains("fallback-models") ||
+        result.options.contains("temperature")) {
+
+        CliSettingManager.setting.model = CliConfig.model
+        CliSettingManager.setting.fastModel = CliConfig.fastModel
+        CliSettingManager.setting.fallbackModels = CliConfig.fallbackModels
+        CliSettingManager.setting.temperature = CliConfig.temperature
+
+        CliSettingManager.save()
+    }
+
     return true
 }

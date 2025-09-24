@@ -88,32 +88,23 @@ protected class CliConfig {
     /**
      * Temperature agents will use
      */
-    public static var temperature: Float64 = 1.0
+    public static var temperature: Float64 = CliSettingManager.setting.temperature
 
     /**
      * The chat model to use
      */
-    public static var model: String = "ark:kimi-k2-250711"
+    public static var model: String = CliSettingManager.setting.model
 
     /**
      * Fast model for auxiliary tasks in hybrid mode
      */
-    public static var fastModel: Option<String> = "ark:doubao-1-5-pro-32k-250115"
+    public static var fastModel: Option<String> = CliSettingManager.setting.fastModel
 
     /**
      * Fallback models to use when primary model fails
      */
-    public static var fallbackModels: Array<String> = ["moonshot:kimi-k2-0905-preview", "zhipuai:glm-4.5"]
+    public static var fallbackModels: Array<String> = CliSettingManager.setting.fallbackModels
 
-    /**
-     * Enable model fallback functionality
-     */
-    public static var enableFallback: Bool = true
-
-    /**
-     * Maximum number of models to try
-     */
-    public static var maxFallbackAttempts: Int64 = 3
 
     /**
      * The prompt when running magic-cli in noninteractive mode

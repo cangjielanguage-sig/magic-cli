@@ -8,6 +8,7 @@ protected class ModelTokenLimits {
     private static let CONTEXT_LIMITS = HashMap<String, Int64>([
         // Ark (ByteDance) models
         ("ark:kimi-k2-250711", 128 * 1024),
+        ("ark:kimi-k2-250905", 256 * 1024),
         ("ark:doubao-seed-1-6-flash-250828", 256 * 1024),
         ("ark:doubao-1-5-pro-32k-250115", 32 * 1024),
         ("ark:deepseek-v3-1-250821", 128 * 1024),

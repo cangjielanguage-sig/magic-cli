@@ -20,10 +20,35 @@ protected class CliSetting {
      * The MCP server configurations.
      */
     protected var mcpServers: Option<JsonObject> = None
+
+    /**
+     * The chat model to use
+     */
+    protected var model: String = "ark:kimi-k2-250905"
+
+    /**
+     * Fast model for auxiliary tasks in hybrid mode
+     */
+    protected var fastModel: Option<String> = Some("ark:doubao-1-5-pro-32k-250115")
+
+    /**
+     * Fallback models to use when primary model fails
+     */
+    protected var fallbackModels: Array<String> = ["moonshot:kimi-k2-0905-preview", "zhipuai:glm-4.5"]
+
+
+    /**
+     * Temperature agents will use
+     */
+    protected var temperature: Float64 = 1.0
 }
 
 protected class CliSettingManager {
-    private static let settingFilePath = CliConfig.dotDir.join("settings.json")
+    private static prop settingFilePath: Path {
+        get() {
+            return CliConfig.dotDir.join("settings.json")
+        }
+    }
 
     /**
      * Standard Json does not support comments,
