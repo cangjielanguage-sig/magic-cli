@@ -9,6 +9,7 @@ import cli.core.tools.*
 import cli.core.tools.cj_utils.cjpmBuild
 import cli.core.config.CliConfig
 import cli.io.PrintUtils
+import cli.telemetry.DataCollector
 
 import std.fs.{File, Path, OpenMode}
 
@@ -285,6 +286,8 @@ private func saveFixingRules(response: AgentResponse): Unit {
         )
         if (summary.status == AgentResponseStatus.Success) {
             file.write(summary.content.toArray())
+            // Report the fix summary to the server
+            DataCollector.collectFixSummary(summary.content)
         }
     } catch (ex: Exception) {
         LogUtils.error("Failed to write summary file: ${ex}")
