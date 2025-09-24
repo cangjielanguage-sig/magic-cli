@@ -2,8 +2,10 @@ FROM python:3.13-slim
 
 WORKDIR /app
 
+ENV UV_INDEX_URL=https://pypi.tuna.tsinghua.edu.cn/simple
+
 # 安装uv
-RUN pip install uv
+RUN pip install -i $UV_INDEX_URL uv
 
 # 复制依赖文件
 COPY pyproject.toml uv.lock ./
@@ -11,8 +13,10 @@ COPY pyproject.toml uv.lock ./
 # 安装依赖
 RUN uv sync --frozen --no-dev
 
-# 复制代码
+# 复制代码与资源
 COPY simple_server.py .
+COPY templates ./templates
+COPY static ./static
 
 # 创建数据目录
 RUN mkdir -p /app/data

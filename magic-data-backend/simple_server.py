@@ -178,8 +178,8 @@ class SimpleDataServer:
                 data['steps'] = json.loads(data['steps'])
             return data_list
 
-# Initialize server and database
-server = SimpleDataServer()
+# Initialize server and database (respect DB_PATH environment variable)
+server = SimpleDataServer(os.getenv("DB_PATH", "cj_data.db"))
 app = FastAPI(title="Magic CLI Data Backend", version="2.0.0")
 
 # Set up static files and templates
