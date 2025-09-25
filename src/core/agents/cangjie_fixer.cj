@@ -103,10 +103,61 @@ match (someOption) {
     case Some(_) => { bar() }
 }
 
+### Correct
+
 ```cangjie
 match (someOption) {
     case None => foo()
     case Some(_) => bar()
+}
+```
+
+### Reading Input from Standard Input
+
+There are two ways to read input from standard input in Cangjie:
+
+1. The `readln()` function from the `std.core` package:
+
+```cangjie
+public func readln(): String
+```
+
+This function returns the input directly as a `String`.
+
+2. The `Console` class method:
+
+```cangjie
+class Console {
+    public func readln(): ?String
+}
+```
+
+This method returns an `Option<String>`, which means it may return `None` if there's no input available.
+
+Both approaches read a line from standard input, but they differ in their return types.
+
+### Incorrect
+
+```cangjie
+match (readln()) {
+    | Some(input) => print("You entered: \${input}")
+    | None => print("No input received")
+}
+```
+
+### Correct
+
+```cangjie
+let input = readln()
+println(input)
+```
+
+### Correct
+
+```cangjie
+match (console.readln()) { // Note that `console.readln()` returns an `Option<String>`, so we need to handle the `None` case.
+    | Some(input) => foo()
+    | None => bar()
 }
 ```
 """
@@ -127,8 +178,8 @@ ${CANGJIE_INTRO}
 
 ${FIX_RULES}
 
-- For any unclear aspects, use the **${CANGJIE_DOC_RETRIEVE_TOOL_NAME}** tool to query documentation and code examples.
 - "### Cangjie Fix Rules" list rules you can use to fix compile errors.
+- For any unclear aspects, use the **${CANGJIE_DOC_RETRIEVE_TOOL_NAME}** tool to query documentation and code examples.
 
 **MANDATORY FOUNDATION**: Cangjie is a new programming language and differs to other languages, so your MUST use tool **${CANGJIE_DOC_RETRIEVE_TOOL_NAME}** to lookup Cangjie syntax, APIs, engineering practices, its best practices, etc.
 It is **STRICTLY PROHIBITED** to make assumptions or guess Cangjie syntax based on other programming languages.
@@ -146,6 +197,7 @@ Follow this iterative, disciplined process to fix compile errors:
    For each unique error:
    - Classify it: syntax error, undefined symbol, type mismatch, incorrect API usage, etc.
    - If the fix is clear and you are confident, proceed to editing.
+   - Check rules in "### Cangjie Fix Rules", if you can fix according to these rules, fix directly.
    - **If uncertain about syntax, APIs, or language features, do not guess. Use `${CANGJIE_DOC_RETRIEVE_TOOL_NAME}` with a precise, targeted query (e.g., "Cangjie optional type syntax", "how to implement interface X")
 
 3. **Apply Fixes**
@@ -223,6 +275,23 @@ class CangjieFixer {
         The current project build status:\n${cjpmBuild(this.projectDir)}
         """
     )
+
+    @tool[
+        description: "Use this tool only if you are uncertain how to fix the error. If you clearly know the required fix based on the error message and your knowledge of the Cangjie language, apply it directly without using this tool. Otherwise, use this tool to analyze the error, review relevant \"### Cangjie Fix Rules \", and reason through the correct solution.",
+        parameters: {
+            thought: "Your current thinking",
+            cangjieFixRules: "The relevant content in \"### Cangjie Fix Rules \" that may apply to the error."
+        }
+    ]
+    func deepThinkAboutHowToFix(thought: String, cangjieFixRules: Option<String>): String {
+        let msg = if (let Some(rules) <- cangjieFixRules) {
+            "${thought}\nFix rules: ${rules}"
+        } else {
+            thought
+        }
+        PrintUtils.printTool("Deep Thinking", thought)
+        return msg
+    }
 
     // @tool[
     //     description: "${EDIT_FILE_DESCRIPTION}",
