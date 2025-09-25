@@ -8,7 +8,7 @@ import cli.core.mcp.MCPConfigManager
 import cli.core.conversation.ConversationManager
 import cli.core.agents.CodeAnalyzer
 import cli.io.{InputUtils, PrintUtils, WithColor, AnsiColor, Confirmation}
-import cli.utils.TerminalUtils
+import cli.utils.ShellUtils
 import cli.telemetry.DataCollector
 
 import std.collection.ArrayList
@@ -38,7 +38,7 @@ private func executeShellCommand(command: String, context: CliContext): Unit {
     }
     //let items = command.split(" ")  // Simple split by space, does not handle quotes
     //let args = if (items.size > 1) { items[1..] } else { Array<String>() }
-    let (exitCode, stdOutData, stdErrData) = TerminalUtils.execute([command], workDir: CliConfig.cwd)
+    let (exitCode, stdOutData, stdErrData) = ShellUtils.execute([command], workDir: CliConfig.cwd)
     let output = if (exitCode == 0) {
         String.fromUtf8(stdOutData).trimAscii()
     } else {
