@@ -14,6 +14,7 @@ private func setConfig(): Unit {
     Config.modelRequestDir = CliConfig.dotDir.join("model-requests").toString()
     Config.enableModelToolCall = true
     Config.enableParallelToolCall = false
+    Config.enableJsonRetry = false
     Config.httpReadWriteTimeout = 600000 // ms
     // Set your API key in the .env file
     let envInfo = Config.env.load(Path("./.env"))

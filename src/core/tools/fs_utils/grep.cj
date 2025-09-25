@@ -16,7 +16,7 @@ import cli.core.config.CliConfig
 /**
  * Main grep function that searches for a regular expression pattern within file contents.
  * Uses ripgrep if available, falls back to traditional grep/PowerShell.
- * 
+ *
  * @param pattern The regular expression pattern to search for
  * @param path Optional directory path to search in (defaults to current working directory)
  * @param include Optional glob pattern to filter files (e.g., "*.cj", "*.{ts,tsx}")
@@ -54,7 +54,7 @@ private func getRipgrepPath(): Option<String> {
     } catch (e: Exception) {
         // Command not found, continue to fallback
     }
-    
+
     return None
 }
 
@@ -64,25 +64,25 @@ private func getRipgrepPath(): Option<String> {
 private func grepWithRipgrep(pattern: String, path: Option<String>, include: Option<String>, rgPath: String): String {
     try {
         let rgCmd = ArrayList<String>([rgPath, "--line-number", "--with-filename", "--no-heading"])
-        
+
         // Add glob pattern if specified
         if (let Some(includePattern) <- include) {
             rgCmd.add("--glob")
             rgCmd.add(includePattern)
         }
-        
+
         rgCmd.add(pattern)
-        
+
         // Add search path (default to current directory)
         let searchPath = path ?? "."
         rgCmd.add(searchPath)
-        
+
         let command = String.join(rgCmd.toArray(), delimiter: " ")
         LogUtils.debug("[Run command] ${command}")
-        
+
         let workingDir = path.map { s => Path(s) } ?? CliConfig.cwd
         let (exitCode, stdOutData, stdErrData) = executeWithOutput(rgPath, rgCmd.toArray()[1..], workingDirectory: workingDir)
-        
+
         if (exitCode == 0) {
             let outString = String.fromUtf8(stdOutData).trimAscii()
             return parseGrepOutput(outString, workingDir)
@@ -116,7 +116,7 @@ private func grepWithTraditional(pattern: String, path: Option<String>, include:
         LogUtils.debug("[Run command] ${command}")
 
         let workingDir = path.map { s => Path(s) } ?? CliConfig.cwd
-        let (exitCode, stdOutData, stdErrData) = TerminalUtils.execute([command],  workDir: workingDir)
+        let (exitCode, stdOutData, stdErrData) = ShellUtils.execute([command],  workDir: workingDir)
 
         if (exitCode == 0) {
             let outString = String.fromUtf8(stdOutData).trimAscii()

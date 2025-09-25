@@ -128,9 +128,9 @@ public class FSToolset {
 
         try {
             let (exitCode, stdOutData, stdErrData) = if (InfoUtils.os == "windows") {
-                TerminalUtils.execute(["dir"], workDir: Path(path))
+                ShellUtils.execute(["dir"], workDir: Path(path))
             } else { //linux or ohos
-                TerminalUtils.execute(["ls", "-la"], workDir: Path(path))
+                ShellUtils.execute(["ls", "-la"], workDir: Path(path))
             }
 
             if (exitCode == 0) {

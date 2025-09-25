@@ -4,7 +4,7 @@ import std.process.*
 import std.fs.Path
 import std.collection.ArrayList
 
-public class TerminalUtils {
+public class ShellUtils {
     @When[ohos == "false"]
     public static func execute(command: Array<String>, workDir!: ?Path = None): (Int64, Array<Byte>, Array<Byte>) {
         let cmdArgs = ArrayList<String>()
