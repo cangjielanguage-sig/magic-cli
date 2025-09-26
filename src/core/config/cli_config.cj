@@ -105,7 +105,6 @@ protected class CliConfig {
      */
     public static var fallbackModels: Array<String> = CliSettingManager.setting.fallbackModels
 
-
     /**
      * The prompt when running magic-cli in noninteractive mode
      */
@@ -114,9 +113,9 @@ protected class CliConfig {
     public static var printInfoSavingDir: Path = Path("")
 
     /**
-    * language in [Cangjie, General]
+    * language in [cangjie, general, unknown]
     */
-    public static var language: String = 'General'
+    public static var language: String = "unknown" // will be set during the arguments parsing
 
     public static prop userRules: String {
         get() {

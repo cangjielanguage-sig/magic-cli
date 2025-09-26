@@ -9,12 +9,12 @@ import cli.core.tools.fs_utils.writeFileBasic
 
 import std.fs.{exists, File, Path, Directory}
 
+import cli.lsp2.getSemanticInfo
+
 private func setConfig(): Unit {
-    Config.logFile = CliConfig.logFile.toString()
     Config.modelRequestDir = CliConfig.dotDir.join("model-requests").toString()
     Config.enableModelToolCall = true
     Config.enableParallelToolCall = false
-    Config.enableJsonRetry = false
     Config.httpReadWriteTimeout = 600000 // ms
     // Set your API key in the .env file
     let envInfo = Config.env.load(Path("./.env"))
@@ -22,20 +22,24 @@ private func setConfig(): Unit {
 }
 
 main(args: Array<String>): Int64 {
+    // let info = getSemanticInfo("./src/main.cj", 24)
+    // println(info.toJsonValue().toJsonString())
+    // return 0
     // Enter the raw input mode, the exiting will be called in atExit
     InputUtils.enterRawMode()
 
-    // Start the setting guideline when first time to run
     // Note that the complete settings of CliConfig are distributed across the following processes
-    // Process 1:
-    initSettingGuideline()
-    // Process 2:
+   // Process 1:
     if (!parseArgs(args)) {
         printHelp()
         return 0
     }
-    // Process 3:
+    // Process 2:
     setConfig()
+
+    // Start the setting guideline when first time to run
+    // Process 3:
+    initSettingGuideline()
 
     // Initialize the global context
     let context = CliContext()

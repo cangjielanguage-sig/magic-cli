@@ -320,7 +320,7 @@ func processInput(input: String, context: CliContext): Bool {
             } catch (ex: Exception) {
                 let msg = "Execution failure: ${ex.message}"
                 PrintUtils.printLine(msg.withColor(AnsiColor.color256(100)))
-                LogUtils.error(msg)
+                LogUtils.error(ex)
             }
             return true  // Continue running
     }

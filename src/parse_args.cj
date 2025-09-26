@@ -48,6 +48,16 @@ func parseArgs(args: Array<String>): Bool {
     if (result.options.contains("help") || result.options.contains("h")) {
         return false
     }
+
+    // Log level must be set first
+    if (let Some(level) <- result.options.get("log-level")) {
+        Config.logLevel = level
+    } else {
+        Config.logLevel = "DEBUG"
+    }
+    // Log file must be set together with the log level
+    Config.logFile = CliConfig.logFile.toString()
+
     if (result.options.contains("auto")) {
         CliConfig.auto = true
     }
@@ -82,12 +92,6 @@ func parseArgs(args: Array<String>): Bool {
         CliConfig.language = 'cangjie'
     } else {
         CliConfig.language = CliSettingManager.setting.language
-    }
-
-    if (let Some(level) <- result.options.get("log-level")) {
-        Config.logLevel = level
-    } else {
-        Config.logLevel = "DEBUG"
     }
 
     if (result.options.contains("model") ||

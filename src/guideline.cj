@@ -13,7 +13,7 @@ import std.regex.Regex
 func initSettingGuideline(): Unit {
     // Load the settings
     let setting = CliSettingManager.setting
-    if (setting.language == "unknown") {
+    if (setting.language == "unknown" && CliConfig.language == "unknown") {
         let index = InputUtils.getOptions(
             ["Cangjie", "Others"],
             prompt: "Which programming language will be used (for this project). Default: Cangjie."
