@@ -9,8 +9,6 @@ import cli.core.tools.fs_utils.writeFileBasic
 
 import std.fs.{exists, File, Path, Directory}
 
-import cli.lsp2.getSemanticInfo
-
 private func setConfig(): Unit {
     Config.modelRequestDir = CliConfig.dotDir.join("model-requests").toString()
     Config.enableModelToolCall = true
@@ -22,9 +20,6 @@ private func setConfig(): Unit {
 }
 
 main(args: Array<String>): Int64 {
-    // let info = getSemanticInfo("./src/main.cj", 24)
-    // println(info.toJsonValue().toJsonString())
-    // return 0
     // Enter the raw input mode, the exiting will be called in atExit
     InputUtils.enterRawMode()
 
