@@ -73,7 +73,7 @@ The structure MUST be as follows:
 """
 
 @agent[
-    model: "${CliConfig.model}",
+    model: CliConfig.fastModel ?? CliConfig.model,
     executor: "naive"
 ]
 private class CompactContextAgent {
@@ -102,16 +102,12 @@ public class Compactor <: ConversationCompactor {
             toBeCompactedContent.append(conversation[i].toString())
         }
         let agent = CompactContextAgent()
-        // Use fast model for context compaction in hybrid mode
-        if (let Some(model) <- CliConfig.fastModel) {
-            agent.model = ModelManager.createChatModel(model)
-        }
         return agent.chat(toBeCompactedContent.toString())
     }
 
     public func calculateCompactIndex(conversation: Conversation): Option<Int64> {
         let (totalTokens, roundTokens) = this.calculateToken(conversation)
-        let modelContextLimit = ModelTokenLimits.getContextLimit(CliConfig.model)
+        let modelContextLimit = ModelTokenLimits.getContextLimit(CliConfig.model.fullName)
         // If the total token of conversation is less than 70% of the model context token limit, then no need to compact
         let threshold = Int64(Float64(modelContextLimit) * COMPACT_TOKEN_THRESHOLD)
         if (totalTokens <= threshold) {

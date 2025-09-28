@@ -108,7 +108,7 @@ Always prioritize user control and project conventions.
 """
 
 @agent[
-    model: "${CliConfig.model}",
+    model: CliConfig.model,
     temperature: CliConfig.temperature,
     executor: "tool-loop:1000",
     tools: [

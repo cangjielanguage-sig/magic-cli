@@ -122,7 +122,7 @@ protected class CliContext {
     /**
      * Switch agent to fallback model
      */
-    public func switchToFallbackModel(fallbackModel: String): Unit {
-        this.agent.model = ModelManager.createChatModel(fallbackModel)
+    public func switchToFallbackModel(fallbackModel: ChatModel): Unit {
+        this.agent.model = fallbackModel
     }
 }

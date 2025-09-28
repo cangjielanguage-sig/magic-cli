@@ -17,6 +17,7 @@ public class LSPClient {
     private let jsonRpcClient: JSONRPCClient
     private var initialized: Bool = false
     private var capabilities: Option<ServerCapabilities> = None
+    private let fileManager = FileManager()
 
     public init(serverPath: String, serverArgs!: Array<String> = Array<String>()) {
         this.jsonRpcClient = JSONRPCClient(serverPath, serverArgs: serverArgs)
@@ -66,10 +67,6 @@ public class LSPClient {
         } catch (ex: Exception) {
             LogUtils.error("Failed to initialize LSP client: ${ex}")
             LogUtils.debug(ex)
-            for (ste in ex.getStackTrace()) {
-                println("${ste.fileName}:${ste.lineNumber} ${ste.methodName}")
-            }
-            println("SSS")
             throw Exception("LSP initialization failed: ${ex.message}")
         }
     }
@@ -134,10 +131,33 @@ public class LSPClient {
         }
     }
 
+    public func getHovers(filePath: Path, startLine: Int64, endLine: Int64): Array<HoverInfo> {
+        let hovers = ArrayList<HoverInfo>()
+        // Get lines in range
+        let lines = this.fileManager.getFileLines(filePath, startLine, endLine)
+
+        // Sample positions for hover (every 5th character on each line)
+        for (i in 0..lines.size) {
+            let lineContent = lines[i]
+            for (charIdx in 0..lineContent.size:5) {
+                // Skip whitespace
+                if (lineContent[charIdx].isAsciiWhiteSpace()) {
+                    continue
+                }
+                if (let Some(hover) <- this.getHover(filePath, startLine + i, charIdx)) {
+                    if (!hover.contents.isEmpty()) {
+                        hovers.add(hover)
+                    }
+                }
+            }
+        }
+        return hovers.toArray()
+    }
+
     /**
      * Get hover information at a specific position
      */
-    public func getHover(filePath: Path, line: Int64, character: Int64): Option<HoverInfo> {
+    private func getHover(filePath: Path, line: Int64, character: Int64): Option<HoverInfo> {
         try {
             if (!this.initialized) {
                 throw Exception("LSP client not initialized")
@@ -147,7 +167,10 @@ public class LSPClient {
                 textDocument: TextDocumentIdentifier(
                     uri: this.pathToUri(filePath)
                 ),
-                position: Position(line: line, character: character)
+                position: Position(
+                    line: line - 1, // Convert to 0-based
+                    character: character
+                )
             )
 
             let result = this.jsonRpcClient.sendRequest("textDocument/hover", params: (params.toJsonValue().asObject()))
@@ -157,29 +180,49 @@ public class LSPClient {
             // For now, assume the result is valid
 
             let hoverResult = HoverResult.fromJsonValue(result)
-            var hoverContent = StringBuilder()
-
-            for (markedString in hoverResult.contents) {
-                match (markedString.language) {
-                    case Some(language) =>
-                        hoverContent.append("```${language}\n")
-                        hoverContent.append(markedString.value)
-                        hoverContent.append("\n```\n")
-                    case _ =>
-                        hoverContent.append(markedString.value)
-                }
+            var hoverContent = this.parseHoverContent(hoverResult.contents.value)
+            let symbol = if (let Some(range) <- hoverResult.range) {
+                this.fileManager.getFileRangeContent(filePath, range)
+            } else {
+                ""
             }
-
             return HoverInfo(
-                line: line,
+                line: line - 1, // Convert to 0-based
                 character: character,
                 contents: hoverContent.toString(),
-                range: hoverResult.range
+                range: hoverResult.range,
+                symbol: symbol
             )
         } catch (ex: Exception) {
             LogUtils.error("Failed to get hover info for ${filePath}:${line}:${character}: ${ex}")
             return None
         }
+    }
+
+    private func parseHoverContent(jsonValue: JsonValue): String {
+        let hoverContent = StringBuilder()
+        match (jsonValue.kind()) {
+            case JsonKind.JsString =>
+                hoverContent.append(jsonValue.asString().getValue())
+            case JsonKind.JsObject =>
+                let markedString = MarkedString.fromJsonValue(jsonValue)
+                match (markedString.language) {
+                    case Some(language) =>
+                        // hoverContent.append("```${language}\n")
+                        hoverContent.append(markedString.value)
+                        // hoverContent.append("\n```\n")
+                    case _ =>
+                        hoverContent.append(markedString.value)
+                }
+            case JsonKind.JsArray =>
+                let allContent = ArrayList<String>()
+                for (item in jsonValue.asArray().getItems()) {
+                    allContent.add(this.parseHoverContent(item))
+                }
+                hoverContent.append(String.join(allContent.toArray(), delimiter: " "))
+            case _ => throw UnsupportedException("Unreachable")
+        }
+        return hoverContent.toString()
     }
 
     /**
@@ -223,14 +266,14 @@ public class LSPClient {
             // Filter tokens for the specified line
             let lineTokens = ArrayList<SemanticTokenInfo>()
             for (token in allTokens) {
-                if (token.line == line) {
+                if (token.line + 1 == line) { // # token line is to 0-based
                     lineTokens.add(token)
                 }
             }
             let lineTokensArray = lineTokens.toArray()
 
             // Get hover info for the beginning of the line
-            let hoverInfo = this.getHover(filePath, line, 0)
+            let hoverInfos = this.getHovers(filePath, line, line)
 
             // Get document symbols
             let symbols = this.getDocumentSymbols(filePath)
@@ -253,7 +296,7 @@ public class LSPClient {
                 line: line,
                 tokens: tokensWithText,
                 symbols: symbols,
-                hoverInfo: hoverInfo,
+                hoverInfos: hoverInfos,
                 timestamp: 0
             )
         } catch (ex: Exception) {
@@ -265,7 +308,7 @@ public class LSPClient {
                 tokens: [],
                 symbols: [],
                 timestamp: 0,
-                hoverInfo: None
+                hoverInfos: []
             )
         }
     }
@@ -354,9 +397,9 @@ public class LSPClient {
             let tokenType = data[i + 3]
             let tokenModifiersBitmask = data[i + 4]
 
-            if (deltaLine > 0) {
-                currentLine += deltaLine
-                currentChar = deltaChar
+            currentLine += deltaLine
+            if (deltaLine == 0) {
+                currentChar = 0
             } else {
                 currentChar += deltaChar
             }

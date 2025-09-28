@@ -36,7 +36,6 @@ protected class CliSetting {
      */
     protected var fallbackModels: Array<String> = ["moonshot:kimi-k2-0905-preview", "zhipuai:glm-4.5"]
 
-
     /**
      * Temperature agents will use
      */

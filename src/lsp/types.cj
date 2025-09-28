@@ -267,7 +267,7 @@ public struct HoverParams {
  */
 @jsonable
 public struct HoverResult {
-    public var contents: Array<MarkedString>
+    public var contents: LSPResult
     public var range: Option<Range> = None
 }
 
@@ -314,7 +314,7 @@ public struct SemanticInfoResult {
     public var filePath: String
     public var line: Int64
     public var tokens: Array<SemanticTokenInfo>
-    public var hoverInfo: Option<HoverInfo> = None
+    public var hoverInfos: Array<HoverInfo>
     public var symbols: Array<DocumentSymbol>
     public var timestamp: Int64
 }
@@ -341,4 +341,5 @@ public struct HoverInfo {
     public var character: Int64
     public var contents: String
     public var range: Option<Range> = None
+    public let symbol: String
 }

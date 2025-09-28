@@ -77,7 +77,7 @@ You:
 
 @agent[
     description: "${ANALYZE_TOOL_DESCRIPTION}",
-    model: "${CliConfig.model}",
+    model: CliConfig.model,
     executor: "tool-loop:1000",
     tools: [
         FSToolset()
