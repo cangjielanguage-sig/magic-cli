@@ -55,4 +55,19 @@ protected class ModelTokenLimits {
     public static func getContextLimit(model: String): Int64 {
         return CONTEXT_LIMITS.get(model).getOrDefault { DEFAULT_LIMIT }
     }
+
+    private static let MAX_TOKENS_LIMITS = HashMap<String, Int64>([
+        // Ark (ByteDance) models
+        ("ark:kimi-k2-250711", 32 * 1024),
+        ("ark:kimi-k2-250905", 32 * 1024),
+        ("ark:doubao-seed-1-6-flash-250828", 32 * 1024),
+        ("ark:doubao-1-5-pro-32k-250115", 8 * 1024),
+        ("ark:deepseek-v3-1-250821", 32 * 1024),
+        ("ark:deepseek-v3-250324", 32 * 1024),
+        ("ark:deepseek-r1-250528", 32 * 1024)
+    ])
+
+    public static func getMaxTokensLimit(model: String): Option<Int64> {
+        return MAX_TOKENS_LIMITS.get(model)
+    }
 }

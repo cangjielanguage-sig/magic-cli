@@ -108,7 +108,7 @@ instead, use 'readFile' to ensure you aren't making broad assumptions. Many of y
 """
 
 @agent[
-    model: "${CliConfig.model}",
+    model: CliConfig.model,
     temperature: CliConfig.temperature,
     executor: "tool-loop:1000",
     tools: [

@@ -7,16 +7,12 @@ import magic.log.LogUtils
 /**
  * Main entry point for getting semantic information from Cangjie files
  */
-public func getSemanticInfo(path: Path, line: Int64): SemanticInfoResult {
+public func getSemanticInfo(path: Path, line: Int64, serverPath!: String = "LSPServer", serverArgs!: Array<String> = []): SemanticInfoResult {
     try {
-        LogUtils.info("Getting semantic info for ${path}:${line}")
-
-        // Default LSP server path - this should be configurable
-        let lspServerPath = "LSPServer" // Adjust this to your actual LSP server
-        let lspServerArgs = Array<String>()
+        LogUtils.info("Getting semantic info for ${path}:${line} with server ${serverPath}")
 
         // Create LSP client
-        let lspClient = LSPClient(lspServerPath, serverArgs: lspServerArgs)
+        let lspClient = LSPClient(serverPath, serverArgs: serverArgs)
 
         try {
             // Initialize LSP client
@@ -41,45 +37,7 @@ public func getSemanticInfo(path: Path, line: Int64): SemanticInfoResult {
             tokens: [],
             symbols: [],
             timestamp: 0,
-            hoverInfo: None
-        )
-    }
-}
-
-/**
- * Extended version with configurable LSP server
- */
-public func getSemanticInfoWithServer(path: Path, line: Int64, serverPath: String, serverArgs!: Array<String> = Array<String>()): SemanticInfoResult {
-    try {
-        LogUtils.info("Getting semantic info for ${path}:${line} with server ${serverPath}")
-
-        // Create LSP client
-        let lspClient = LSPClient(serverPath, serverArgs: serverArgs)
-
-        try {
-            // Initialize LSP client
-            let rootPath = path.parent
-    let rootUri = rootPath.toString()
-            lspClient.initialize(rootUri: "file://${rootUri}")
-
-            // Get semantic info
-            let result = lspClient.getSemanticInfo(path, line)
-            LogUtils.info("Successfully retrieved semantic info for ${path}:${line}")
-            return result
-        } finally {
-            // Always close the LSP client
-            lspClient.close()
-        }
-    } catch (ex: Exception) {
-        LogUtils.error("Failed to get semantic info for ${path}:${line}: ${ex}")
-        // Return empty result on error
-        return SemanticInfoResult(
-            filePath: path.toString(),
-            line: line,
-            tokens: [],
-            symbols: [],
-            timestamp: 0,
-            hoverInfo: None
+            hoverInfos: []
         )
     }
 }
@@ -95,11 +53,12 @@ public func getSemanticInfoSummary(result: SemanticInfoResult): String {
     summary.append("Timestamp: ${result.timestamp}\n")
     summary.append("Tokens found: ${result.tokens.size}\n")
 
-    match (result.hoverInfo) {
-        case Some(hover) =>
-            summary.append("Hover info available at line ${hover.line}:${hover.character}\n")
-        case _ =>
-            summary.append("No hover info available\n")
+    if (!result.hoverInfos.isEmpty()) {
+        summary.append("\nHovers:\n")
+        summary.append("--------\n")
+        for (hover in result.hoverInfos) {
+            summary.append("  Hover info available at line ${hover.line}:${hover.character}\n")
+        }
     }
 
     summary.append("Symbols found: ${result.symbols.size}\n")

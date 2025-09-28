@@ -2,6 +2,7 @@ package cli
 
 import magic.core.agent.{Agent,AgentRequest, AgentResponseStatus, AsyncAgentResponse}
 import magic.log.LogUtils
+import magic.core.model.ChatModel
 
 import cli.core.config.CliConfig
 import cli.core.mcp.MCPConfigManager
@@ -171,21 +172,21 @@ private func shouldFallback(ex: Exception): Bool {
 }
 
 // Session-level successful model memory (resets on restart)
-private var sessionSuccessfulModel: Option<String> = None
+private var sessionSuccessfulModel: Option<ChatModel> = None
 
 private func executeAgentTask(context: CliContext, input: String): Unit {
     LogUtils.debug("Handle user input `${input}`")
 
-    let models = ArrayList<String>()
+    let models = ArrayList<ChatModel>()
     if (let Some(successModel) <- sessionSuccessfulModel) {
         // Use last successful model first
         models.add(successModel)
-        if (successModel != CliConfig.model) {
+        if (successModel.fullName != CliConfig.model.fullName) {
             models.add(CliConfig.model)
         }
-        for (fallback in CliConfig.fallbackModels) {
-            if (fallback != successModel) {
-                models.add(fallback)
+        for (model in CliConfig.fallbackModels) {
+            if (model.fullName != successModel.fullName) {
+                models.add(model)
             }
         }
     } else {
@@ -203,12 +204,12 @@ private func executeAgentTask(context: CliContext, input: String): Unit {
             if (i > 0) {
                 // Only show user message on first fallback in this session
                 if (sessionSuccessfulModel.isNone()) {
-                    PrintUtils.printTool("Model Fallback", "Switching to: ${currentModel}")
+                    PrintUtils.printTool("Model Fallback", "Switching to: ${currentModel.fullName}")
                 }
                 context.switchToFallbackModel(currentModel)
             }
 
-            LogUtils.info("Using model: ${currentModel}")
+            LogUtils.info("Using model: ${currentModel.fullName}")
 
             // Execute with current model
             let response = context.agent.asyncChat(AgentRequest(input, conversation: context.conversationManager.conversation))
@@ -257,7 +258,7 @@ private func executeAgentTask(context: CliContext, input: String): Unit {
                 throw ex
             }
             if (shouldFallback(ex)) {
-                LogUtils.info("Model ${currentModel} failed, trying fallback")
+                LogUtils.info("Model ${currentModel.fullName} failed, trying fallback")
                 continue
             } else {
                 throw ex

@@ -175,7 +175,7 @@ project/
 """
 
 @agent[
-    model: "${CliConfig.model}",
+    model: CliConfig.model,
     executor: "naive"
 ]
 public class CodeDesigner {

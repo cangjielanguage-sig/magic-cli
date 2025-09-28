@@ -62,14 +62,16 @@ func parseArgs(args: Array<String>): Bool {
         CliConfig.auto = true
     }
     if (let Some(model) <- result.options.get("model")) {
-        CliConfig.model = model
+        CliConfig.setModel(model)
     }
     if (let Some(model) <- result.options.get("fast-model")) {
-        CliConfig.fastModel = model
+        CliConfig.setFastModel(model)
     }
     if (let Some(modelsStr) <- result.options.get("fallback-models")) {
-        let models = modelsStr.split(",") |> map({model => model.trimAscii()}) |> collectArray
-        CliConfig.fallbackModels = models
+        let models = modelsStr.split(",") |>
+            map { model => model.trimAscii() } |>
+            collectArray
+        CliConfig.setFallbackModels(models)
     }
     if (let Some(temperature) <- result.options.get("temperature")) {
         try {
@@ -86,29 +88,41 @@ func parseArgs(args: Array<String>): Bool {
         CliConfig.nonInteractivePrompt = prompt
         CliConfig.printInfoSavingDir = Path("test").join(DateTime.now().toUnixTimeStamp().toMilliseconds().toString())
     }
+
+    var changeSetting = false
+
     if (let Some(language) <- result.options.get("language")) {
         CliConfig.language = language.toAsciiLower()
+        CliSettingManager.setting.language = CliConfig.language
+        changeSetting = true
     } else if (let Some(language) <- result.options.get("l")) {
         CliConfig.language = language.toAsciiLower()
+        CliSettingManager.setting.language = CliConfig.language
+        changeSetting = true
     } else {
         CliConfig.language = CliSettingManager.setting.language
     }
 
-    if (result.options.contains("model") ||
-        result.options.contains("fast-model") ||
-        result.options.contains("fallback-models") ||
-        result.options.contains("temperature") ||
-        result.options.contains("language") ||
-        result.options.contains("l")) {
-
-        CliSettingManager.setting.model = CliConfig.model
-        CliSettingManager.setting.fastModel = CliConfig.fastModel
-        CliSettingManager.setting.fallbackModels = CliConfig.fallbackModels
+    if (let Some(model) <- result.options.get("model")) {
+        CliSettingManager.setting.model = model
+        changeSetting = true
+    }
+    if (let Some(model) <- result.options.get("fast-model")) {
+        CliSettingManager.setting.fastModel = model
+        changeSetting = true
+    }
+    if (let Some(models) <- result.options.get("fallback-models")) {
+        CliSettingManager.setting.fallbackModels = CliConfig.fallbackModels |>
+            map { model => model.fullName } |>
+            collectArray
+        changeSetting = true
+    }
+    if (let Some(temp) <- result.options.get("temperature")) {
         CliSettingManager.setting.temperature = CliConfig.temperature
-        CliSettingManager.setting.language = CliConfig.language
-
+        changeSetting = true
+    }
+    if (changeSetting) {
         CliSettingManager.save()
     }
-
     return true
 }

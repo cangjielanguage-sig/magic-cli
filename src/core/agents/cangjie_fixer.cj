@@ -16,7 +16,7 @@ import std.fs.{File, Path, OpenMode}
 const CANGJIE_FIX_TOOL_NAME = "fixCangjieProjectCompileError"
 
 @agent[
-    model: "${CliConfig.fastModel ?? CliConfig.model}",
+    model: CliConfig.fastModel ?? CliConfig.model,
     executor: "naive"
 ]
 class CodeFixSummarizer {
@@ -254,7 +254,7 @@ Follow this iterative, disciplined process to fix compile errors:
 """
 
 @agent[
-    model: "${CliConfig.model}",
+    model: CliConfig.model,
     temperature: CliConfig.temperature,
     executor: "tool-loop:1000",
     tools: [

@@ -49,7 +49,7 @@ The output must be concise and directly usable for code generation.
 
 @agent[
     description: "An tool specialized in the Cangjie programming language, capable of retrieving Cangjie language documentation based on user queries. Input user query: Topics to focus documentation on (e.g., 'hooks', 'routing').",
-    model: "${CliConfig.model}",
+    model: CliConfig.fastModel ?? CliConfig.model,
     executor: "react"
 ]
 protected class CangjieContext7Agent {
