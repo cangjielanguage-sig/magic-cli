@@ -14,7 +14,7 @@
 #define VK_RIGHT 0x27
 #define VK_HOME 0x24
 #define VK_END 0x23
-#define INFINITE 0xFFFFFFFF
+#define INFINITE_VALUE 0xFFFFFFFF
 
 // Static storage for original terminal settings
 static HANDLE h_console = 0;
@@ -381,7 +381,7 @@ int getRawUtf8(BYTE *bytes) {
  *   2  = CHECKPOINT (half, illegal)
  */
 int getByte(DWORD dwTimeoutMs, WORD* keyCode) {
-    DWORD waitTime = (dwTimeoutMs == 0) ? INFINITE : dwTimeoutMs;
+    DWORD waitTime = (dwTimeoutMs == 0) ? INFINITE_VALUE : dwTimeoutMs;
     DWORD waitResult = WaitForSingleObject(h_console, waitTime);
     switch (waitResult) {
         case WAIT_TIMEOUT:

@@ -9,9 +9,9 @@ public class ShellUtils {
     public static func execute(command: Array<String>, workDir!: ?Path = None): (Int64, Array<Byte>, Array<Byte>) {
         let cmdArgs = ArrayList<String>()
         if (InfoUtils.os == "windows") {
-            cmdArgs.add("-Command")
+            cmdArgs.add("/c")
             cmdArgs.add(all: command)
-            executeWithOutput("powershell", cmdArgs.toArray(), workingDirectory: workDir)
+            executeWithOutput("cmd", cmdArgs.toArray(), workingDirectory: workDir)
         } else {
             cmdArgs.add("-c")
             cmdArgs.add(all: command)
