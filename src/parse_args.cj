@@ -86,10 +86,10 @@ func parseArgs(args: Array<String>): Bool {
         CliConfig.nonInteractivePrompt = prompt
         CliConfig.printInfoSavingDir = Path("test").join(DateTime.now().toUnixTimeStamp().toMilliseconds().toString())
     }
-    if (let Some(language) <- result.options.get("language") && language.toAsciiLower() == 'cangjie') {
-        CliConfig.language = 'cangjie'
-    } else if (let Some(language) <- result.options.get("l") && language.toAsciiLower() == 'cangjie') {
-        CliConfig.language = 'cangjie'
+    if (let Some(language) <- result.options.get("language")) {
+        CliConfig.language = language.toAsciiLower()
+    } else if (let Some(language) <- result.options.get("l")) {
+        CliConfig.language = language.toAsciiLower()
     } else {
         CliConfig.language = CliSettingManager.setting.language
     }
@@ -97,12 +97,15 @@ func parseArgs(args: Array<String>): Bool {
     if (result.options.contains("model") ||
         result.options.contains("fast-model") ||
         result.options.contains("fallback-models") ||
-        result.options.contains("temperature")) {
+        result.options.contains("temperature") ||
+        result.options.contains("language") ||
+        result.options.contains("l")) {
 
         CliSettingManager.setting.model = CliConfig.model
         CliSettingManager.setting.fastModel = CliConfig.fastModel
         CliSettingManager.setting.fallbackModels = CliConfig.fallbackModels
         CliSettingManager.setting.temperature = CliConfig.temperature
+        CliSettingManager.setting.language = CliConfig.language
 
         CliSettingManager.save()
     }
