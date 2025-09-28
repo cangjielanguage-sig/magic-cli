@@ -34,7 +34,8 @@ protected class CliSetting {
     /**
      * Fallback models to use when primary model fails
      */
-    protected var fallbackModels: Array<String> = ["moonshot:kimi-k2-0905-preview", "zhipuai:glm-4.5"]
+    protected var fallbackModels: Array<String> = [] // Disable fallback models by default
+    // ["moonshot:kimi-k2-0905-preview", "zhipuai:glm-4.5"]
 
     /**
      * Temperature agents will use
