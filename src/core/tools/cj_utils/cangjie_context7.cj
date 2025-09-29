@@ -39,32 +39,27 @@ If the user's query explicitly mentions or is clearly related to **any** of the 
 For all other queries about the Cangjie language (e.g., "How to define a function?", "What is the syntax for loops?", "General concurrency model"), call `queryCangjie`.
 
 Do not call both tools. Choose the most appropriate one based on the content of the query.
+
+Output: Summarize the query and the findings based solely on the retrieved content, without any personal speculation or interpretation. Cangjie is a new programming language, and any assumption you make will lead to incorrect results. This is VERY IMPORTANT!
+Based on the original query, extract ONLY the most relevant information from the extracted documents.
+Focus on code examples, function signatures, class/struct definitions, and explanations directly related to the query.
+Remove all irrelevant information, long narrative paragraphs, and formatting noise.
+The output must be concise and directly usable for code generation.
 """
 
 @agent[
     description: "An tool specialized in the Cangjie programming language, capable of retrieving Cangjie language documentation based on user queries. Input user query: Topics to focus documentation on (e.g., 'hooks', 'routing').",
-    model: "${CliConfig.model}",
+    model: CliConfig.fastModel ?? CliConfig.model,
     executor: "react"
 ]
 protected class CangjieContext7Agent {
     private static func startContext7(): MCPClient {
-        if (InfoUtils.os == "windows") {
-            StdioMCPClient("cmd", [
-                "/c",
-                "npx",
-                "-y",
-                "@upstash/context7-mcp",
-                "--api-key",
-                Config.env["CONTEXT7_API_KEY"].getOrThrow({ => Exception("CONTEXT7_API_KEY is not set")})
-            ])
-        } else {
-            StdioMCPClient("npx", [
-                "-y",
-                "@upstash/context7-mcp",
-                "--api-key",
-                Config.env["CONTEXT7_API_KEY"].getOrThrow({ => Exception("CONTEXT7_API_KEY is not set")})
-            ])
-        }
+        HttpMCPClient("https://mcp.context7.com/mcp", headers: [
+            (
+                "CONTEXT7_API_KEY",
+                Config.env["CONTEXT7_API_KEY"].getOrThrow({ => AgentCancelException(reason: "CONTEXT7_API_KEY is not set") })
+            )
+        ])
     }
 
     private let client = CangjieContext7Agent.startContext7()
@@ -76,8 +71,8 @@ protected class CangjieContext7Agent {
         description: "Queries the official Cangjie language documentation for general language features, syntax, and core standard library information.",
         parameters: {
             query: "Topic to focus documentation on (e.g., 'hooks', 'routing')."
-        },
-        terminal: true
+        }
+        // terminal: true
     ]
     func queryCangjie(query: String): String {
         let docs = client.callTool("get-library-docs", [
@@ -92,8 +87,8 @@ protected class CangjieContext7Agent {
         description: "Queries the Cangjie stdx (Standard Library Extension) documentation for specific extended packages such as JSON, TLS, logging, compression, and cryptography. Use this only when the query involves one of the stdx packages.",
         parameters: {
             query: "Topic to focus documentation on (e.g., 'hooks', 'routing')."
-        },
-        terminal: true
+        }
+        // terminal: true
     ]
     func queryCangjieStdExtension(query: String): String {
         let docs = client.callTool("get-library-docs", [
@@ -103,4 +98,20 @@ protected class CangjieContext7Agent {
         ])
         return docs.content
     }
+
+    // @tool[
+    //     description: "Queries the OpenHarmony development documentation for application development, system APIs, framework features, and platform-specific capabilities.",
+    //     parameters: {
+    //         query: "Topic to focus documentation on (e.g., 'ArkUI', 'ArkTS', 'application lifecycle')."
+    //     },
+    //     terminal: true
+    // ]
+    // func queryOpenHarmony(query: String): String {
+    //     let docs = client.callTool("get-library-docs", [
+    //         ("context7CompatibleLibraryID", "/openharmony/docs"),
+    //         ("topic", query),
+    //         ("tokens", 3000)
+    //     ])
+    //     return docs.content
+    // }
 }

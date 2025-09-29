@@ -2,13 +2,15 @@ package cli
 
 import magic.core.agent.{Agent,AgentRequest, AgentResponseStatus, AsyncAgentResponse}
 import magic.log.LogUtils
+import magic.core.model.ChatModel
 
 import cli.core.config.CliConfig
 import cli.core.mcp.MCPConfigManager
 import cli.core.conversation.ConversationManager
 import cli.core.agents.CodeAnalyzer
 import cli.io.{InputUtils, PrintUtils, WithColor, AnsiColor, Confirmation}
-import cli.utils.TerminalUtils
+import cli.utils.ShellUtils
+import cli.telemetry.DataCollector
 
 import std.collection.ArrayList
 import std.fs.{exists, File, FSException, Path}
@@ -37,7 +39,7 @@ private func executeShellCommand(command: String, context: CliContext): Unit {
     }
     //let items = command.split(" ")  // Simple split by space, does not handle quotes
     //let args = if (items.size > 1) { items[1..] } else { Array<String>() }
-    let (exitCode, stdOutData, stdErrData) = TerminalUtils.execute([command], workDir: CliConfig.cwd)
+    let (exitCode, stdOutData, stdErrData) = ShellUtils.execute([command], workDir: CliConfig.cwd)
     let output = if (exitCode == 0) {
         String.fromUtf8(stdOutData).trimAscii()
     } else {
@@ -149,7 +151,8 @@ private func initMagicFile(): Unit {
  * Check if an exception should trigger model fallback
  */
 private func shouldFallback(ex: Exception): Bool {
-    if (!CliConfig.enableFallback) {
+    // Only fallback if we have fallback models configured
+    if (CliConfig.fallbackModels.size == 0) {
         return false
     }
     let message = ex.message.toAsciiLower()
@@ -169,41 +172,31 @@ private func shouldFallback(ex: Exception): Bool {
 }
 
 // Session-level successful model memory (resets on restart)
-private var sessionSuccessfulModel: Option<String> = None
+private var sessionSuccessfulModel: Option<ChatModel> = None
 
 private func executeAgentTask(context: CliContext, input: String): Unit {
     LogUtils.debug("Handle user input `${input}`")
 
-    let models = ArrayList<String>()
+    let models = ArrayList<ChatModel>()
     if (let Some(successModel) <- sessionSuccessfulModel) {
         // Use last successful model first
         models.add(successModel)
-        if (successModel != CliConfig.model) {
+        if (successModel.fullName != CliConfig.model.fullName) {
             models.add(CliConfig.model)
         }
-        if (CliConfig.enableFallback) {
-            for (fallback in CliConfig.fallbackModels) {
-                if (fallback != successModel) {
-                    models.add(fallback)
-                }
+        for (model in CliConfig.fallbackModels) {
+            if (model.fullName != successModel.fullName) {
+                models.add(model)
             }
         }
     } else {
         // First execution, use original order
         models.add(CliConfig.model)
-        if (CliConfig.enableFallback) {
-            models.add(all: CliConfig.fallbackModels)
-        }
+        models.add(all: CliConfig.fallbackModels)
     }
 
-    let maxAttempts = if (models.size > CliConfig.maxFallbackAttempts) {
-        CliConfig.maxFallbackAttempts
-    } else {
-        models.size
-    }
-
-    // Try models in sequence
-    for (i in 0..maxAttempts) {
+    // Try all available models in sequence
+    for (i in 0..models.size) {
         let currentModel = models[i]
 
         try {
@@ -211,12 +204,12 @@ private func executeAgentTask(context: CliContext, input: String): Unit {
             if (i > 0) {
                 // Only show user message on first fallback in this session
                 if (sessionSuccessfulModel.isNone()) {
-                    PrintUtils.printTool("Model Fallback", "Switching to: ${currentModel}")
+                    PrintUtils.printTool("Model Fallback", "Switching to: ${currentModel.fullName}")
                 }
                 context.switchToFallbackModel(currentModel)
             }
 
-            LogUtils.info("Using model: ${currentModel}")
+            LogUtils.info("Using model: ${currentModel.fullName}")
 
             // Execute with current model
             let response = context.agent.asyncChat(AgentRequest(input, conversation: context.conversationManager.conversation))
@@ -231,9 +224,10 @@ private func executeAgentTask(context: CliContext, input: String): Unit {
                     if (!InputUtils.isRequestingInput() && InputUtils.checkEsc()) {
                         // ESC was pressed, cancel the agent response
                         if (escPressed.compareAndSwap(false, true)) {  // Ensure only one cancellation
+                            LogUtils.info("ESC pressed, cancelling")
                             context.thinkIndicator.load()?.cancel()
                             response.cancel()
-                            PrintUtils.printInterrupt()
+                            // PrintUtils.printInterrupt() // Cancellation info will be printed in handleAgentResponse
                         }
                         return
                     }
@@ -260,11 +254,11 @@ private func executeAgentTask(context: CliContext, input: String): Unit {
             sessionSuccessfulModel = Some(currentModel)
             break // Success, exit retry loop
         } catch (ex: Exception) {
-            if (i == maxAttempts - 1) {
+            if (i == models.size - 1) {
                 throw ex
             }
             if (shouldFallback(ex)) {
-                LogUtils.info("Model ${currentModel} failed, trying fallback")
+                LogUtils.info("Model ${currentModel.fullName} failed, trying fallback")
                 continue
             } else {
                 throw ex
@@ -290,6 +284,9 @@ private func handleAgentResponse(context: CliContext,
                     PrintUtils.printAgentResponse(response)
                 }
                 context.conversationManager.conversation.addChatRound(response.execution.chatRound)
+                spawn {
+                    DataCollector.collectChatRound(response.execution.chatRound)
+                }
             }
         case AgentResponseStatus.Cancelled =>
             if (content == "__USER_CLARIFY__") {
@@ -298,6 +295,8 @@ private func handleAgentResponse(context: CliContext,
                 // Change the answer that wil be added to the chat round
                 response.execution.setAnswer("The user denied the last tool and will guide the execution.")
                 context.conversationManager.conversation.addChatRound(response.execution.chatRound)
+            } else {
+                PrintUtils.printLine(response.content.withColor(AnsiColor.color256(100)))
             }
             // Otherwise, user denied the execution
     }
@@ -322,7 +321,7 @@ func processInput(input: String, context: CliContext): Bool {
             } catch (ex: Exception) {
                 let msg = "Execution failure: ${ex.message}"
                 PrintUtils.printLine(msg.withColor(AnsiColor.color256(100)))
-                LogUtils.error(msg)
+                LogUtils.error(ex)
             }
             return true  // Continue running
     }

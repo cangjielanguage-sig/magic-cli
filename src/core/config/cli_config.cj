@@ -1,8 +1,12 @@
 package cli.core.config
 
+import magic.core.model.ChatModel
+import magic.model.ModelManager
+import magic.log.LogUtils
+
 import std.fs.*
 import std.io.readToEnd
-import magic.log.LogUtils
+import std.collection.{map, collectArray}
 
 protected class CliConfig {
     private static const DOT_DIR_NAME = ".magic-cli"
@@ -86,52 +90,89 @@ protected class CliConfig {
     public static var auto: Bool = false
 
     /**
+     * Temperature agents will use
+     */
+    public static var temperature: Float64 = CliSettingManager.setting.temperature
+
+    /**
      * The chat model to use
      */
-    public static var model: String = "ark:kimi-k2-250711"
+    public static var _model: Option<ChatModel> = None
+    public static prop model: ChatModel {
+        get() {
+            if (let Some(m) <- _model) {
+                return m
+            }
+            setModel(CliSettingManager.setting.model)
+            return _model.getOrThrow()
+        }
+    }
 
-    /**
-     * Fallback models to use when primary model fails
-     */
-    public static var fallbackModels: Array<String> = ["moonshot:kimi-k2-0905-preview", "zhipuai:glm-4.5"]
-    
-    /**
-     * Enable model fallback functionality
-     */
-    public static var enableFallback: Bool = true
-
-    /**
-     * Maximum number of models to try
-     */
-    public static var maxFallbackAttempts: Int64 = 3
+    public static func setModel(model: String): Unit {
+        let m = ModelManager.createChatModel(model)
+        m.maxTokens = ModelTokenLimits.getMaxTokensLimit(model)
+        _model = m
+    }
 
     /**
      * Fast model for auxiliary tasks in hybrid mode
      */
-    public static var hybridFastModel: String = "ark:doubao-1-5-pro-32k-250115"
+    public static var _fastModel: Option<ChatModel> = None
+
+    public static prop fastModel: Option<ChatModel> {
+        get() {
+            if (let Some(m) <- _fastModel) {
+                return m
+            }
+            if (let Some(m) <- CliSettingManager.setting.fastModel) {
+                _fastModel = ModelManager.createChatModel(m)
+            }
+            return _fastModel
+        }
+    }
+
+    public static func setFastModel(model: String): Unit {
+        _fastModel = ModelManager.createChatModel(model)
+    }
 
     /**
-     * Enable hybrid mode (use fast model for auxiliary tasks)
+     * Fallback models to use when primary model fails
      */
-    public static var hybridMode: Bool = false
+    private static var _fallbackModels: Array<ChatModel> = []
+    public static prop fallbackModels: Array<ChatModel> {
+        get() {
+            if (_fallbackModels.isEmpty()) {
+                _fallbackModels = CliSettingManager.setting.fallbackModels |>
+                    map { model => ModelManager.createChatModel(model) } |>
+                    collectArray
+            }
+            return _fallbackModels
+        }
+    }
+
+    public static func setFallbackModels(models: Array<String>): Unit {
+        _fallbackModels = models |>
+            map { model => ModelManager.createChatModel(model) } |>
+            collectArray
+    }
 
     /**
      * The prompt when running magic-cli in noninteractive mode
      */
-    public static var noninteractive: Bool = false
-    public static var noninteractivePrompt: String = ""
+    public static var nonInteractive: Bool = false
+    public static var nonInteractivePrompt: String = ""
     public static var printInfoSavingDir: Path = Path("")
 
     /**
-    * language in [Cangjie, General]
+    * language in [cangjie, general, unknown]
     */
-    public static var language: String = 'General'
+    public static var language: String = "unknown" // will be set during the arguments parsing
 
     public static prop userRules: String {
         get() {
             let ruleFile = uerRuleFile
             if (exists(ruleFile)) {
-                String.fromUtf8(readToEnd(File(ruleFile, OpenMode.Read)))    
+                String.fromUtf8(readToEnd(File(ruleFile, OpenMode.Read)))
             } else {
                 ""
             }

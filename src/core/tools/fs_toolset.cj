@@ -26,7 +26,7 @@ import cli.core.config.CliConfig
 
 let EDIT_FILE_DESCRIPTION = """
 Replaces text within a file. By default, replaces a single occurrence.
-This tool requires providing significant context around the change to ensure precise targeting. Always use the readFile or readFileRange tool to examine the file's current content before attempting a text replacement.
+This tool requires providing significant context around the change to ensure precise targeting. Always use the readFile tool to examine the file's current content before attempting a text replacement.
 
 Expectation for required parameters:
 1. path MUST be an absolute path; otherwise an error will be thrown.
@@ -128,9 +128,9 @@ public class FSToolset {
 
         try {
             let (exitCode, stdOutData, stdErrData) = if (InfoUtils.os == "windows") {
-                TerminalUtils.execute(["dir"], workDir: Path(path))
+                ShellUtils.execute(["dir"], workDir: Path(path))
             } else { //linux or ohos
-                TerminalUtils.execute(["ls", "-la"], workDir: Path(path))
+                ShellUtils.execute(["ls", "-la"], workDir: Path(path))
             }
 
             if (exitCode == 0) {
@@ -146,7 +146,7 @@ public class FSToolset {
     }
 
     @tool[
-        description: "Reads and returns a specific range of lines from a file with line numbers.",
+        description: "Reads and returns a specific range of lines from a file with line numbers. If startLine and endLine is omitted, the entire file will be read.",
         parameters: {
             filePath: "The absolute path to the file to read",
             startLine: "Optional: Starting line number (1-based, inclusive). If not provided, reads from start of file",
@@ -154,10 +154,13 @@ public class FSToolset {
         }
     ]
     public func readFile(filePath: String, startLine: Option<Int64>, endLine: Option<Int64>): String {
-        let message = "filePath: ${filePath}\nstart: ${startLine ?? 1}\nend: ${endLine.map { n => n.toString() } ?? "end of file"}"
-        PrintUtils.printTool("Read File Range", message)
+        let start = startLine ?? 1
+        let end = endLine.map { n => n.toString() } ?? "EOF"
+        let message = "filePath: ${filePath}\nstart: ${start}\nend: ${end}"
+        PrintUtils.printTool("Read File", message)
 
-        return catRange(filePath, startLine ?? 1, endLine: endLine ?? Int64.Max)
+        let content = catRange(filePath, startLine ?? 1, endLine: endLine ?? Int64.Max)
+        return "<file-content path=${filePath} start=${start} end=${end}>\n${content}\n</file-content>"
     }
 
     @tool[
@@ -180,8 +183,8 @@ public class FSToolset {
         description: "${EDIT_FILE_DESCRIPTION}",
         parameters: {
             filePath: "File path, must be an absolute path",
-            oldContent: "The exact literal text to replace, preferably unescaped. For single replacements (default), include at least 3 lines of context BEFORE and AFTER the target text, matching whitespace and indentation precisely. For multiple replacements, specify expected_replacements parameter. If this string is not the exact literal text (i.e. you escaped it) or does not match exactly, the tool will fail.",
-            newContent: "The exact literal text to replace `oldContent` with, preferably unescaped. Provide the EXACT text. Ensure the resulting code is correct and idiomatic."
+            oldContent: "The exact literal text to replace, preferably unescaped. Including at least 3 lines of context BEFORE and AFTER the target text, matching whitespace and indentation precisely. If this string is not the exact literal text (i.e. you escaped it) or does not match exactly, the tool will fail.",
+            newContent: "The exact literal text to replace `oldContent` with, preferably unescaped. Provide the EXACT text. newContent MUST be different from oldContent; otherwise, the tool will fail."
         }
     ]
     public func editFile(filePath: String, oldContent: String, newContent: String): String {
@@ -250,16 +253,16 @@ public class FSToolset {
         }
     }
 
-    @tool[
-        description: "Lists the directory structure recursively from the given path, showing files and subdirectories in a tree-like format. Useful for understanding the overall layout and hierarchy of a project or folder.",
-        parameters: {
-            path: "The absolute path to the directory to visualize."
-        }
-    ]
-    public func tree(path: String): String {
-        PrintUtils.printTool("Tree", "path: ${path}")
-        return listTree(path)
-    }
+    // @tool[
+    //     description: "Lists the directory structure recursively from the given path, showing files and subdirectories in a tree-like format. Useful for understanding the overall layout and hierarchy of a project or folder.",
+    //     parameters: {
+    //         path: "The absolute path to the directory to visualize."
+    //     }
+    // ]
+    // public func tree(path: String): String {
+    //     PrintUtils.printTool("Tree", "path: ${path}")
+    //     return listTree(path)
+    // }
 
     @tool[
         description: "Efficiently finds files matching specific extensions patterns (e.g., `src/**/*.ts`, `**/*.md`), returning absolute paths. Ideal for quickly locating files based on their extension name, especially in large codebases.",

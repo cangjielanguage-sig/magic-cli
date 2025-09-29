@@ -26,7 +26,7 @@ public class ShellTool {
         }
 
         try {
-            let (exitCode, stdOutData, stdErrData) = TerminalUtils.execute([command], workDir: Path(path))
+            let (exitCode, stdOutData, stdErrData) = ShellUtils.execute([command], workDir: Path(path))
             if (exitCode == 0) {
                 let outString = String.fromUtf8(stdOutData).trimAscii()
                 return "Command executed successfully, output:\n${outString}"

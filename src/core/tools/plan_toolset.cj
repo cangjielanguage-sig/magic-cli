@@ -103,12 +103,12 @@ public class PlanToolset {
     ]
     public func createOrUpdatePlan(tasks: Array<String>): String {
         this.plan = Plan(tasks)
-        let message = "\n${this.plan}\nPlan has been created. Please confirm if you need to modify the plan. Confirm execution to save this plan and start execution."
+        let message = "\n${this.plan}\nPlan has been created. Please confirm if you need to modify the plan."
         if (InputUtils.confirm("Plan", message) == Confirmation.Deny) {
             return "User denied the plan"
         }
         this.plan.save()
-        return "\nPlan has been approved by user, ready to start execution."
+        return "Plan has been approved by user, ready to start execution."
     }
 
     @tool[

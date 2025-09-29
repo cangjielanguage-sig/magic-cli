@@ -12,7 +12,7 @@ import stdx.encoding.json.*
 
 @agent[
     executor: "naive",
-    model: "${CliConfig.model}"
+    model: CliConfig.fastModel ?? CliConfig.model
 ]
 private class DocSummaryAssistant {
     @prompt("""
@@ -52,9 +52,6 @@ protected func retrieveCangjieDocumentsInternal(query: String, numToRetrieve: Op
             responseData.toJsonString()
     }
     let docSummaryAssistant = DocSummaryAssistant()
-    if (CliConfig.hybridMode) {
-        docSummaryAssistant.model = ModelManager.createChatModel(CliConfig.hybridFastModel)
-    }
     let promptForSummarizer = """
         Original User Query: "${query}"
 

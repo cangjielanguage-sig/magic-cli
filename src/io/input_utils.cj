@@ -4,6 +4,7 @@ import cli.core.config.CliConfig
 
 import magic.log.LogUtils
 import magic.core.agent.AgentCancelException
+import magic.core.tool.ToolException
 
 import std.collection.{map, enumerate, collectArray}
 import std.time.DateTime
@@ -70,9 +71,10 @@ protected class InputUtils {
         isRequestingUserInput.store(true)
         try {
             let options = [
-                "Yes, allow this tool to continue",
-                "No, this tool should not execute",
-                "Help, tell me how to the run"
+                "Yes, proceed",
+                "Yes, allow all edits during this session",
+                "No, stop",
+                "Wait, input guidelines"
             ]
             match (getOptions(options)) {
                 case Some(index) =>
@@ -80,12 +82,18 @@ protected class InputUtils {
                         PrintUtils.printApproval()
                         return Confirmation.Approve
                     } else if (index == 1) {
+                        PrintUtils.printApproval()
+                        CliConfig.auto = true
+                        return Confirmation.Approve
+                    } else if (index == 2) {
                         PrintUtils.printCancellation()
                         return Confirmation.Deny
                     } else {
-                        PrintUtils.printCancellation()
+                        let input = getUserInput(prompt: "> ")
+                        // PrintUtils.printCancellation()
                         // throw the exception to cancel the current execution
-                        throw AgentCancelException(reason: "__USER_CLARIFY__")
+                        // throw AgentCancelException(reason: "__USER_CLARIFY__")
+                        throw ToolException("User denied the tool to run with guidelines: \"${input}\".\nNOTE You must follow her/his guidelines to execute. Remember that obeying user guidelines is the most important.")
                     }
                 case None => // User pressed ESC to cancel
                     PrintUtils.printCancellation()
