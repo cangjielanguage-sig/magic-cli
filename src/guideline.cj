@@ -12,18 +12,19 @@ import std.regex.Regex
 
 func initSettingGuideline(): Unit {
     // Load the settings
-    let setting = CliSettingManager.setting
-    if (setting.language == "unknown" && CliConfig.language == "unknown") {
+    if (CliSettingManager.setting.language == "unknown" && CliConfig.language == "unknown") {
         let index = InputUtils.getOptions(
             ["Cangjie", "Others"],
             prompt: "Which programming language will be used (for this project). Default: Cangjie."
         ) ?? 0
         match (index) {
             case 0 =>
-                setting.language = "cangjie"
+                CliSettingManager.setting.language = "cangjie"
+                CliConfig.language = "cangjie"
                 CliSettingManager.save()
             case 1 =>
-                setting.language = "general"
+                CliSettingManager.setting.language = "general"
+                CliConfig.language = "general"
                 CliSettingManager.save()
             case _ => throw UnsupportedException("Unreachable")
         }

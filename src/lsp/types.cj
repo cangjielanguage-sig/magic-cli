@@ -212,7 +212,7 @@ public struct InitializeResult {
  */
 @jsonable
 public struct ServerCapabilities {
-    public var semanticTokensProvider: Option<SemanticTokensServerCapabilities> = None
+    public var semanticTokensProvider: SemanticTokensServerCapabilities
     public var hoverProvider: Bool = false
     public var documentSymbolProvider: Bool = false
 }
@@ -323,7 +323,7 @@ public struct SemanticInfoResult {
  * Individual semantic token information
  */
 @jsonable
-public struct SemanticTokenInfo {
+public class SemanticTokenInfo {
     public var line: Int64
     public var character: Int64
     public var length: Int64

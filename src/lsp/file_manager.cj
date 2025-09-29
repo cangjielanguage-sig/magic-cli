@@ -9,17 +9,22 @@ public class FileManager {
     private let lineCache = HashMap<String, Array<String>>()
 
     public func getFileContent(path: String): String {
-        if (this.cache.contains(path)) {
-            return this.cache[path]
+        return getFileContent(Path(path))
+    }
+
+    public func getFileContent(path: Path): String {
+        let pathKey = canonicalize(path).toString()
+        if (this.cache.contains(pathKey)) {
+            return this.cache[pathKey]
         }
 
         let content = readFileContent(path)
-        this.cache[path] = content
+        this.cache[pathKey] = content
         return content
     }
 
     public func getFileRangeContent(path: Path, range: Range): String {
-        let lines = this.getFileLines(path, range.start.line+1, range.end.line+1) // Convert to 1-based
+        let lines = this.getFileLines(path, range.start.line, range.end.line)
         if (lines.size == 1) {
             return lines[0][range.start.character..range.end.character]
         }
@@ -41,7 +46,7 @@ public class FileManager {
             lines
         }
 
-        if (startLine < 1 || endLine < 1 || startLine > endLine) {
+        if (startLine < 0 || endLine < 0 || startLine > endLine) {
             return []
         }
 
@@ -50,10 +55,10 @@ public class FileManager {
         if (startLine > lines.size) {
             return []
         }
-        return lines[(startLine-1)..=(actualEndLine-1)]
+        return lines[(startLine)..=(actualEndLine)]
     }
 
-    private func readFileContent(path: String): String {
+    private func readFileContent(path: Path): String {
         return String.fromUtf8(File.readFrom(path))
     }
 }
