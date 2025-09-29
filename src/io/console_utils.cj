@@ -37,6 +37,14 @@ protected func clearScreen(mode!: ClearMode) {
     }
 }
 
+protected func hideCursor(): Unit {
+    PrintUtils.printString("\u{1B}[?25l")
+}
+
+protected func showCursor(): Unit {
+    PrintUtils.printString("\u{1B}[?25h")
+}
+
 protected func clearFromPreLine() {
     moveCursor(1, direction: Up)
     moveCursor(col: 0)
