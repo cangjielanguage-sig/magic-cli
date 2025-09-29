@@ -19,6 +19,12 @@ public class LSPClient {
     private var capabilities: Option<ServerCapabilities> = None
     private let fileManager = FileManager()
 
+    // Set when initialization
+    // Standard LSP token types
+    var tokenTypes: Array<String> = []
+    // Standard LSP token modifiers
+    var tokenModifiers: Array<String> = []
+
     public init(serverPath: String, serverArgs!: Array<String> = Array<String>()) {
         this.jsonRpcClient = JSONRPCClient(serverPath, serverArgs: serverArgs)
     }
@@ -58,6 +64,8 @@ public class LSPClient {
             let result = this.jsonRpcClient.sendRequest("initialize", params: (initializeParams.toJsonValue().asObject()))
             let initResult = InitializeResult.fromJsonValue(result)
             this.capabilities = Some<ServerCapabilities>(initResult.capabilities)
+            this.tokenTypes = initResult.capabilities.semanticTokensProvider.legend.tokenTypes
+            this.tokenModifiers = initResult.capabilities.semanticTokensProvider.legend.tokenModifiers
             this.initialized = true
 
             // Send initialized notification
@@ -70,6 +78,74 @@ public class LSPClient {
             throw Exception("LSP initialization failed: ${ex.message}")
         }
     }
+
+    /**
+     * Get semantic information for a specific line
+     * line is 0-based
+     */
+    public func getSemanticInfo(filePath: Path, line: Int64): SemanticInfoResult {
+        try {
+            if (!this.initialized) {
+                throw Exception("LSP client not initialized")
+            }
+
+            // Open the document
+            this.openDocument(filePath)
+
+            // Get all semantic tokens for the document
+            let allSemanticTokens = this.getSemanticTokens(filePath)
+
+            // Get the actual file content to extract token text
+            let content = this.fileManager.getFileContent(filePath)
+
+            // Filter tokens for the specified line
+            let filteredSemanticTokens = allSemanticTokens |>
+                filter { token => token.line == line } |>
+                collectArray
+
+            // Extract token text from content
+            for (token in filteredSemanticTokens) {
+                println(token.toJsonValue().toJsonString())
+                token.text = this.fileManager.getFileRangeContent(
+                    filePath,
+                    Range(
+                        start: Position(line: token.line, character: token.character),
+                        end: Position(line: token.line, character: token.character + token.length)
+                    )
+                )
+            }
+            // println(allSemanticTokens.toJsonValue().toJsonString())
+
+            // Get hover info for the beginning of the line
+            let hoverInfos = this.getHovers(filePath, filteredSemanticTokens)
+
+            // Get document symbols
+            let symbols = this.getDocumentSymbols(filePath)
+
+            return SemanticInfoResult(
+                filePath: filePath.toString(),
+                line: line,
+                tokens: filteredSemanticTokens,
+                symbols: symbols,
+                hoverInfos: hoverInfos,
+                timestamp: 0
+            )
+        } catch (ex: Exception) {
+            LogUtils.error("Failed to get semantic info for ${filePath}:${line}: ${ex}")
+            LogUtils.error(ex)
+            // Return empty result on error
+            return SemanticInfoResult(
+                filePath: filePath.toString(),
+                line: line,
+                tokens: [],
+                symbols: [],
+                timestamp: 0,
+                hoverInfos: []
+            )
+        }
+    }
+
+
 
     /**
      * Open a text document in the LSP server
@@ -131,23 +207,12 @@ public class LSPClient {
         }
     }
 
-    public func getHovers(filePath: Path, startLine: Int64, endLine: Int64): Array<HoverInfo> {
+    public func getHovers(filePath: Path, tokens: Array<SemanticTokenInfo>): Array<HoverInfo> {
         let hovers = ArrayList<HoverInfo>()
-        // Get lines in range
-        let lines = this.fileManager.getFileLines(filePath, startLine, endLine)
-
-        // Sample positions for hover (every 5th character on each line)
-        for (i in 0..lines.size) {
-            let lineContent = lines[i]
-            for (charIdx in 0..lineContent.size:5) {
-                // Skip whitespace
-                if (lineContent[charIdx].isAsciiWhiteSpace()) {
-                    continue
-                }
-                if (let Some(hover) <- this.getHover(filePath, startLine + i, charIdx)) {
-                    if (!hover.contents.isEmpty()) {
-                        hovers.add(hover)
-                    }
+        for (token in tokens) {
+            if (let Some(hover) <- this.getHover(filePath, token.line, token.character)) {
+                if (!hover.contents.isEmpty()) {
+                    hovers.add(hover)
                 }
             }
         }
@@ -168,7 +233,7 @@ public class LSPClient {
                     uri: this.pathToUri(filePath)
                 ),
                 position: Position(
-                    line: line - 1, // Convert to 0-based
+                    line: line,
                     character: character
                 )
             )
@@ -187,7 +252,7 @@ public class LSPClient {
                 ""
             }
             return HoverInfo(
-                line: line - 1, // Convert to 0-based
+                line: line,
                 character: character,
                 contents: hoverContent.toString(),
                 range: hoverResult.range,
@@ -249,79 +314,11 @@ public class LSPClient {
     }
 
     /**
-     * Get semantic information for a specific line
-     */
-    public func getSemanticInfo(filePath: Path, line: Int64): SemanticInfoResult {
-        try {
-            if (!this.initialized) {
-                throw Exception("LSP client not initialized")
-            }
-
-            // Open the document
-            this.openDocument(filePath)
-
-            // Get all semantic tokens for the document
-            let allTokens = this.getSemanticTokens(filePath)
-
-            // Filter tokens for the specified line
-            let lineTokens = ArrayList<SemanticTokenInfo>()
-            for (token in allTokens) {
-                if (token.line + 1 == line) { // # token line is to 0-based
-                    lineTokens.add(token)
-                }
-            }
-            let lineTokensArray = lineTokens.toArray()
-
-            // Get hover info for the beginning of the line
-            let hoverInfos = this.getHovers(filePath, line, line)
-
-            // Get document symbols
-            let symbols = this.getDocumentSymbols(filePath)
-
-            // Get the actual file content to extract token text
-            let content = try {
-                let file = File(filePath, OpenMode.Read)
-                let reader = StringReader<File>(file)
-                reader.readToEnd()
-            } catch (ex: Exception) {
-                LogUtils.error("Failed to read file content for ${filePath}: ${ex}")
-                ""
-            }
-
-            // Extract token text from content
-            let tokensWithText = this.extractTokenText(lineTokensArray, content)
-
-            return SemanticInfoResult(
-                filePath: filePath.toString(),
-                line: line,
-                tokens: tokensWithText,
-                symbols: symbols,
-                hoverInfos: hoverInfos,
-                timestamp: 0
-            )
-        } catch (ex: Exception) {
-            LogUtils.error("Failed to get semantic info for ${filePath}:${line}: ${ex}")
-            // Return empty result on error
-            return SemanticInfoResult(
-                filePath: filePath.toString(),
-                line: line,
-                tokens: [],
-                symbols: [],
-                timestamp: 0,
-                hoverInfos: []
-            )
-        }
-    }
-
-    /**
      * Check if the server supports semantic tokens
      */
     public func supportsSemanticTokens(): Bool {
         match (this.capabilities) {
-            case Some(caps) => match (caps.semanticTokensProvider) {
-                case Some(_) => true
-                case _ => false
-            }
+            case Some(_) => return true
             case _ => false
         }
     }
@@ -333,16 +330,6 @@ public class LSPClient {
         match (this.capabilities) {
             case Some(caps) => caps.hoverProvider
             case _ => false
-        }
-    }
-
-    /**
-     * Get server capabilities
-     */
-    public func getCapabilities(): ServerCapabilities {
-        match (this.capabilities) {
-            case Some(caps) => caps
-            case _ => ServerCapabilities()
         }
     }
 
@@ -368,29 +355,11 @@ public class LSPClient {
             return tokens.toArray()
         }
 
-        // Standard LSP token types
-        let tokenTypes = [
-            "namespace", "type", "class", "enum", "interface", "struct",
-            "typeParameter", "parameter", "variable", "property", "enumMember",
-            "function", "method", "macro", "keyword", "modifier", "comment",
-            "string", "number", "regexp", "operator", "decorator"
-        ]
-
-        // Standard LSP token modifiers
-        let tokenModifiersArray = [
-            "declaration", "definition", "readonly", "static", "deprecated",
-            "abstract", "async", "modification", "documentation", "defaultLibrary"
-        ]
-
         var currentLine: Int64 = 0
         var currentChar: Int64 = 0
 
         var i: Int64 = 0
-        while (i < data.size) {
-            if (i + 4 >= data.size) {
-                break
-            }
-
+        while (i + 4 < data.size) {
             let deltaLine = data[i]
             let deltaChar = data[i + 1]
             let length = data[i + 2]
@@ -398,8 +367,8 @@ public class LSPClient {
             let tokenModifiersBitmask = data[i + 4]
 
             currentLine += deltaLine
-            if (deltaLine == 0) {
-                currentChar = 0
+            if (deltaLine > 0) {
+                currentChar = deltaChar
             } else {
                 currentChar += deltaChar
             }
@@ -409,8 +378,8 @@ public class LSPClient {
             // Check each bit position in the tokenModifiers bitmask
             for (j in 0..32) { // Assume 32 bits max for modifiers
                 if ((tokenModifiersBitmask & (1 << j)) != 0) {
-                    if (j < tokenModifiersArray.size) {
-                        modifiers.add(tokenModifiersArray[j])
+                    if (j < this.tokenModifiers.size) {
+                        modifiers.add(this.tokenModifiers[j])
                     }
                 }
             }

@@ -7,38 +7,29 @@ import magic.log.LogUtils
 /**
  * Main entry point for getting semantic information from Cangjie files
  */
-public func getSemanticInfo(path: Path, line: Int64, serverPath!: String = "LSPServer", serverArgs!: Array<String> = []): SemanticInfoResult {
+public func getSemanticInfo(
+        root: Path,
+        filePath: Path,
+        line: Int64, // 1-based
+        serverPath!: String = "LSPServer",
+        serverArgs!: Array<String> = []): SemanticInfoResult {
+    LogUtils.info("Getting semantic info for ${filePath}:${line} with server ${serverPath}")
+
+    // Create LSP client
+    let lspClient = LSPClient(serverPath, serverArgs: serverArgs)
+
     try {
-        LogUtils.info("Getting semantic info for ${path}:${line} with server ${serverPath}")
+        // Initialize LSP client
+        let rootUri = root.toString()
+        lspClient.initialize(rootUri: "file://${rootUri}")
 
-        // Create LSP client
-        let lspClient = LSPClient(serverPath, serverArgs: serverArgs)
-
-        try {
-            // Initialize LSP client
-            let rootPath = path.parent
-            let rootUri = rootPath.toString()
-            lspClient.initialize(rootUri: "file://${rootUri}")
-
-            // Get semantic info
-            let result = lspClient.getSemanticInfo(path, line)
-            LogUtils.info("Successfully retrieved semantic info for ${path}:${line}")
-            return result
-        } finally {
-            // Always close the LSP client
-            lspClient.close()
-        }
-    } catch (ex: Exception) {
-        LogUtils.error("Failed to get semantic info for ${path}:${line}: ${ex}")
-        // Return empty result on error
-        return SemanticInfoResult(
-            filePath: path.toString(),
-            line: line,
-            tokens: [],
-            symbols: [],
-            timestamp: 0,
-            hoverInfos: []
-        )
+        // Get semantic info
+        let result = lspClient.getSemanticInfo(filePath, line - 1) // Convert to 0-based
+        LogUtils.info("Successfully retrieved semantic info for ${filePath}:${line}")
+        return result
+    } finally {
+        // Always close the LSP client
+        lspClient.close()
     }
 }
 
