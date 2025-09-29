@@ -35,6 +35,8 @@ protected class StatusIndicator {
     private func work(): Unit {
         var idx = 0
 
+        // During the working indicator, we hide the cursor
+        hideCursor()
         // Print message once (with space for spinner)
         PrintUtils.printString(
             "  ${message}...".withColor(Theme.MUTED), withIndent: true
@@ -43,6 +45,7 @@ protected class StatusIndicator {
         var messageChanged = false
         while (!Thread.currentThread.hasPendingCancellation) {
             let spinner = INDICATORS[idx % INDICATORS.size]
+            // First time to change the display message
             if (this.cancelFlag.load() && !messageChanged) {
                 // Change the message to display (with space for spinner)
                 PrintUtils.printString("\r") // Move cursor to the start of the line
@@ -52,20 +55,18 @@ protected class StatusIndicator {
                 messageChanged = true
             }
 
-            // Overwrite just the first character (spinner position)
             PrintUtils.printString("\r") // Move cursor to the start of the line
             if (PrintUtils.CURRENT_INDENT > 0) {
                 PrintUtils.printString(" " * PrintUtils.CURRENT_INDENT)
             }
+            // Overwrite just the first character (spinner position)
             PrintUtils.printString("${spinner}".withColor(Theme.MUTED))
-            // Move cursor to end of the message line
-            let remainingLength = "  ${message}...".size - 1
-            moveCursor(remainingLength, direction: Direction.Right)
 
             sleep(Duration.millisecond * 100)
             idx = (idx + 1) % INDICATORS.size
         }
         clearScreen(mode: ClearMode.EntireLine)
+        showCursor()
     }
 
     protected func cancel(): Unit {
