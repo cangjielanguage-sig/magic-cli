@@ -5,10 +5,13 @@ import magic.prelude.*
 import magic.jsonable.*
 import magic.agent.ConversationAgent
 import magic.log.LogUtils
+import magic.utils.readFile
+
 import cli.core.config.CliConfig
-import cli.io.PrintUtils
+import cli.io.{PrintUtils, CompletionListUtils}
+
 import std.fs.{exists, Directory, Path, File}
-import std.collection.{HashMap, ArrayList}
+import std.collection.{HashMap, ArrayList, enumerate}
 import stdx.encoding.json.*
 
 @jsonable
@@ -18,12 +21,17 @@ protected class CustomCommand {
 }
 
 protected class CustomCommandManager {
-    private var commands: HashMap<String, CustomCommand> = HashMap<String, CustomCommand>()
-    private let commandsDir: Path
+    private var commands = HashMap<String, CustomCommand>()
+    private let commandsDir = CliConfig.dotDir.join("commands")
 
     public init() {
-        this.commandsDir = CliConfig.dotDir.join("commands")
-        loadCommands()
+        this.loadCommands()
+    }
+
+    private func addCommand(name: String, command: CustomCommand): Unit {
+        commands[name] = command
+        CompletionListUtils.registerCompletionItem("/cmd:${name}")
+        LogUtils.info("Loaded custom command: ${name}")
     }
 
     /**
@@ -39,25 +47,36 @@ protected class CustomCommandManager {
 
         try {
             for (entry in Directory.readFrom(commandsDir)) {
-                if (entry.isRegular() && entry.name.endsWith(".json")) {
-                    let commandName = entry.name.replace(".json", "")
-                    if (let Some(command) <- loadCommand(entry.path)) {
-                        commands[commandName] = command
-                        LogUtils.info("Loaded custom command: ${commandName}")
+                if (!entry.isRegular()) {
+                    continue
+                }
+                // Support two approaches to define custom commands:
+                // 1. As a JSON file
+                // 2. As a markdown file
+                if (entry.path.extensionName == "json") {
+                    let commandName = entry.path.fileNameWithoutExtension
+                    if (let Some(command) <- loadCommandFromJson(entry.path)) {
+                        this.addCommand(commandName, command)
+                    }
+                } else if (entry.path.extensionName == "md") {
+                    let commandName = entry.path.fileNameWithoutExtension
+                    if (let Some(command) <- loadCommandFromMd(entry.path)) {
+                        this.addCommand(commandName, command)
                     }
                 }
             }
-        } catch (e: Exception) {
-            LogUtils.error("Failed to load commands: ${e.message}")
+        } catch (ex: Exception) {
+            LogUtils.error("Failed to load commands: ${ex.message}")
+            LogUtils.error(ex)
         }
     }
 
     /**
      * Load a single command from JSON file
      */
-    private func loadCommand(filePath: Path): Option<CustomCommand> {
+    private func loadCommandFromJson(filePath: Path): Option<CustomCommand> {
         try {
-            let content = String.fromUtf8(File.readFrom(filePath))
+            let content = readFile(filePath)
             let jsonValue = JsonValue.fromStr(content)
             let command = CustomCommand.fromJsonValue(jsonValue)
 
@@ -67,10 +86,37 @@ protected class CustomCommandManager {
             }
 
             return Some(command)
-        } catch (e: Exception) {
-            LogUtils.error("Failed to load command from ${filePath}: ${e.message}")
+        } catch (ex: Exception) {
+            LogUtils.error("Failed to load command from ${filePath}: ${ex.message}")
+            LogUtils.error(ex)
             return None
         }
+    }
+
+    /**
+     * Load a single command from Markdown file
+     */
+    private func loadCommandFromMd(filePath: Path): Option<CustomCommand> {
+        let content = readFile(filePath)
+        let lines = content.split("\n")
+        var pivot = -1
+        for ((idx, line) in enumerate(lines)) {
+            if (line.startsWith("---")) {
+                pivot = idx
+                break
+            }
+        }
+        if (pivot == -1) {
+            return CustomCommand(description: "", prompt: content)
+        }
+        let prompt = String.join(lines[pivot+1..], delimiter: "\n")
+        for (line in lines[0..pivot]) {
+            let items = line.split(":")
+            if (items.size == 2 && items[0].trimAscii() == "description") {
+                return CustomCommand(description: items[1].trimAscii(), prompt: prompt)
+            }
+        }
+        return CustomCommand(description: "", prompt: prompt)
     }
 
     /**

@@ -2,9 +2,9 @@ package cli.io
 
 import magic.core.agent.{AsyncAgentResponse, AgentResponse}
 
-import cli.utils.InfoUtils
 import cli.core.config.CliConfig
 import cli.core.tools.fs_utils.writeFileBasic
+import cli.utils.InfoUtils
 
 import std.collection.{map, enumerate, collectArray}
 import std.time.DateTime
@@ -153,26 +153,14 @@ protected class PrintUtils {
         PrintUtils.printLine("\n👋 Goodbye ✨!\n".withColor(Theme.SECONDARY))
     }
 
-    static let HELP_INFO = [
-        ("help",         "Show this help message"),
-        ("clear",        "Clear conversation history"),
-        ("compact",      "Compact the conversation"),
-        ("conversation", "Manage conversations"),
-        ("mcp",          "Show loaded MCP tools"),
-        ("memory",       "Show MAGIC.md content"),
-        ("cmd",          "Manage custom commands"),
-        ("init",         "Initialize MAGIC.md for project"),
-        ("exit",         "Exit the program")
-    ]
-
     static public func printHelpMessage() {
         let helpMessage = wrapBox(
             "Available Commands".withColor(Theme.PRIMARY),
-            lines: HELP_INFO |>
-                map { info =>
-                    let cmd = "/${info[0]}".padEnd(15).withColor(AnsiColor.YELLOW)
+            lines: CompletionListUtils.COMMANDS |>
+                map { commandInfo =>
+                    let cmd = "/${commandInfo[0]}".padEnd(15).withColor(AnsiColor.YELLOW)
                     let separator = " ║ ".withColor(Theme.MUTED)
-                    let message = "- ${info[1]}".withColor(Theme.MUTED)
+                    let message = "- ${commandInfo[1]}".withColor(Theme.MUTED)
                     " ${cmd}${separator}${message}"
                 } |>
                 collectArray,
