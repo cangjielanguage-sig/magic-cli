@@ -58,6 +58,8 @@ protected class CliContext {
         // CangjieFixer is special which is not added as a subAgent
         let allowedAgentName = ArrayList<String>([
             this.agent.name,
+            "CodeAnalyzer",
+            "CodeDesigner",
             "CangjieFixer",
             "CangjieContext7Agent"
         ])

@@ -3,6 +3,7 @@ package cli.core.agents
 import magic.dsl.*
 import magic.prelude.*
 import magic.config.Config
+import magic.tool.{AgentAsTool, SubAgentMode}
 
 import cli.core.tools.*
 import cli.core.config.CliConfig
@@ -116,7 +117,7 @@ instead, use 'readFile' to ensure you aren't making broad assumptions. Many of y
         ShellTool(),
         PlanToolset(),
         // GitToolset(),
-        analyzeCode
+        AgentAsTool(CodeAnalyzer(), mode: SubAgentMode.WithContext)
     ]
 ]
 public class GeneralCodeAgent {

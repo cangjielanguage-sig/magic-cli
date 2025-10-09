@@ -236,13 +236,13 @@ protected class PrintUtils {
 
     static public func printAgentResponse(response: AgentResponse) {
         PrintUtils.printLine(
-            wrapBox("${InputUtils.buildPrompt("🔮")}${response.content}")
+            wrapBox("${InputUtils.buildPrompt("🔮")}${renderMarkdown(response.content)}")
         )
     }
 
     static public func printAgentResponse(response: AsyncAgentResponse) {
         PrintUtils.printLine(
-            wrapBox("${InputUtils.buildPrompt("🔮")}${response.content}")
+            wrapBox("${InputUtils.buildPrompt("🔮")}${renderMarkdown(response.content)}")
         )
     }
 

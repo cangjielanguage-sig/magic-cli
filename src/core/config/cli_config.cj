@@ -78,9 +78,9 @@ protected class CliConfig {
     /**
      * User Rules Config
      */
-    public static prop uerRuleFile: Path {
+    public static prop magicMarkdownPath: Path {
         get() {
-            CliConfig.dotDir.join("MAGIC.md")
+            CliConfig.cwd.join("MAGIC.md")
         }
     }
 
@@ -170,7 +170,7 @@ protected class CliConfig {
 
     public static prop userRules: String {
         get() {
-            let ruleFile = uerRuleFile
+            let ruleFile = magicMarkdownPath
             if (exists(ruleFile)) {
                 String.fromUtf8(readToEnd(File(ruleFile, OpenMode.Read)))
             } else {
