@@ -115,10 +115,15 @@ public struct TextDocumentItem {
  */
 @jsonable
 public struct InitializeParams {
-    public var processId: Option<Int64> = None
-    public var rootUri: Option<String> = None
-    public var capabilities: ClientCapabilities
-    public var clientInfo: Option<ClientInfo> = None
+    public var rootPath: String
+    public var rootUri: String
+}
+
+@jsonable
+public struct MultiModuleOption {
+    public var name: String
+    public var package_requires: JsonObject
+    public var requires: JsonObject
 }
 
 /**

@@ -83,13 +83,16 @@ public class CangjieToolset {
 
     @tool[
         description: "Initialize a new Cangjie project in the specified directory.",
-        parameters: { path: "Path to the Cangjie module, must be an absolute path. If omitted, the current working directory will be used to initialized." }
+        parameters: {
+            path: "Path to the Cangjie module, must be an absolute path. If omitted, the current working directory will be used to initialized.",
+            projectType: "Type of the Cangjie project to initialize. If omitted, default value 'executable' will be used. Valid values are 'executable', 'static' for static library or 'dynamic' for dynamic library."
+        }
     ]
-    public func initCangjieProject(path: Option<String>): String {
+    public func initCangjieProject(path: Option<String>, projectType: Option<String>): String {
         let projectDir = path.map { p => Path(p) } ?? CliConfig.cwd
         // Since Cangjie project name must be of camel case, we convert directory name to camel case
         let packageName = CangjieToolset.toCamelCase(projectDir.fileName)
-        let args: Array<String> = ["init", "--name", packageName]
+        let args: Array<String> = ["init", "--name", packageName, "--type", projectType ?? "executable"]
 
         PrintUtils.printTool("cjpm init", projectDir.toString())
         let result = cjpmRun(args, projectDir)

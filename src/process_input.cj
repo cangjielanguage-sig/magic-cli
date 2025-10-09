@@ -119,9 +119,7 @@ Please start analyzing the project and return the MAGIC.md content:
 
 private func initMagicFile(): Unit {
     let agent = CodeAnalyzer()
-    let magicFilePath = CliConfig.uerRuleFile
-
-    if (exists(magicFilePath)) {
+    if (exists(CliConfig.magicMarkdownPath)) {
         if (InputUtils.confirm("MAGIC.md already exists.", "Overwrite?") == Confirmation.Deny) {
             return
         }
@@ -131,7 +129,7 @@ private func initMagicFile(): Unit {
     let response = agent.chat(AgentRequest(INIT_PROMPT))
 
     try {
-        File.writeTo(magicFilePath, response.content.toArray())
+        File.writeTo(CliConfig.magicMarkdownPath, response.content.toArray())
         PrintUtils.printTool("MAGIC.md Init", "✅ MAGIC.md initialized successfully!")
 
         let preview = if (response.content.size > 300) {
