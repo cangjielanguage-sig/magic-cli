@@ -14,6 +14,11 @@ import cli.utils.*
 import cli.core.config.CliConfig
 
 /**
+ * Maximum number of grep results to return (prevents context overflow)
+ */
+const MAX_GREP_MATCHES: Int64 = 100
+
+/**
  * Main grep function that searches for a regular expression pattern within file contents.
  * Uses ripgrep if available, falls back to traditional grep/PowerShell.
  *
@@ -134,44 +139,58 @@ private func grepWithTraditional(pattern: String, path: Option<String>, include:
 /**
  * Parses grep/ripgrep output and converts relative paths to absolute paths.
  * Both tools use similar output format: "path:line-number:content"
+ * Limits results to 100 matches to prevent context overflow.
  *
  * @param rawOutput Raw output from grep/ripgrep command
  * @param workingDir Working directory used for path resolution
- * @return Formatted output with absolute paths
+ * @return Formatted output with absolute paths, truncated if necessary
  */
 private func parseGrepOutput(rawOutput: String, workingDir: Path): String {
-    return String.join(
-        rawOutput.split("\n") |>
-            map { line: String =>
-                // Both grep and ripgrep return "path:line-number:content"
-                let items = line.split(":", 3, removeEmpty: false)
-                if (items.size != 3) {
-                    return line
+    let lines = rawOutput.split("\n")
+    let nonEmptyLines = lines |> filter { line: String => !line.trimAscii().isEmpty() } |> collectArray
+
+    let totalMatches = nonEmptyLines.size
+    let shouldTruncate = totalMatches > MAX_GREP_MATCHES
+    let linesToProcess = if (shouldTruncate) { nonEmptyLines[0..MAX_GREP_MATCHES] } else { nonEmptyLines }
+
+    let formattedLines = linesToProcess |>
+        map { line: String =>
+            // Both grep and ripgrep return "path:line-number:content"
+            let items = line.split(":", 3, removeEmpty: false)
+            if (items.size != 3) {
+                return line
+            }
+            // Convert relative paths to absolute paths safely
+            let path = try {
+                if (items[0].startsWith("./")) {
+                    canonicalize(workingDir.join(items[0]))
+                } else if (!Path(items[0]).isAbsolute()) {
+                    canonicalize(workingDir.join(items[0]))
+                } else {
+                    canonicalize(items[0])
                 }
-                // Convert relative paths to absolute paths safely
-                let path = try {
-                    if (items[0].startsWith("./")) {
-                        canonicalize(workingDir.join(items[0]))
-                    } else if (!Path(items[0]).isAbsolute()) {
-                        canonicalize(workingDir.join(items[0]))
-                    } else {
-                        canonicalize(items[0])
-                    }
-                } catch (e: Exception) {
-                    // If canonicalize fails, use the original path
-                    if (items[0].startsWith("./")) {
-                        workingDir.join(items[0])
-                    } else if (!Path(items[0]).isAbsolute()) {
-                        workingDir.join(items[0])
-                    } else {
-                        Path(items[0])
-                    }
+            } catch (e: Exception) {
+                // If canonicalize fails, use the original path
+                if (items[0].startsWith("./")) {
+                    workingDir.join(items[0])
+                } else if (!Path(items[0]).isAbsolute()) {
+                    workingDir.join(items[0])
+                } else {
+                    Path(items[0])
                 }
-                let number = items[1]
-                let content = items[2]
-                return String.join([path.toString(), number, content], delimiter: ":")
-            } |>
-            collectArray,
-        delimiter: "\n"
-    )
+            }
+            let number = items[1]
+            let content = items[2]
+            return String.join([path.toString(), number, content], delimiter: ":")
+        } |>
+        collectArray
+
+    let result = String.join(formattedLines, delimiter: "\n")
+
+    if (shouldTruncate) {
+        let remaining = totalMatches - MAX_GREP_MATCHES
+        return result + "\n\n[Truncated: showing ${MAX_GREP_MATCHES} of ${totalMatches} matches. ${remaining} more results not shown. Use more specific pattern or include filter.]"
+    }
+
+    return result
 }
