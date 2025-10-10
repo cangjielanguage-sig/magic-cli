@@ -24,14 +24,14 @@ main(args: Array<String>): Int64 {
     InputUtils.enterRawMode()
 
     // Note that the complete settings of CliConfig are distributed across the following processes
-   // Process 1:
+    // Process 1:
+    setConfig()
+    // Process 2:
     if (!parseArgs(args)) {
         printHelp()
         return 0
     }
-    // Process 2:
-    setConfig()
-
+    
     // Start the setting guideline when first time to run
     // Process 3:
     initSettingGuideline()
