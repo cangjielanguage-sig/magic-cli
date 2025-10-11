@@ -44,7 +44,8 @@ private func processInlineMarkdown(line: String): String {
 
     // Headers (# ## ###)
     processed = RegexUtils.replaceAll(processed, #"(#{1,6})\s+(.+)$"#, { m =>
-        let level = m.matchString(1).size
+        let header = m.matchString(1)
+        let level = header.size
         let text = m.matchString(2)
         let color = match (level) {
             case 1 => AnsiColor.BRIGHT_CYAN
@@ -54,7 +55,7 @@ private func processInlineMarkdown(line: String): String {
             case 5 => AnsiColor.MAGENTA
             case _ => AnsiColor.MAGENTA
         }
-        "${color}${text}${AnsiColor.RESET}"
+        "${header.withColor(Theme.current.muted)} ${color}${text}${AnsiColor.RESET}"
     })
 
     // Bold (**text** or __text__)

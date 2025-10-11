@@ -149,14 +149,10 @@ public class Theme {
         bgError: AnsiColor.colorBg256(52)     // Dark red
     )
 
-    private static var currentTheme: ThemeConfig = DEFAULT
+    protected static var current: ThemeConfig = DEFAULT
 
     public static func set(theme: ThemeConfig): Unit {
-        currentTheme = theme
-    }
-
-    public static func get(): ThemeConfig {
-        return currentTheme
+        current = theme
     }
 
     public static func listThemes(): Array<ThemeConfig> {
@@ -164,18 +160,18 @@ public class Theme {
     }
 
     // Backward compatibility accessors
-    public static prop PRIMARY: AnsiColor { get() { currentTheme.primary } }
-    public static prop SECONDARY: AnsiColor { get() { currentTheme.secondary } }
-    public static prop SUCCESS: AnsiColor { get() { currentTheme.success } }
-    public static prop WARNING: AnsiColor { get() { currentTheme.warning } }
-    public static prop ERROR: AnsiColor { get() { currentTheme.error } }
-    public static prop INFO: AnsiColor { get() { currentTheme.info } }
-    public static prop MUTED: AnsiColor { get() { currentTheme.muted } }
-    public static prop ACCENT: AnsiColor { get() { currentTheme.accent } }
-    public static prop HIGHLIGHT: AnsiColor { get() { currentTheme.highlight } }
-    public static prop SUBTLE: AnsiColor { get() { currentTheme.subtle } }
-    public static prop BG_SUCCESS: AnsiColor { get() { currentTheme.bgSuccess } }
-    public static prop BG_ERROR: AnsiColor { get() { currentTheme.bgError } }
+    public static prop PRIMARY: AnsiColor { get() { current.primary } }
+    public static prop SECONDARY: AnsiColor { get() { current.secondary } }
+    public static prop SUCCESS: AnsiColor { get() { current.success } }
+    public static prop WARNING: AnsiColor { get() { current.warning } }
+    public static prop ERROR: AnsiColor { get() { current.error } }
+    public static prop INFO: AnsiColor { get() { current.info } }
+    public static prop MUTED: AnsiColor { get() { current.muted } }
+    public static prop ACCENT: AnsiColor { get() { current.accent } }
+    public static prop HIGHLIGHT: AnsiColor { get() { current.highlight } }
+    public static prop SUBTLE: AnsiColor { get() { current.subtle } }
+    public static prop BG_SUCCESS: AnsiColor { get() { current.bgSuccess } }
+    public static prop BG_ERROR: AnsiColor { get() { current.bgError } }
 }
 
 protected interface WithColor {
@@ -186,10 +182,16 @@ protected interface WithColor {
 
 extend String <: WithColor {
     public func withColor(color: AnsiColor): String {
+        if (this.isEmpty()) {
+            return this
+        }
         return "${color}${this}${AnsiColor.RESET}"
     }
 
     public func withBgColor(bgColor: AnsiColor): String {
+        if (this.isEmpty()) {
+            return this
+        }
         return "${bgColor}${this}${AnsiColor.RESET}"
     }
 }

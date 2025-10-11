@@ -1,4 +1,4 @@
-package cli
+package cli.app
 
 import magic.dsl.*
 import magic.prelude.*
@@ -17,15 +17,17 @@ import cli.core.config.CliConfig
 import cli.core.agents.*
 import cli.io.{InputUtils, PrintUtils, StatusIndicator}
 import cli.utils.StringUtils
+import cli.core.tools.fs_utils.writeFileBasic
 
 import std.collection.ArrayList
-import std.fs.Path
+import std.fs.{Path, exists, Directory}
 import std.collection.HashMap
 import std.sync.*
 import std.env.atExit
 
-protected class CliContext {
+protected class CliApp {
     protected let agent: Agent
+    private let mutex = Mutex()
     protected let thinkIndicator = AtomicOptionReference<StatusIndicator>()
     protected let conversationManager: ConversationManager
     protected let customCommandManager: CustomCommandManager
@@ -41,8 +43,8 @@ protected class CliContext {
         this.mcpManager = MCPConfigManager()
         try {
             agent.toolManager.addTools(mcpManager.loadMCPServers())
-        } catch (e: Exception) {
-            LogUtils.error("Failed to load MCP servers: ${e.message}")
+        } catch (ex: Exception) {
+            LogUtils.error("Failed to load MCP servers: ${ex.message}")
             PrintUtils.printTool("MCP Loading", "Warning: Failed to load MCP servers, continuing without MCP tools")
         }
 
@@ -53,6 +55,21 @@ protected class CliContext {
         this.registerHooks()
     }
 
+    func startThinkIndicator(message: String) {
+        this.thinkIndicator.store(PrintUtils.printStatusIndicator(message: message))
+    }
+
+    func stopThinkIndicator() {
+        // Multiple threads may stop the thinkIndicator at the same time:
+        // 1. stopped in ChatModelEndEvent by one thread
+        // 2. stopped by the main thread when canceling the execution.
+        synchronized(this.mutex) {
+            if (let Some(i) <- this.thinkIndicator.swap(None)) {
+                i.stop()
+            }
+        }
+    }
+
     private func registerHooks() {
         // Collect all subAgents as allowed agents that is able to print the thinking indicator
         // CangjieFixer is special which is not added as a subAgent
@@ -61,7 +78,7 @@ protected class CliContext {
             "CodeAnalyzer",
             "CodeDesigner",
             "CangjieFixer",
-            "CangjieContext7Agent"
+            "CangjieDocAgent"
         ])
         for (tool in this.agent.toolManager.tools) {
             if (tool is AgentAsTool) {
@@ -75,14 +92,13 @@ protected class CliContext {
             // Only show the indicator of the allowed agents
             if (allowedAgentName.contains(evt.agent.name)) {
                 let name = StringUtils.splitCamelCase(evt.agent.name)
-                this.thinkIndicator.store(PrintUtils.printStatusIndicator(message: "💭 (${name}) Thinking"))
+                this.startThinkIndicator("💭 (${name}) Thinking")
             }
             EventResponse.Continue
         }
         EventHandlerManager.global.addHandler { evt: ChatModelEndEvent =>
-            if (allowedAgentName.contains(evt.agent.name) && let Some(i) <- this.thinkIndicator.load()) {
-                i.stop()
-                this.thinkIndicator.store(None)
+            if (allowedAgentName.contains(evt.agent.name)) {
+                this.stopThinkIndicator()
             }
         }
         EventHandlerManager.global.addHandler { evt: ChatModelFailureEvent =>
@@ -95,9 +111,8 @@ protected class CliContext {
                     LogUtils.error("Failed to compact the conversation or call chat model: ${ex.message}")
                 }
             }
-            if (allowedAgentName.contains(evt.agent.name) && let Some(i) <- this.thinkIndicator.load()) {
-                i.stop()
-                this.thinkIndicator.store(None)
+            if (allowedAgentName.contains(evt.agent.name)) {
+                this.stopThinkIndicator()
             }
             EventResponse.Continue
         }
@@ -110,8 +125,10 @@ protected class CliContext {
             EventResponse.Continue
         }
         EventHandlerManager.global.addHandler { evt: SubAgentEndEvent =>
-            let name = StringUtils.splitCamelCase(evt.agent.name)
-            PrintUtils.printLine("🎉 SubAgent ${name} completed 🍻", withIndent: true)
+            if (evt.agentResponse.status == AgentResponseStatus.Success) {
+                let name = StringUtils.splitCamelCase(evt.agent.name)
+                PrintUtils.printLine("🎉 SubAgent ${name} completed 🍻", withIndent: true)
+            }
             PrintUtils.endSubAgent()
         }
         // Register the callback to auto-save conversation when exiting the program
@@ -126,5 +143,29 @@ protected class CliContext {
      */
     public func switchToFallbackModel(fallbackModel: ChatModel): Unit {
         this.agent.model = fallbackModel
+    }
+
+    protected func startNonInteractive(input: String): Unit {
+        if (!exists(CliConfig.printInfoSavingDir)) {
+            Directory.create(CliConfig.printInfoSavingDir, recursive: true)
+        }
+        processInput(this, input)
+        return
+    }
+
+    protected func startInteractive(): Unit {
+        PrintUtils.printWelcome()
+        // Simplified event loop
+        while (true) {
+            let input = InputUtils.getUserInput()
+            if (input.isEmpty()) {
+                continue
+            }
+
+            // Process input and check if we should continue
+            if (!processInput(this, input)) {
+                break  // Exit requested
+            }
+        }
     }
 }

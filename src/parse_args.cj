@@ -1,6 +1,7 @@
 package cli
 
 import magic.config.Config
+import magic.log.LogUtils
 
 import cli.core.config.{CliConfig, CliSettingManager}
 import cli.io.PrintUtils
@@ -27,7 +28,7 @@ func printHelp(): Unit {
 /**
  * Parse the command line arguments
  */
-func parseArgs(args: Array<String>): Bool {
+func parseArgsAndSetConfig(args: Array<String>): Bool {
     let argSpecs = [
         Long("auto", NoValue),
         Long("model", RequiredValue),
@@ -58,6 +59,17 @@ func parseArgs(args: Array<String>): Bool {
     // Log file must be set together with the log level
     Config.logFile = CliConfig.logFile.toString()
 
+    // Set your API key in the .env file
+    let envInfo = Config.env.load(Path("./.env"))
+    LogUtils.info(envInfo)
+
+    // Set Magic settings
+    Config.modelRequestDir = CliConfig.dotDir.join("model-requests").toString()
+    Config.enableModelToolCall = true
+    Config.enableParallelToolCall = false
+    Config.httpReadWriteTimeout = 600000 // ms
+
+    // Set Magic-Cli settings
     if (result.options.contains("auto")) {
         CliConfig.auto = true
     }
