@@ -60,7 +60,7 @@ class RawInputUtils {
         if (infinite) {
             waitTimeMs = 0
         } else {
-            waitTimeMs = 50
+            waitTimeMs = 20
         }
         let len = unsafe { getByte(waitTimeMs, inout keyCode) }
         if (len == 1 && bytes.contains(UInt8(keyCode))) { // ASCII

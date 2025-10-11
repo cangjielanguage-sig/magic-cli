@@ -52,7 +52,7 @@ The output must be concise and directly usable for code generation.
     model: CliConfig.fastModel ?? CliConfig.model,
     executor: "react"
 ]
-protected class CangjieContext7Agent {
+protected class CangjieDocAgent {
     private static func startContext7(): MCPClient {
         HttpMCPClient("https://mcp.context7.com/mcp", headers: [
             (
@@ -62,7 +62,7 @@ protected class CangjieContext7Agent {
         ])
     }
 
-    private let client = CangjieContext7Agent.startContext7()
+    private let client = CangjieDocAgent.startContext7()
     @prompt(
         "${CANGJIE_CONTEXT7_PROMPT}"
     )

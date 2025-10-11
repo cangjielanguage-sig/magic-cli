@@ -1,66 +1,31 @@
 package cli
 
 import magic.config.Config
-import magic.log.LogUtils
 
 import cli.core.config.CliConfig
 import cli.io.{InputUtils, PrintUtils}
-import cli.core.tools.fs_utils.writeFileBasic
-
-import std.fs.{exists, File, Path, Directory}
-
-private func setConfig(): Unit {
-    Config.modelRequestDir = CliConfig.dotDir.join("model-requests").toString()
-    Config.enableModelToolCall = true
-    Config.enableParallelToolCall = false
-    Config.httpReadWriteTimeout = 600000 // ms
-    // Set your API key in the .env file
-    let envInfo = Config.env.load(Path("./.env"))
-    LogUtils.info(envInfo)
-}
+import cli.app.CliApp
 
 main(args: Array<String>): Int64 {
-    // Enter the raw input mode, the exiting will be called in atExit
+   // Enter the raw input mode, the exiting will be called in atExit
     InputUtils.enterRawMode()
 
-    // Note that the complete settings of CliConfig are distributed across the following processes
-    // Process 1:
-    setConfig()
-    // Process 2:
-    if (!parseArgs(args)) {
+    // Parse the command line arguments and set the config
+    if (!parseArgsAndSetConfig(args)) {
         printHelp()
         return 0
     }
-    
+
     // Start the setting guideline when first time to run
-    // Process 3:
     initSettingGuideline()
 
-    // Initialize the global context
-    let context = CliContext()
+    // Initialize the app context
+    let app = CliApp()
     if (CliConfig.nonInteractive) {
-        if (!exists(CliConfig.printInfoSavingDir)) {
-            Directory.create(CliConfig.printInfoSavingDir, recursive: true)
-        }
-        let commandSavingPath = CliConfig.printInfoSavingDir.join("command_args.txt")
-        writeFileBasic(commandSavingPath, String.join(args, delimiter: " "))
-        let input = CliConfig.nonInteractivePrompt
-        processInput(input, context)
+        app.startNonInteractive(CliConfig.nonInteractivePrompt)
         return 0
-    }
-
-    PrintUtils.printWelcome()
-    // Simplified event loop
-    while (true) {
-        let input = InputUtils.getUserInput()
-        if (input.isEmpty()) {
-            continue
-        }
-
-        // Process input and check if we should continue
-        if (!processInput(input, context)) {
-            break  // Exit requested
-        }
+    } else {
+        app.startInteractive()
     }
     return 0
 }

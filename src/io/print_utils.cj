@@ -17,7 +17,6 @@ import std.sync.AtomicBool
  */
 protected class StatusIndicator {
     private var future: Option<Future<Unit>> = None
-    private let cancelFlag = AtomicBool(false) // Whether the agent execution is cancelled
     private let message: String
 
     init(message: String) {
@@ -45,16 +44,6 @@ protected class StatusIndicator {
         var messageChanged = false
         while (!Thread.currentThread.hasPendingCancellation) {
             let spinner = INDICATORS[idx % INDICATORS.size]
-            // First time to change the display message
-            if (this.cancelFlag.load() && !messageChanged) {
-                // Change the message to display (with space for spinner)
-                PrintUtils.printString("\r") // Move cursor to the start of the line
-                PrintUtils.printString(
-                    "  ${message}... (Interrupted)".withColor(Theme.MUTED), withIndent: true
-                )
-                messageChanged = true
-            }
-
             PrintUtils.printString("\r") // Move cursor to the start of the line
             if (PrintUtils.CURRENT_INDENT > 0) {
                 PrintUtils.printString(" " * PrintUtils.CURRENT_INDENT)
@@ -69,13 +58,9 @@ protected class StatusIndicator {
         showCursor()
     }
 
-    protected func cancel(): Unit {
-        this.cancelFlag.store(true)
-    }
-
     protected func stop(): Unit {
-        this.future?.cancel()
-        this.future?.get()
+        this.future.getOrThrow().cancel()
+        this.future.getOrThrow().get()
     }
 }
 
@@ -86,12 +71,19 @@ protected class PrintUtils {
     // When we enter a sub-agent, we need to indent the output
     static var CURRENT_INDENT = 0
 
+    static public func resetSubAgent(): Unit {
+        CURRENT_INDENT = 0
+    }
+
     static public func beginSubAgent(): Unit {
         CURRENT_INDENT += 4
     }
 
     static public func endSubAgent(): Unit {
         CURRENT_INDENT -= 4
+        if (CURRENT_INDENT < 0) {
+            CURRENT_INDENT = 0
+        }
     }
 
     //---------------------------------------------------
@@ -158,7 +150,7 @@ protected class PrintUtils {
             "Available Commands".withColor(Theme.PRIMARY),
             lines: CompletionListUtils.COMMANDS |>
                 map { commandInfo =>
-                    let cmd = "/${commandInfo[0]}".padEnd(15).withColor(AnsiColor.YELLOW)
+                    let cmd = "${commandInfo[0]}".padEnd(15).withColor(AnsiColor.YELLOW)
                     let separator = " ║ ".withColor(Theme.MUTED)
                     let message = "- ${commandInfo[1]}".withColor(Theme.MUTED)
                     " ${cmd}${separator}${message}"
@@ -235,15 +227,19 @@ protected class PrintUtils {
     //----------------------------------------------------------------------------------
 
     static public func printAgentResponse(response: AgentResponse) {
+        PrintUtils.printLine("")
         PrintUtils.printLine(
-            wrapBox("${InputUtils.buildPrompt("🔮")}${renderMarkdown(response.content)}")
+            wrapBox(renderMarkdown(response.content), withBorder: false)
         )
+        PrintUtils.printLine("")
     }
 
     static public func printAgentResponse(response: AsyncAgentResponse) {
+        PrintUtils.printLine("")
         PrintUtils.printLine(
-            wrapBox("${InputUtils.buildPrompt("🔮")}${renderMarkdown(response.content)}")
+            wrapBox(renderMarkdown(response.content), withBorder: false)
         )
+        PrintUtils.printLine("")
     }
 
     static public func printShellResult(output: String) {

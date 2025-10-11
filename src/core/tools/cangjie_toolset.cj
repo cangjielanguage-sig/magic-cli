@@ -65,7 +65,7 @@ public class CangjieToolset {
     ]
     public func retrieveCangjieDocuments(query: String): String {
         PrintUtils.printTool("Retrieve Cangjie Documents via Context7", "query: ${query}")
-        let agent = CangjieContext7Agent()
+        let agent = CangjieDocAgent()
         return agent.chat(query)
     }
 
