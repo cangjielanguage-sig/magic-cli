@@ -147,7 +147,7 @@ protected class InputUtils {
             PrintUtils.printLine(String.join(optionsToDisplay, delimiter: "\n"))
 
             // Read keyboard input
-            let rune = RawInputUtils.rawGetRune()
+            let rune = RawInputUtils.getRune()
             if (rune.isNone()) {
                 return None // EOF or error
             }

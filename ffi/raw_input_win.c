@@ -1,5 +1,6 @@
 #include <windows.h>
 #include <stdint.h>
+#include <stdbool.h>
 #include <string.h>
 #include <stdio.h>
 
@@ -373,6 +374,20 @@ int getRawUtf8(BYTE *bytes) {
     return size;
 }
 
+bool checkHasInput(uint32_t dwTimeoutMs) {
+    DWORD waitTime = (dwTimeoutMs == 0) ? INFINITE_VALUE : dwTimeoutMs;
+    DWORD waitResult = WaitForSingleObject(h_console, waitTime);
+    switch (waitResult) {
+        case WAIT_OBJECT_0:
+            return true;
+        case WAIT_TIMEOUT:
+        case WAIT_FAILED:
+        case WAIT_ABANDONED:
+        default:
+            return false;
+    }
+}
+
 /**
  * listen ESC Button, make sure in `raw mode` before calling this function
  * @return: keyCode len:
@@ -381,23 +396,15 @@ int getRawUtf8(BYTE *bytes) {
  *   2  = CHECKPOINT (half, illegal)
  */
 int getByte(DWORD dwTimeoutMs, WORD* keyCode) {
-    DWORD waitTime = (dwTimeoutMs == 0) ? INFINITE_VALUE : dwTimeoutMs;
-    DWORD waitResult = WaitForSingleObject(h_console, waitTime);
-    switch (waitResult) {
-        case WAIT_TIMEOUT:
-            return -1;
-        case WAIT_FAILED:
-            return -1;
-        case WAIT_OBJECT_0:
-            BOOL isVirtual = -1;
-            if (!getConsoleChar(keyCode, &isVirtual)) {
-                return -1;
-            }
-            if (is_high_surrogate(*keyCode) || is_low_surrogate(*keyCode)) {
-                return 2;
-            }
-            return 1;
-        default:
-            return -1;
+    if (!checkHasInput(dwTimeoutMs)) {
+        return -1;
     }
+    BOOL isVirtual = -1;
+    if (!getConsoleChar(keyCode, &isVirtual)) {
+        return -1;
+    }
+    if (is_high_surrogate(*keyCode) || is_low_surrogate(*keyCode)) {
+        return 2;
+    }
+    return 1;
 }

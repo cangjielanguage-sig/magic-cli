@@ -11,7 +11,7 @@ import std.fs.{File, Path, exists}
 /**
  * Input state management
  */
-private class InputState {
+class InputState {
     public var buffer: LinkedList<Rune>
     public var cursor: Int64
     public var historyIndex: Int64
@@ -143,7 +143,7 @@ private class CompletionState {
 /**
  * Display context for rendering
  */
-private class DisplayContext {
+class DisplayContext {
     public let prompt: String
     public var lastRenderedLines: Int64
     public var terminalWidth: Int64
@@ -197,16 +197,6 @@ func extractPathContext(text: String, cursor: Int64): Option<(Int64, Int64, Int6
     let pathPrefix = String(runes[pathStart..cursor])
 
     return Some((atIndex, pathStart, pathEnd, pathPrefix))
-}
-
-/**
- * Calculate cursor position in wrapped boxed content
- * Uses existing calculateCursorPos function to calculate cursor position
- */
-private func calculateCursorPosition(text: String, cursor: Int64, prefix: String): (Int64, Int64) {
-    // Use wrapBox to wrap text, then use existing calculateCursorPos function
-    let wrappedContent = wrapBox(text)
-    return calculateCursorPos(wrappedContent, cursor, prefix: prefix)
 }
 
 /**
@@ -339,6 +329,11 @@ public class Readline {
                         return None
                     }
                 }
+                // If \n is not the last character, handle it as a regular character
+                if (RawInputUtils.hasInput()) {
+                    handleRune(rune, inputState, completionState)
+                    return None
+                }
 
                 // Otherwise, finalize input
                 let text = inputState.getText()
@@ -465,16 +460,22 @@ public class Readline {
                 return None // Could be used to cancel completion or exit
 
             case _ => // Regular character
-                inputState.insertChar(rune)
-
-                // Update completion list
-                let newText = inputState.getText()
-                if (let Some(completions) <- buildCompletionList(newText, inputState.cursor, isShellMode: inputState.isShellMode())) {
-                    completionState.setCompletions(completions)
-                } else {
-                    completionState.clear()
-                }
+                handleRune(rune, inputState, completionState)
                 return None
+        }
+    }
+
+    private func handleRune(rune: Rune,
+                            inputState: InputState,
+                            completionState: CompletionState): Unit {
+        inputState.insertChar(rune)
+
+        // Update completion list
+        let newText = inputState.getText()
+        if (let Some(completions) <- buildCompletionList(newText, inputState.cursor, isShellMode: inputState.isShellMode())) {
+            completionState.setCompletions(completions)
+        } else {
+            completionState.clear()
         }
     }
 
@@ -513,12 +514,9 @@ public class Readline {
         let wrappedContent = wrapBox("${displayPrompt}${displayText}", boxColor: boxColor)
 
         // Calculate cursor position for current state
-        // Use original text for cursor calculation (without color codes)
-        let cursorWrappedContent = wrapBox("${displayContext.prompt}${currentText}", boxColor: boxColor)
         let (cursorRow, cursorCol) = calculateCursorPos(
-            cursorWrappedContent,
-            inputState.cursor,
-            prefix: displayContext.prompt
+            inputState,
+            displayContext
         )
 
         // Clear previous render (similar to original redraw logic)
@@ -618,7 +616,7 @@ public class Readline {
             this.render(inputState, completionState, displayContext, isFirst: true)
 
             while (true) {
-                let rune = if (let Some(r) <- RawInputUtils.rawGetRune()) {
+                let rune = if (let Some(r) <- RawInputUtils.getRune()) {
                     r
                 } else {
                     return None // EOF
