@@ -1,7 +1,7 @@
 package cli.io
 
 import std.regex.Regex
-import std.collection.{ArrayList, collectArray, enumerate}
+import std.collection.{ArrayList, collectArray, enumerate, filter, count}
 import magic.log.LogUtils
 
 // Box drawing characters for creating bordered text boxes
@@ -195,7 +195,7 @@ protected func wrapLineWithVerticalBorder(line: String,
     }
     // If line is empty, fill with spaces
     if (line.isEmpty()) {
-        return "${border}${' ' * width}${border}"
+        return "${border}${padString(String.empty, width: width)}${border}"
     }
     let subLines: ArrayList<String> = ArrayList()
     // Split the line into multiple sub-lines if it exceeds the width
@@ -262,27 +262,29 @@ protected func wrapOptionList(options: Array<String>, selectedIndex: Int64): Str
  * @param wrappedContent The complete formatted box content with borders
  * @param cursorPos The logical cursor position in the original text (0-based)
  * @param prefix Optional prefix text like prompt (default: empty)
- * @param width The width of the box content area (default: 100)
- * @param boxColor The color of the box borders (default: BRIGHT_BLACK)
  * @return Tuple of (row, column) representing the visual cursor position
  */
-protected func calculateCursorPos(wrappedContent: String, cursorPos: Int64, prefix!: String = String.empty,
-    width!: Int64 = 100, boxColor!: AnsiColor = AnsiColor.BRIGHT_BLACK): (Int64, Int64) {
-    let realCursorPos = cursorPos + runeSizeOf(prefix)
+func calculateCursorPos(inputState: InputState,
+                        displayContext: DisplayContext): (Int64, Int64) {
+    let boxColor = AnsiColor.BRIGHT_BLACK
+    // Use original text for cursor calculation (without color codes)
+    // Remove the top and bottom border lines, keep only content lines
+    let text = inputState.getText()
+    let wrappedContent= wrapBox("${displayContext.prompt}${text}", withBorder: false)
+
+    let numOfReturnBeforeCursor = text.toRuneArray()[0..inputState.cursor] |>
+        filter { rune => rune == r'\n' || rune == r'\r' } |>
+        count
+    let realCursorPos = inputState.cursor - numOfReturnBeforeCursor + runeSizeOf(displayContext.prompt)
     let widthList = ArrayList<Int64>()
-    var lines = collectArray(wrappedContent.lines())
+    var lines = wrappedContent.lines() |> collectArray
     var cursorLeft = realCursorPos
 
-    // Remove the top and bottom border lines, keep only content lines
-    lines = lines[1..(lines.size - 1)]
     var cursorWidth = 0
 
     // Process each content line to find cursor position
     for (i in 0..lines.size) {
-        let line = lines[i]
-            .removePrefix(VERTICAL_BORDER.withColor(boxColor))  // Remove left border
-            .removeSuffix(VERTICAL_BORDER.withColor(boxColor))  // Remove right border
-            .replace(PAD, '')  // Remove padding characters
+        let line = lines[i].replace(PAD, '')  // Remove padding characters
         let lineRunes = removeAnsiEscape(line).toRuneArray()  // Remove ANSI sequences for width calculation
         let lineWidth = displayWidthOf(lineRunes)
         widthList.add(lineWidth)
