@@ -615,7 +615,6 @@ public class Readline {
 
             // Initial render (first time)
             this.render(inputState, completionState, displayContext, isFirst: true)
-            var lastRenderTime = DateTime.now()
 
             while (true) {
                 let rune = if (let Some(r) <- RawInputUtils.getRune()) {
@@ -632,13 +631,7 @@ public class Readline {
                     return line
                 } else {
                     // Re-render after handling input (not first time)
-                    // Control the render frequency < 20FPS
-                    let currentTime = DateTime.now()
-                    let duration = currentTime - lastRenderTime
-                    if (duration.toMilliseconds() > 50) {
-                        this.render(inputState, completionState, displayContext, isFirst: false)
-                        lastRenderTime = currentTime
-                    }
+                    this.render(inputState, completionState, displayContext, isFirst: false)
                 }
             }
 
