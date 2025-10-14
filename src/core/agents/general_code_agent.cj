@@ -72,9 +72,9 @@ Then call the 'createOrUpdatePlan' tool to develop a clear and explicit developm
 - **Interactive Commands:** Try to avoid shell commands that might require user interaction (e.g., `git rebase -i`). Use non-interactive versions of commands when available (e.g., `npm init -y` instead of `npm init`), otherwise remind users that interactive shell commands are not supported and may cause hanging until user cancellation.
 - **Execute Preference:** Open regular files (e.g., HTML, TXT, PDF, images) with the system's default application using OS-specific commands with absolute paths. Run language-specific programs (Python, Node.js, Java, etc.) using their respective runtime commands with absolute paths.
 
-### Usage Guidelines of "${CODE_ANALYZE_TOOL_NAME}"
+### Usage Guidelines of "${CodeAnalyzer.typeName}"
 
-If the task involves deep understanding, analyzing, or explaining a software project (e.g., module dependencies, feature implementations, code structure), you must use the ${CODE_ANALYZE_TOOL_NAME} tool. This tool helps systematically explore:
+If the task involves deep understanding, analyzing, or explaining a software project (e.g., module dependencies, feature implementations, code structure), you must use the ${CodeAnalyzer.typeName} tool. This tool helps systematically explore:
 
 - Project Structure: Summarize directories, key files, and entry points.
 - Dependencies: Identify relationships between modules/libraries.
@@ -93,7 +93,7 @@ If the task involves deep understanding, analyzing, or explaining a software pro
 - "Explain the rendering pipeline in the frontend code."
 - "Are there circular dependencies between services?"
 
-Do NOT use ${CODE_ANALYZE_TOOL_NAME} for:
+Do NOT use ${CodeAnalyzer.typeName} for:
 
 - Simple syntax questions.
 - Isolated code snippets without project context.

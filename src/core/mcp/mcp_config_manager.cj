@@ -19,13 +19,18 @@ import stdx.encoding.json.*
 private enum MCPServerConfig <: FromJsonValue<MCPServerConfig> & ToJsonValue {
     | Stdio(StdioMCPInitParams)
     | Sse(SseMCPInitParams)
+    | Http(HttpMCPInitParams)
 
     /**
      * Check and parse the server type from the initial parameters
      */
     redef public static func fromJsonValue(initParams: JsonValue): MCPServerConfig {
-        if (let Some(_) <- initParams.asObject().get("url")) {
-            return MCPServerConfig.Sse(SseMCPInitParams.fromJsonValue(initParams))
+        if (let Some(url) <- initParams.asObject().get("url")) {
+            if (url.asString().getValue().contains("sse")) {
+                return MCPServerConfig.Sse(SseMCPInitParams.fromJsonValue(initParams))
+            } else {
+                return MCPServerConfig.Http(HttpMCPInitParams.fromJsonValue(initParams))
+            }
         } else {
             return MCPServerConfig.Stdio(StdioMCPInitParams.fromJsonValue(initParams))
         }
@@ -35,6 +40,7 @@ private enum MCPServerConfig <: FromJsonValue<MCPServerConfig> & ToJsonValue {
         return match (this) {
             case Stdio(params) => params.toJsonValue()
             case Sse(params) => params.toJsonValue()
+            case Http(params) => params.toJsonValue()
         }
     }
 }
@@ -93,6 +99,9 @@ public class MCPConfigManager {
             case Sse(initParam) =>
                 LogUtils.info("Creating SSE MCP client for ${serverName} with URL: ${initParam.url}")
                 SseMCPClient(initParam.url)
+            case Http(initParam) =>
+                LogUtils.info("Creating HTTP MCP client for ${serverName} with URL: ${initParam.url}")
+                HttpMCPClient(initParam.url, headers: initParam.header.toArray())
         }
 
         let tools = ArrayList<Tool>()
@@ -119,6 +128,7 @@ public class MCPConfigManager {
                 case Some(config) => match (config) {
                     case Stdio(_) => "Stdio"
                     case Sse(_) => "SSE"
+                    case Http(_) => "HTTP"
                 }
                 case _ => "Unknown"
             }
