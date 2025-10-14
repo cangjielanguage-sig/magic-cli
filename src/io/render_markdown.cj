@@ -55,7 +55,7 @@ private func processInlineMarkdown(line: String): String {
             case 5 => AnsiColor.MAGENTA
             case _ => AnsiColor.MAGENTA
         }
-        "${header.withColor(Theme.current.muted)} ${color}${text}${AnsiColor.RESET}"
+        "${header.withColor(Theme.MUTED)} ${color}${text}${AnsiColor.RESET}"
     })
 
     // Bold (**text** or __text__)
@@ -87,9 +87,9 @@ private func processInlineMarkdown(line: String): String {
         "${AnsiColor.BG_BLACK}${AnsiColor.BRIGHT_YELLOW}${m.matchString(1)}${AnsiColor.RESET}"
     })
 
-    // Strikethrough (~~text~~)
+    // Strike through (~~text~~)
     processed = RegexUtils.replaceAll(processed, #"~~([^~]+)~~"#, { m =>
-        "${AnsiColor.STRIKETHROUGH}${m.matchString(1)}${AnsiColor.RESET}"
+        "${AnsiColor.STRIKE_THROUGH}${m.matchString(1)}${AnsiColor.RESET}"
     })
 
     // Links [text](url)

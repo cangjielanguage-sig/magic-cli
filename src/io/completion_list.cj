@@ -7,7 +7,7 @@ protected class CompletionListUtils {
      * Command definitions: (command_name, description:  [subcommands])
      * Commands without subcommands have empty array
      */
-    protected static let COMMANDS: Array<(String, String, Array<String>)> = [
+    protected static let COMMANDS: ArrayList<(String, String, Array<String>)> = ArrayList([
         ("/help", "Show this help message", []),
         ("/clear", "Clear conversation history", []),
         ("/compact", "Compact the conversation history", []),
@@ -17,9 +17,14 @@ protected class CompletionListUtils {
         ("/mcp", "Manage MCP tools", ["add", "add-sse", "remove", "list"]),
         ("/conversation", "Manage conversations", ["list", "save", "resume", "remove", "help"]),
         ("/cmd", "Manage customized commands", ["list", "reload", "help"])
-    ]
+    ])
 
     static let COMPLETION_LIST = ArrayList<String>()
+
+    protected static func registerCommand(command: String, description: String) {
+        COMMANDS.add((command, description, []))
+        registerCompletionItem("/${command}")
+    }
 
     protected static func registerCompletionItem(item: String) {
         COMPLETION_LIST.add(item)

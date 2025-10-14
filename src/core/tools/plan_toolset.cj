@@ -5,7 +5,7 @@ import magic.prelude.*
 import magic.log.LogUtils
 
 import cli.core.config.CliConfig
-import cli.io.{InputUtils, PrintUtils, Confirmation}
+import cli.io.{InputUtils, PrintUtils, Confirmation, WithColor, AnsiColor, Theme}
 import cli.utils.*
 
 import std.collection.*
@@ -26,9 +26,9 @@ private class Task {
 
     public func toMarkdown(): String {
         if (this.completed) {
-            return "- [x] ${this.description}"
+            return "${'╰─'.withColor(Theme.MUTED)} ${this.description.withColor(Theme.SUCCESS).withColor(AnsiColor.STRIKE_THROUGH)}"
         } else {
-            return "- [ ] ${this.description}"
+            return "${'╰─'.withColor(AnsiColor.BRIGHT_BLACK)} ${this.description.withColor(AnsiColor.BOLD)}"
         }
     }
 
@@ -103,8 +103,8 @@ public class PlanToolset {
     ]
     public func createOrUpdatePlan(tasks: Array<String>): String {
         this.plan = Plan(tasks)
-        let message = "\n${this.plan}\nPlan has been created. Please confirm if you need to modify the plan."
-        if (InputUtils.confirm("Plan", message) == Confirmation.Deny) {
+        let footer = "💡 Plan has been created. Please confirm if you need to modify the plan. ʘ‿ʘ".withColor(Theme.HIGHLIGHT)
+        if (InputUtils.confirm("Plan", this.plan.toString(), footer: footer) == Confirmation.Deny) {
             return "User denied the plan"
         }
         this.plan.save()
