@@ -8,7 +8,7 @@ import magic.log.LogUtils
 import magic.utils.readFile
 
 import cli.core.config.CliConfig
-import cli.io.{PrintUtils, CompletionListUtils}
+import cli.io.{PrintUtils, CompletionListUtils, wrapBox, WithColor, Theme, AnsiColor}
 
 import std.fs.{exists, Directory, Path, File}
 import std.collection.{HashMap, ArrayList, enumerate, filter, map, collectArray}
@@ -25,23 +25,8 @@ protected class CustomCommandManager {
     private let commandsDir = CliConfig.dotDir.join("commands")
 
     public init() {
+        registerBuiltinCommands()
         this.loadCommands()
-    }
-
-    private func addCommand(name: String, command: CustomCommand): Unit {
-        // Check for conflicts with built-in commands
-        let builtinCommands = ["/help", "/clear", "/compact", "/memory", "/init", "/exit", "/mcp", "/conversation", "/cmd"]
-        for (builtin in builtinCommands) {
-            if ("/" + name == builtin) {
-                LogUtils.info("Custom command '${name}' conflicts with built-in command '${builtin}', skipping")
-                return
-            }
-        }
-
-        commands[name] = command
-        // CompletionListUtils.registerCompletionItem("/cmd:${name}")
-        CompletionListUtils.registerCommand("/${name}", command.description)
-        LogUtils.info("Loaded custom command: ${name}")
     }
 
     /**
@@ -79,6 +64,18 @@ protected class CustomCommandManager {
             LogUtils.error("Failed to load commands: ${ex.message}")
             LogUtils.error(ex)
         }
+    }
+
+    private func addCommand(name: String, command: CustomCommand): Unit {
+        // Check for conflicts with built-in commands
+        if (isBuiltinCommand(name)) {
+            LogUtils.info("Custom command '${name}' conflicts with built-in command', skipping")
+            return
+        }
+
+        commands[name] = command
+        CompletionListUtils.registerCompletionItem("/${name}")
+        LogUtils.info("Loaded custom command: ${name}")
     }
 
     /**
@@ -223,5 +220,34 @@ protected class CustomCommandManager {
             // Custom command
             return buildUserRequest(cmdName, args)
         }
+    }
+
+    static public func printBuiltinCommands() {
+        let message = wrapBox(
+            "Available Builtin Commands".withColor(Theme.PRIMARY),
+            lines: BUILTIN_COMMANDS |>
+                map { commandInfo: (String, String, Array<String>) =>
+                    let cmd = "/${commandInfo[0]}".padEnd(15).withColor(AnsiColor.YELLOW)
+                    let separator = " ║ ".withColor(Theme.MUTED)
+                    let message = "- ${commandInfo[1]}".withColor(Theme.MUTED)
+                    return " ${cmd}${separator}${message}"
+                } |>
+                collectArray,
+            width: 60,
+            centerTitle: true
+        )
+        PrintUtils.printLine(message)
+    }
+
+    /**
+     * Check if input is a built-in command
+     */
+    protected static func isBuiltinCommand(name: String): Bool {
+        for (builtin in BUILTIN_COMMANDS |> map { info => info[0] }) {
+            if (name == builtin) {
+                return true
+            }
+        }
+        return false
     }
 }

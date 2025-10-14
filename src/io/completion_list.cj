@@ -3,30 +3,9 @@ package cli.io
 import std.collection.{ArrayList, filter, enumerate, collectArray}
 
 protected class CompletionListUtils {
-    /**
-     * Command definitions: (command_name, description:  [subcommands])
-     * Commands without subcommands have empty array
-     */
-    protected static let COMMANDS: ArrayList<(String, String, Array<String>)> = ArrayList([
-        ("/help", "Show this help message", []),
-        ("/clear", "Clear conversation history", []),
-        ("/compact", "Compact the conversation history", []),
-        ("/memory", "Show MAGIC.md content", []),
-        ("/init", "Initialize MAGIC.md for project", []),
-        ("/exit", "Exit the program", []),
-        ("/mcp", "Manage MCP tools", ["add", "add-sse", "remove", "list"]),
-        ("/conversation", "Manage conversations", ["list", "save", "resume", "remove", "help"]),
-        ("/cmd", "Manage customized commands", ["list", "reload", "help"])
-    ])
-
     static let COMPLETION_LIST = ArrayList<String>()
 
-    protected static func registerCommand(command: String, description: String) {
-        COMMANDS.add((command, description, []))
-        registerCompletionItem("/${command}")
-    }
-
-    protected static func registerCompletionItem(item: String) {
+   protected static func registerCompletionItem(item: String) {
         COMPLETION_LIST.add(item)
     }
 
@@ -87,16 +66,7 @@ func buildCompletionListForCommand(text: String, cursor: Int64): Option<Array<St
     }
 
     // Generate all possible completions from command definitions
-    for ((commandName, _commandDescription, subcommands) in CompletionListUtils.COMMANDS) {
-        // Add the base command if it matches
-        addCommandIfMatches(commandName)
 
-        // Add subcommands if they match
-        for (subcommand in subcommands) {
-            let fullSubcommand = commandName + " " + subcommand
-            addCommandIfMatches(fullSubcommand)
-        }
-    }
     // Last, add all registered items
     for (command in CompletionListUtils.COMPLETION_LIST) {
         addCommandIfMatches(command)

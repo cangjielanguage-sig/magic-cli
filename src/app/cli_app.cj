@@ -1,37 +1,30 @@
 package cli.app
 
-import magic.dsl.*
-import magic.prelude.*
 import magic.log.LogUtils
-import magic.core.message.Conversation
 import magic.core.agent.Agent
-import magic.interaction.*
-import magic.config.Config
-import magic.tool.AgentAsTool
-import magic.model.ModelManager
+import magic.core.model.ChatModel
 
 import cli.core.mcp.MCPConfigManager
 import cli.core.conversation.ConversationManager
 import cli.core.commands.CustomCommandManager
+import cli.core.token_status.TokenStatusManager
 import cli.core.config.CliConfig
 import cli.core.agents.*
 import cli.io.{InputUtils, PrintUtils, StatusIndicator}
-import cli.utils.StringUtils
-import cli.core.tools.fs_utils.writeFileBasic
 
 import std.collection.ArrayList
 import std.fs.{Path, exists, Directory}
 import std.collection.HashMap
-import std.sync.*
-import std.env.atExit
+import std.sync.{Mutex, AtomicOptionReference}
 
 protected class CliApp {
-    protected let agent: Agent
     private let mutex = Mutex()
+    protected let agent: Agent
     protected let thinkIndicator = AtomicOptionReference<StatusIndicator>()
     protected let conversationManager: ConversationManager
     protected let customCommandManager: CustomCommandManager
     protected let mcpManager: MCPConfigManager
+    protected let tokenStatusManager: TokenStatusManager
 
     protected init() {
         this.agent = if (CliConfig.language.toAsciiLower() == 'cangjie') {
@@ -50,9 +43,10 @@ protected class CliApp {
 
         this.conversationManager = ConversationManager(Compactor())
         this.customCommandManager = CustomCommandManager()
+        this.tokenStatusManager = TokenStatusManager()
 
         // Initialize event handlers and callbacks
-        this.registerHooks()
+        registerHooks(this)
     }
 
     func startThinkIndicator(message: String) {
@@ -68,74 +62,6 @@ protected class CliApp {
                 i.stop()
             }
         }
-    }
-
-    private func registerHooks() {
-        // Collect all subAgents as allowed agents that is able to print the thinking indicator
-        // CangjieFixer is special which is not added as a subAgent
-        let allowedAgentName = ArrayList<String>([
-            this.agent.name,
-            "CodeAnalyzer",
-            "CodeDesigner",
-            "CangjieFixer",
-            "CangjieDocAgent"
-        ])
-        for (tool in this.agent.toolManager.tools) {
-            if (tool is AgentAsTool) {
-                allowedAgentName.add(tool.name)
-            }
-        }
-        //------------------------------------------------------------------------------
-        // Use chat model start/end/failure events to show and stop the thinking indicator
-        EventHandlerManager.global.addHandler { evt: ChatModelStartEvent =>
-            // There may be other agents during the execution.
-            // Only show the indicator of the allowed agents
-            if (allowedAgentName.contains(evt.agent.name)) {
-                let name = StringUtils.splitCamelCase(evt.agent.name)
-                this.startThinkIndicator("💭 (${name}) Thinking")
-            }
-            EventResponse.Continue
-        }
-        EventHandlerManager.global.addHandler { evt: ChatModelEndEvent =>
-            if (allowedAgentName.contains(evt.agent.name)) {
-                this.stopThinkIndicator()
-            }
-        }
-        EventHandlerManager.global.addHandler { evt: ChatModelFailureEvent =>
-            // If the model context is too long and is truncated, compact the conversation
-            if (evt.error == "length") {
-                try {
-                    this.conversationManager.compact()
-                    return Continue(this.agent.model.create(evt.chatRequest))
-                } catch (ex: Exception) {
-                    LogUtils.error("Failed to compact the conversation or call chat model: ${ex.message}")
-                }
-            }
-            if (allowedAgentName.contains(evt.agent.name)) {
-                this.stopThinkIndicator()
-            }
-            EventResponse.Continue
-        }
-        //------------------------------------------------------------------------------
-        // Use sub-agent start/end events to print the sub-agent execution info
-        EventHandlerManager.global.addHandler { evt: SubAgentStartEvent =>
-            let name = StringUtils.splitCamelCase(evt.agent.name)
-            PrintUtils.printTool(name, "question: ${evt.agentRequest.question}")
-            PrintUtils.beginSubAgent()
-            EventResponse.Continue
-        }
-        EventHandlerManager.global.addHandler { evt: SubAgentEndEvent =>
-            if (evt.agentResponse.status == AgentResponseStatus.Success) {
-                let name = StringUtils.splitCamelCase(evt.agent.name)
-                PrintUtils.printLine("🎉 SubAgent ${name} completed 🍻", withIndent: true)
-            }
-            PrintUtils.endSubAgent()
-        }
-        // Register the callback to auto-save conversation when exiting the program
-        atExit({
-            => conversationManager.autoSave()
-            InputUtils.exitRawMode()
-        })
     }
 
     /**

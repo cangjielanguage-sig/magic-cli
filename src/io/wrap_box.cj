@@ -156,7 +156,8 @@ protected func wrapBox(title: String,
     // Add the title section if title is provided
     if (!title.isEmpty()) {
         strBuilder.append(
-            "${verticalBorder.withColor(boxColor)}${padString(title, width: width, center: centerTitle)}${verticalBorder.withColor(boxColor)}\n")
+            "${verticalBorder.withColor(boxColor)}${padString(title.withColor(AnsiColor.BOLD), width: width, center: centerTitle)}${verticalBorder.withColor(boxColor)}\n"
+        )
         strBuilder.append("${verticalBorder}${HORIZONTAL_SEPARATOR * width}${verticalBorder}".withColor(boxColor))
         strBuilder.append('\n')
     }
