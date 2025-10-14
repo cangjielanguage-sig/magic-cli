@@ -8,10 +8,8 @@ import cli.core.tools.*
 import cli.core.config.CliConfig
 import cli.io.PrintUtils
 
-const CODE_ANALYZE_TOOL_NAME = "CodeAnalyzer"
-
 private let ANALYZE_TOOL_DESCRIPTION = """
-`${CODE_ANALYZE_TOOL_NAME}` is a utility that analyzes the codebase in the current working directory based on the user's query.
+`CodeAnalyzer` is a utility that analyzes the codebase in the current working directory based on the user's query.
 Invoke this tool when the user asks questions that require inspecting actual code content, structure, implementation logic, or technical details—and when the answer cannot be accurately provided from existing context alone.
 
 **When to Use**:
@@ -26,7 +24,7 @@ Invoke this tool when the user asks questions that require inspecting actual cod
 - The query is too broad or ambiguous (e.g., "Analyze the whole project")—instead, ask for clarification.
 - The question can be reasonably answered through reasoning or prior information without code inspection.
 
-Use ${CODE_ANALYZE_TOOL_NAME} as a targeted assistance mechanism, not a default response strategy. Rely first on your knowledge and dialogue context. Only invoke the tool when necessary, and always with a clear purpose.
+Use `CodeAnalyzer` as a targeted assistance mechanism, not a default response strategy. Rely first on your knowledge and dialogue context. Only invoke the tool when necessary, and always with a clear purpose.
 """
 
 private let ANALYZER_PROMPT = """

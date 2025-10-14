@@ -179,9 +179,9 @@ ${CANGJIE_INTRO}
 ${FIX_RULES}
 
 - "### Cangjie Fix Rules" list rules you can use to fix compile errors.
-- For any unclear aspects, use the **${CANGJIE_DOC_RETRIEVE_TOOL_NAME}** tool to query documentation and code examples.
+- For any unclear aspects, use the **${CangjieToolset._cangjieRetrieveDocuments}** tool to query documentation and code examples.
 
-**MANDATORY FOUNDATION**: Cangjie is a new programming language and differs to other languages, so your MUST use tool **${CANGJIE_DOC_RETRIEVE_TOOL_NAME}** to lookup Cangjie syntax, APIs, engineering practices, its best practices, etc.
+**MANDATORY FOUNDATION**: Cangjie is a new programming language and differs to other languages, so your MUST use tool **${CangjieToolset._cangjieRetrieveDocuments}** to lookup Cangjie syntax, APIs, engineering practices, its best practices, etc.
 It is **STRICTLY PROHIBITED** to make assumptions or guess Cangjie syntax based on other programming languages.
 
 ## Compile Error Fixing Process
@@ -198,7 +198,7 @@ Follow this iterative, disciplined process to fix compile errors:
    - Classify it: syntax error, undefined symbol, type mismatch, incorrect API usage, etc.
    - If the fix is clear and you are confident, proceed to editing.
    - Check rules in "### Cangjie Fix Rules", if you can fix according to these rules, fix directly.
-   - **If uncertain about syntax, APIs, or language features, do not guess. Use `${CANGJIE_DOC_RETRIEVE_TOOL_NAME}` with a precise, targeted query (e.g., "Cangjie optional type syntax", "how to implement interface X")
+   - **If uncertain about syntax, APIs, or language features, do not guess. Use `${CangjieToolset._cangjieRetrieveDocuments}` with a precise, targeted query (e.g., "Cangjie optional type syntax", "how to implement interface X")
 
 3. **Apply Fixes**
    - Edit only the necessary files to resolve the compile errors.
@@ -209,7 +209,7 @@ Follow this iterative, disciplined process to fix compile errors:
    After each change:
    - Re-run `buildCangjieProject` to get updated feedback.
    - If other errors appear, iterate to analyze and fix them.
-   - If an error persists despite your fix, re-evaluate the root cause and use the `${CANGJIE_DOC_RETRIEVE_TOOL_NAME}` tool if needed.
+   - If an error persists despite your fix, re-evaluate the root cause and use the `${CangjieToolset._cangjieRetrieveDocuments}` tool if needed.
   - Never assume you have fixed all errors unless you have called `buildCangjieProject` and it reported zero compile errors. This is VERY IMPORTANT.
 
 5. **Repeat Until Success**
@@ -240,7 +240,7 @@ Follow this iterative, disciplined process to fix compile errors:
   - **NEVER add backticks (`) around identifiers or function names** - backticks are not part of normal Cangjie syntax and will cause compilation errors.
 
 - **No Guessing**
-  - If you are unsure about Cangjie syntax, APIs, or semantics, **always use** `${CANGJIE_DOC_RETRIEVE_TOOL_NAME}` before making changes.
+  - If you are unsure about Cangjie syntax, APIs, or semantics, **always use** `${CangjieToolset._cangjieRetrieveDocuments}` before making changes.
   - Never assume—verify with official documentation.
 
 - **Transparency on Blockers**
@@ -262,7 +262,7 @@ Follow this iterative, disciplined process to fix compile errors:
         CangjieToolset()
     ]
 ]
-class CangjieFixer {
+protected class CangjieFixer {
     CangjieFixer(private let projectDir: Path) { }
 
     @prompt(

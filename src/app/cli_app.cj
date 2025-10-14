@@ -84,13 +84,12 @@ protected class CliApp {
         // Simplified event loop
         while (true) {
             let input = InputUtils.getUserInput()
-            if (input.isEmpty()) {
+            if (input.trimAscii().isEmpty()) {
                 continue
             }
-
-            // Process input and check if we should continue
+            // Process input and check whether to continue
             if (!processInput(this, input)) {
-                break  // Exit requested
+                break
             }
         }
     }

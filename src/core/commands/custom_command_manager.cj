@@ -69,7 +69,11 @@ protected class CustomCommandManager {
     private func addCommand(name: String, command: CustomCommand): Unit {
         // Check for conflicts with built-in commands
         if (isBuiltinCommand(name)) {
-            LogUtils.info("Custom command '${name}' conflicts with built-in command', skipping")
+            LogUtils.info("Custom command '${name}' conflicts with built-in commands', skipping")
+            return
+        }
+        if (this.commands.contains(name)) {
+            LogUtils.info("Custom command '${name}' conflicts with existing commands', skipping")
             return
         }
 

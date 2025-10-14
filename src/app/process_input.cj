@@ -103,30 +103,6 @@ private func executeCommand(input: String, app: CliApp): Option<Bool> {
 
 //-------------------------------------------------------
 
-/**
- * Check if an exception should trigger model fallback
- */
-private func shouldFallback(ex: Exception): Bool {
-    // Only fallback if we have fallback models configured
-    if (CliConfig.fallbackModels.size == 0) {
-        return false
-    }
-    let message = ex.message.toAsciiLower()
-
-    // HTTP and model errors that should trigger fallback
-    return message.contains("timeout") ||
-           message.contains("5") ||  // 5xx server errors
-           message.contains("connection") ||
-           message.contains("network") ||
-           message.contains("429") ||  // Rate limiting
-           message.contains("401") ||  // Unauthorized
-           message.contains("rate limit") ||
-           message.contains("quota") ||
-           message.contains("api key") ||
-           message.contains("unauthorized") ||
-           message.contains("authentication")
-}
-
 private func executeAgentTask(app: CliApp, input: String): Unit {
     LogUtils.debug("Handle user input `${input}`")
     // Each time we execute an agent task, we need to reset the sub-agent indent
@@ -179,7 +155,7 @@ private func executeAgentTask(app: CliApp, input: String): Unit {
         } catch (ex: Exception) {
             if (idx == allModels.size - 1) { // All models are tried
                 throw ex
-            } else if (shouldFallback(ex)) {
+            } else if (ModelFallback.shouldFallback(ex)) {
                 LogUtils.info("Model ${currModel.fullName} failed, trying fallback")
             } else {
                 throw ex
@@ -191,8 +167,7 @@ private func executeAgentTask(app: CliApp, input: String): Unit {
 /**
  * Handle the agent response, print the response and update the conversation
  */
-private func handleAgentResponse(app: CliApp,
-                                 response: AsyncAgentResponse): Unit {
+private func handleAgentResponse(app: CliApp, response: AsyncAgentResponse): Unit {
     // This ensures response.content access is safe
     let content = response.content
     match (response.status) {

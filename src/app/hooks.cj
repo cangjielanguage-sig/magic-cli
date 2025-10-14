@@ -7,6 +7,8 @@ import magic.log.LogUtils
 import magic.model.ModelManager
 import magic.tool.AgentAsTool
 
+import cli.core.agents.*
+import cli.core.tools.cj_utils.CangjieDocAgent
 import cli.io.{InputUtils, PrintUtils, StatusIndicator}
 import cli.utils.StringUtils
 
@@ -18,10 +20,10 @@ func registerHooks(app: CliApp) {
     // Some agents are special which are not added as subAgents
     let allowedAgentName = ArrayList<String>([
         app.agent.name,
-        "CodeAnalyzer",
-        "CodeDesigner",
-        "CangjieFixer",
-        "CangjieDocAgent"
+        CodeAnalyzer.typeName,
+        CodeDesigner.typeName,
+        CangjieFixer.typeName,
+        CangjieDocAgent.typeName
     ])
     for (tool in app.agent.toolManager.tools) {
         if (tool is AgentAsTool) {
