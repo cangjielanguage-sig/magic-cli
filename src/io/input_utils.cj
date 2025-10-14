@@ -62,8 +62,12 @@ protected class InputUtils {
         }
     }
 
-    public static func confirm(title: String, content: String): Confirmation {
+    public static func confirm(title: String, content: String, footer!: Option<String> = None): Confirmation {
         PrintUtils.printTool(title, content, needConfirm: !CliConfig.auto)
+        if (let Some(footer) <- footer) {
+            PrintUtils.printLine(footer)
+            PrintUtils.printLine("")
+        }
         if (CliConfig.auto) {
             return Confirmation.Approve
         }

@@ -11,7 +11,7 @@ import cli.core.config.CliConfig
 import cli.io.{PrintUtils, CompletionListUtils}
 
 import std.fs.{exists, Directory, Path, File}
-import std.collection.{HashMap, ArrayList, enumerate}
+import std.collection.{HashMap, ArrayList, enumerate, filter, map, collectArray}
 import stdx.encoding.json.*
 
 @jsonable
@@ -29,8 +29,18 @@ protected class CustomCommandManager {
     }
 
     private func addCommand(name: String, command: CustomCommand): Unit {
+        // Check for conflicts with built-in commands
+        let builtinCommands = ["/help", "/clear", "/compact", "/memory", "/init", "/exit", "/mcp", "/conversation", "/cmd"]
+        for (builtin in builtinCommands) {
+            if ("/" + name == builtin) {
+                LogUtils.info("Custom command '${name}' conflicts with built-in command '${builtin}', skipping")
+                return
+            }
+        }
+
         commands[name] = command
-        CompletionListUtils.registerCompletionItem("/cmd:${name}")
+        // CompletionListUtils.registerCompletionItem("/cmd:${name}")
+        CompletionListUtils.registerCommand("/${name}", command.description)
         LogUtils.info("Loaded custom command: ${name}")
     }
 
@@ -145,7 +155,7 @@ protected class CustomCommandManager {
             PrintUtils.printLine("  • ${name} - ${command.description}")
         }
         PrintUtils.printLine("")
-        PrintUtils.printLine("Usage: /cmd:<name> [arguments]")
+        PrintUtils.printLine("Usage: /<name> [arguments]")
     }
 
     /**
@@ -155,7 +165,7 @@ protected class CustomCommandManager {
         if (let Some(command) <- commands.get(name)) {
             PrintUtils.printTool("Command Help", "📖 ${name}")
             PrintUtils.printLine("Description: ${command.description}")
-            PrintUtils.printLine("Usage: /cmd:${name} [your arguments]")
+            PrintUtils.printLine("Usage: /${name} [your arguments]")
             PrintUtils.printLine("Prompt template:")
             PrintUtils.printLine("  ${command.prompt}")
         } else {
@@ -177,46 +187,41 @@ protected class CustomCommandManager {
      * Handle custom command input parsing and execution
      */
     public func handleCommand(input: String): Option<String> {
-        // Check for /cmd:command format
-        if (input.contains(":")) {
-            // /cmd:name args...
-            if (let Some(colonIndex) <- input.indexOf(":")) {
-                let remaining = input[colonIndex + 1..]
-                let cmdParts = remaining.split(" ")
-                if (!cmdParts.isEmpty()) {
-                    let cmdName = cmdParts[0]
-                    let args = if (cmdParts.size > 1) {
-                        remaining[cmdName.size..].trimAscii()
-                    } else {
-                        ""
-                    }
-                    return buildUserRequest(cmdName, args)
+        // Check for direct /<command> format
+        // /<command> args...
+        let parts = input.split(" ") |>
+            filter { x => !x.isEmpty() } |>
+            map { x => x.trimAscii() } |>
+            collectArray
+        let cmdName = parts[0][1..] // Remove the leading '/'
+        let args = String.join(parts[1..], delimiter: " ")
+
+        // /cmd xxx
+        if (cmdName == "cmd") {
+            if (args.isEmpty() || args == "list") {
+                // /cmd or /cmd list
+                listCommands()
+            } else if (parts.size >= 2 && parts[1] == "help") {
+                // /cmd help <name>
+                if (parts.size >= 3) {
+                    showHelp(parts[2])
+                } else {
+                    PrintUtils.printLine("Usage: /cmd help <command-name>")
                 }
-            }
-        }
-
-        let parts = input.split(" ")
-
-        if (parts.size == 1 || (parts.size == 2 && parts[1] == "list")) {
-            // /cmd or /cmd list
-            listCommands()
-        } else if (parts.size >= 2 && parts[1] == "help") {
-            // /cmd help <name>
-            if (parts.size >= 3) {
-                showHelp(parts[2])
+            } else if (args == "reload") {
+                // /cmd reload
+                reloadCommands()
             } else {
-                PrintUtils.printLine("Usage: /cmd help <command-name>")
+                PrintUtils.printLine("Unknown command. Available options:")
+                PrintUtils.printLine("  /cmd list          - List all commands")
+                PrintUtils.printLine("  /cmd help <name>   - Show command help")
+                PrintUtils.printLine("  /cmd reload        - Reload commands")
+                PrintUtils.printLine("  /<name> [args]     - Execute command (new)")
             }
-        } else if (parts.size >= 2 && parts[1] == "reload") {
-            // /cmd reload
-            reloadCommands()
+            return None
         } else {
-            PrintUtils.printLine("Unknown command. Available options:")
-            PrintUtils.printLine("  /cmd list          - List all commands")
-            PrintUtils.printLine("  /cmd help <name>   - Show command help")
-            PrintUtils.printLine("  /cmd reload        - Reload commands")
-            PrintUtils.printLine("  /cmd:<name> [args] - Execute command")
+            // Custom command
+            return buildUserRequest(cmdName, args)
         }
-        return None
     }
 }

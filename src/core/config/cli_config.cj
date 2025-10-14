@@ -90,6 +90,11 @@ protected class CliConfig {
     public static var auto: Bool = false
 
     /**
+     * Whether to enable data collection for telemetry and analytics
+     */
+    public static var collectData: Bool = CliSettingManager.setting.collectData
+
+    /**
      * Temperature agents will use
      */
     public static var temperature: Float64 = CliSettingManager.setting.temperature

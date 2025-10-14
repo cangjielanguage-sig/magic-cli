@@ -27,7 +27,7 @@ public struct AnsiColor <: ToString {
     public static let DIM = AnsiColor.color16(2)
     public static let ITALIC = AnsiColor.color16(3)
     public static let UNDERLINE = AnsiColor.color16(4)
-    public static let STRIKETHROUGH = AnsiColor.color16(9)
+    public static let STRIKE_THROUGH = AnsiColor.color16(9)
 
     // Foreground colors
     public static let BLACK = AnsiColor.color16(30)
@@ -105,7 +105,7 @@ public class Theme {
         name: "default",
         primary: AnsiColor.BRIGHT_CYAN,
         secondary: AnsiColor.BRIGHT_BLUE,
-        success: AnsiColor.BRIGHT_GREEN,
+        success: AnsiColor.color256(22),
         warning: AnsiColor.BRIGHT_YELLOW,
         error: AnsiColor.BRIGHT_RED,
         info: AnsiColor.BRIGHT_WHITE,

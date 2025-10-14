@@ -46,6 +46,7 @@ private func executeShellCommand(command: String, app: CliApp): Unit {
  */
 private func isBuiltinCommand(input: String): Bool {
     for (cmd in CompletionListUtils.COMMANDS) {
+        LogUtils.info("Checking built-in command: ${cmd[0]}")
         if (input.startsWith(cmd[0])) {
             return true
         }
@@ -90,12 +91,19 @@ private func executeBuiltinCommand(input: String, app: CliApp): Bool {
                 executeAgentTask(app, request)
             }
             return true
-        case _input where _input.startsWith("/mcp") =>
+       case _input where _input.startsWith("/mcp") =>
             app.mcpManager.handleCommand(input.split(" "), app.agent)
             return true
         case _input where _input.startsWith("/conversation") =>
             app.conversationManager.handleCommand(input.split(" "))
             return true
+        case _input where _input.startsWith("/") =>
+            // Handle direct /<command> format for custom commands
+            if (let Some(request) <- app.customCommandManager.handleCommand(input)) {
+                executeAgentTask(app, request)
+            }
+            return true
+
         case _ =>
             return true  // Unknown built-in command, continue
     }

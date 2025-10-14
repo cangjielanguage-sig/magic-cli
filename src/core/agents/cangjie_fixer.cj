@@ -140,8 +140,8 @@ Both approaches read a line from standard input, but they differ in their return
 
 ```cangjie
 match (readln()) {
-    | Some(input) => print("You entered: \${input}")
-    | None => print("No input received")
+    case Some(input) => print("You entered: \${input}")
+    case None => print("No input received")
 }
 ```
 
@@ -156,8 +156,8 @@ println(input)
 
 ```cangjie
 match (console.readln()) { // Note that `console.readln()` returns an `Option<String>`, so we need to handle the `None` case.
-    | Some(input) => foo()
-    | None => bar()
+    case Some(input) => foo()
+    case None => bar()
 }
 ```
 """

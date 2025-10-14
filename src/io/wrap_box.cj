@@ -5,10 +5,10 @@ import std.collection.{ArrayList, collectArray, enumerate, filter, count}
 import magic.log.LogUtils
 
 // Box drawing characters for creating bordered text boxes
-private const LEFT_TOP = "┌"              // Top-left corner
-private const LEFT_BOTTOM = "└"           // Bottom-left corner
-private const RIGHT_TOP = "┐"             // Top-right corner
-private const RIGHT_BOTTOM = "┘"          // Bottom-right corner
+private const LEFT_TOP = "╭"              // Top-left corner
+private const LEFT_BOTTOM = "╰"           // Bottom-left corner
+private const RIGHT_TOP = "╮"             // Top-right corner
+private const RIGHT_BOTTOM = "╯"          // Bottom-right corner
 private const HORIZONTAL_BORDER = "─"     // Horizontal line for top/bottom borders
 private const VERTICAL_BORDER = "│"       // Vertical line for left/right borders
 private const HORIZONTAL_SEPARATOR = "─"  // Horizontal line for separating sections
