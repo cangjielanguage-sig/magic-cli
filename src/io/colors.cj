@@ -103,7 +103,7 @@ public class Theme {
     // Pre-defined themes
     public static let DEFAULT = ThemeConfig(
         name: "default",
-        primary: AnsiColor.BRIGHT_CYAN,
+        primary: AnsiColor.color256(140),
         secondary: AnsiColor.BRIGHT_BLUE,
         success: AnsiColor.color256(22),
         warning: AnsiColor.BRIGHT_YELLOW,

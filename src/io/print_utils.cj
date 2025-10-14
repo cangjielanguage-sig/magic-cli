@@ -4,65 +4,10 @@ import magic.core.agent.{AsyncAgentResponse, AgentResponse}
 
 import cli.core.config.CliConfig
 import cli.core.tools.fs_utils.writeFileBasic
-import cli.utils.InfoUtils
 
 import std.collection.{map, enumerate, collectArray}
 import std.time.DateTime
 import std.fs.OpenMode
-import std.sync.AtomicBool
-
-/**
- * The working indicator is printed by another thread
- * We need a data structure to hold the thread future and stop the thread
- */
-protected class StatusIndicator {
-    private var future: Option<Future<Unit>> = None
-    private let message: String
-
-    init(message: String) {
-        this.message = message
-    }
-
-    protected func start(): Unit {
-        this.future = spawn {
-            this.work()
-        }
-    }
-
-    static let INDICATORS = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"]
-
-    private func work(): Unit {
-        var idx = 0
-
-        // During the working indicator, we hide the cursor
-        hideCursor()
-        // Print message once (with space for spinner)
-        PrintUtils.printString(
-            "  ${message}...".withColor(Theme.MUTED), withIndent: true
-        )
-
-        var messageChanged = false
-        while (!Thread.currentThread.hasPendingCancellation) {
-            let spinner = INDICATORS[idx % INDICATORS.size]
-            PrintUtils.printString("\r") // Move cursor to the start of the line
-            if (PrintUtils.CURRENT_INDENT > 0) {
-                PrintUtils.printString(" " * PrintUtils.CURRENT_INDENT)
-            }
-            // Overwrite just the first character (spinner position)
-            PrintUtils.printString("${spinner}".withColor(Theme.MUTED))
-
-            sleep(Duration.millisecond * 100)
-            idx = (idx + 1) % INDICATORS.size
-        }
-        clearScreen(mode: ClearMode.EntireLine)
-        showCursor()
-    }
-
-    protected func stop(): Unit {
-        this.future.getOrThrow().cancel()
-        this.future.getOrThrow().get()
-    }
-}
 
 private let printInfoSavingFilename = "print_info.txt"
 
@@ -89,7 +34,7 @@ protected class PrintUtils {
     //---------------------------------------------------
     // Two fundamental print methods
     static public func printLine(line: String, withIndent!: Bool = false): Unit {
-        // do not print anything if noninteractive, but saving the print info to a file
+        // do not print anything if non-interactive, but saving the print info to a file
         if (!CliConfig.nonInteractive) {
             if (withIndent && CURRENT_INDENT > 0) {
                 print(" " * CURRENT_INDENT)
@@ -145,23 +90,6 @@ protected class PrintUtils {
         PrintUtils.printLine("\n👋 Goodbye ✨!\n".withColor(Theme.SECONDARY))
     }
 
-    static public func printHelpMessage() {
-        let helpMessage = wrapBox(
-            "Available Commands".withColor(Theme.PRIMARY),
-            lines: CompletionListUtils.COMMANDS |>
-                map { commandInfo =>
-                    let cmd = "${commandInfo[0]}".padEnd(15).withColor(AnsiColor.YELLOW)
-                    let separator = " ║ ".withColor(Theme.MUTED)
-                    let message = "- ${commandInfo[1]}".withColor(Theme.MUTED)
-                    " ${cmd}${separator}${message}"
-                } |>
-                collectArray,
-            width: 60,
-            centerTitle: true
-        )
-        PrintUtils.printLine(helpMessage)
-    }
-
     //----------------------------------------------------------------------------------
     // The following print methods are called by tools
     //----------------------------------------------------------------------------------
@@ -196,7 +124,7 @@ protected class PrintUtils {
             " ✔ ".withColor(Theme.SUCCESS)
         }
         let boxContent = wrapBox(
-            mark + name.withColor(Theme.PRIMARY),
+            mark + name.withColor(Theme.PRIMARY).withColor(AnsiColor.BOLD),
             content: message.withColor(Theme.INFO)
         )
         if (CURRENT_INDENT == 0) {

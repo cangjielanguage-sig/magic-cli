@@ -9,6 +9,7 @@ import cli.core.mcp.MCPConfigManager
 import cli.core.conversation.ConversationManager
 import cli.core.agents.CodeAnalyzer
 import cli.io.{InputUtils, PrintUtils, WithColor, AnsiColor, Confirmation}
+import cli.core.commands.CustomCommandManager
 import cli.utils.ShellUtils
 import cli.telemetry.DataCollector
 import cli.io.CompletionListUtils
@@ -42,28 +43,15 @@ private func executeShellCommand(command: String, app: CliApp): Unit {
 //-------------------------------------------------------
 
 /**
- * Check if input is a built-in command
- */
-private func isBuiltinCommand(input: String): Bool {
-    for (cmd in CompletionListUtils.COMMANDS) {
-        LogUtils.info("Checking built-in command: ${cmd[0]}")
-        if (input.startsWith(cmd[0])) {
-            return true
-        }
-    }
-    return input == "exit" || input == "help"
-}
-
-/**
  * Execute built-in commands and return whether to continue running
  */
-private func executeBuiltinCommand(input: String, app: CliApp): Bool {
+private func executeCommand(input: String, app: CliApp): Option<Bool> {
     match (input) {
         case "/exit" | "exit" =>
             PrintUtils.printExitMessage()
             return false  // Signal to exit main loop
         case "/help" | "help" =>
-            PrintUtils.printHelpMessage()
+            CustomCommandManager.printBuiltinCommands()
             return true
         case "/clear" | "clear" =>
             app.conversationManager.clearConversation()
@@ -86,6 +74,9 @@ private func executeBuiltinCommand(input: String, app: CliApp): Bool {
         case "/init" | "init" =>
             initMagicFile()
             return true
+        case "/status" | "status" =>
+            app.tokenStatusManager.printStatus()
+            return true
         case _input where _input.startsWith("/cmd") =>
             if (let Some(request) <- app.customCommandManager.handleCommand(input)) {
                 executeAgentTask(app, request)
@@ -97,15 +88,16 @@ private func executeBuiltinCommand(input: String, app: CliApp): Bool {
         case _input where _input.startsWith("/conversation") =>
             app.conversationManager.handleCommand(input.split(" "))
             return true
+
+        // Handle direct /<command> format for custom commands
         case _input where _input.startsWith("/") =>
-            // Handle direct /<command> format for custom commands
             if (let Some(request) <- app.customCommandManager.handleCommand(input)) {
                 executeAgentTask(app, request)
             }
             return true
 
-        case _ =>
-            return true  // Unknown built-in command, continue
+        case _ => // Not an available command
+            return None
     }
 }
 
@@ -226,23 +218,22 @@ private func handleAgentResponse(app: CliApp,
  * Main input processing function - determines input type and routes accordingly
  */
 func processInput(app: CliApp, input: String): Bool {
-    match {
-        case input.startsWith("!") =>
-            // Shell command - remove "!" and execute
-            executeShellCommand(input[1..], app)
-            return true  // Continue running
-        case isBuiltinCommand(input) =>
-            // Built-in commands (/help, /clear, /mcp, /exit, etc.)
-            return executeBuiltinCommand(input, app)  // Returns false for /exit
-        case _ =>
-            // Let agent process the input
-            try {
-                executeAgentTask(app, input)
-            } catch (ex: Exception) {
-                let msg = "Execution failure: ${ex.message}"
-                PrintUtils.printLine(msg.withColor(AnsiColor.color256(100)))
-                LogUtils.error(ex)
-            }
-            return true  // Continue running
+    if (input.startsWith("!")) {
+        // Shell command - remove "!" and execute
+        executeShellCommand(input[1..], app)
+        return true  // Continue running
     }
+    // Try to execute as a command
+    if (let Some(status) <- executeCommand(input, app)) {
+        return status
+    }
+    // Otherwise, let agent process the input
+    try {
+        executeAgentTask(app, input)
+    } catch (ex: Exception) {
+        let msg = "Execution failure: ${ex.message}"
+        PrintUtils.printLine(msg.withColor(AnsiColor.color256(100)))
+        LogUtils.error(ex)
+    }
+    return true  // Continue running
 }
