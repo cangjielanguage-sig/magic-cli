@@ -21,7 +21,7 @@ public func getSemanticInfo(
     try {
         // Initialize LSP client
         let rootUri = root.toString()
-        lspClient.initialize(rootUri: "file://${rootUri}")
+        lspClient.initialize(root: "${rootUri}")
 
         // Get semantic info
         let result = lspClient.getSemanticInfo(filePath, line - 1) // Convert to 0-based

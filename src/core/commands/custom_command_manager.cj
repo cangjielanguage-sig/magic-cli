@@ -5,10 +5,13 @@ import magic.prelude.*
 import magic.jsonable.*
 import magic.agent.ConversationAgent
 import magic.log.LogUtils
+import magic.utils.readFile
+
 import cli.core.config.CliConfig
-import cli.io.PrintUtils
+import cli.io.{PrintUtils, CompletionListUtils, wrapBox, WithColor, Theme, AnsiColor}
+
 import std.fs.{exists, Directory, Path, File}
-import std.collection.{HashMap, ArrayList}
+import std.collection.{HashMap, ArrayList, enumerate, filter, map, collectArray}
 import stdx.encoding.json.*
 
 @jsonable
@@ -18,12 +21,12 @@ protected class CustomCommand {
 }
 
 protected class CustomCommandManager {
-    private var commands: HashMap<String, CustomCommand> = HashMap<String, CustomCommand>()
-    private let commandsDir: Path
+    private var commands = HashMap<String, CustomCommand>()
+    private let commandsDir = CliConfig.dotDir.join("commands")
 
     public init() {
-        this.commandsDir = CliConfig.dotDir.join("commands")
-        loadCommands()
+        registerBuiltinCommands()
+        this.loadCommands()
     }
 
     /**
@@ -39,25 +42,52 @@ protected class CustomCommandManager {
 
         try {
             for (entry in Directory.readFrom(commandsDir)) {
-                if (entry.isRegular() && entry.name.endsWith(".json")) {
-                    let commandName = entry.name.replace(".json", "")
-                    if (let Some(command) <- loadCommand(entry.path)) {
-                        commands[commandName] = command
-                        LogUtils.info("Loaded custom command: ${commandName}")
+                if (!entry.isRegular()) {
+                    continue
+                }
+                // Support two approaches to define custom commands:
+                // 1. As a JSON file
+                // 2. As a markdown file
+                if (entry.path.extensionName == "json") {
+                    let commandName = entry.path.fileNameWithoutExtension
+                    if (let Some(command) <- loadCommandFromJson(entry.path)) {
+                        this.addCommand(commandName, command)
+                    }
+                } else if (entry.path.extensionName == "md") {
+                    let commandName = entry.path.fileNameWithoutExtension
+                    if (let Some(command) <- loadCommandFromMd(entry.path)) {
+                        this.addCommand(commandName, command)
                     }
                 }
             }
-        } catch (e: Exception) {
-            LogUtils.error("Failed to load commands: ${e.message}")
+        } catch (ex: Exception) {
+            LogUtils.error("Failed to load commands: ${ex.message}")
+            LogUtils.error(ex)
         }
+    }
+
+    private func addCommand(name: String, command: CustomCommand): Unit {
+        // Check for conflicts with built-in commands
+        if (isBuiltinCommand(name)) {
+            LogUtils.info("Custom command '${name}' conflicts with built-in commands', skipping")
+            return
+        }
+        if (this.commands.contains(name)) {
+            LogUtils.info("Custom command '${name}' conflicts with existing commands', skipping")
+            return
+        }
+
+        commands[name] = command
+        CompletionListUtils.registerCompletionItem("/${name}")
+        LogUtils.info("Loaded custom command: ${name}")
     }
 
     /**
      * Load a single command from JSON file
      */
-    private func loadCommand(filePath: Path): Option<CustomCommand> {
+    private func loadCommandFromJson(filePath: Path): Option<CustomCommand> {
         try {
-            let content = String.fromUtf8(File.readFrom(filePath))
+            let content = readFile(filePath)
             let jsonValue = JsonValue.fromStr(content)
             let command = CustomCommand.fromJsonValue(jsonValue)
 
@@ -67,10 +97,37 @@ protected class CustomCommandManager {
             }
 
             return Some(command)
-        } catch (e: Exception) {
-            LogUtils.error("Failed to load command from ${filePath}: ${e.message}")
+        } catch (ex: Exception) {
+            LogUtils.error("Failed to load command from ${filePath}: ${ex.message}")
+            LogUtils.error(ex)
             return None
         }
+    }
+
+    /**
+     * Load a single command from Markdown file
+     */
+    private func loadCommandFromMd(filePath: Path): Option<CustomCommand> {
+        let content = readFile(filePath)
+        let lines = content.split("\n")
+        var pivot = -1
+        for ((idx, line) in enumerate(lines)) {
+            if (line.startsWith("---")) {
+                pivot = idx
+                break
+            }
+        }
+        if (pivot == -1) {
+            return CustomCommand(description: "", prompt: content)
+        }
+        let prompt = String.join(lines[pivot+1..], delimiter: "\n")
+        for (line in lines[0..pivot]) {
+            let items = line.split(":")
+            if (items.size == 2 && items[0].trimAscii() == "description") {
+                return CustomCommand(description: items[1].trimAscii(), prompt: prompt)
+            }
+        }
+        return CustomCommand(description: "", prompt: prompt)
     }
 
     /**
@@ -99,7 +156,7 @@ protected class CustomCommandManager {
             PrintUtils.printLine("  • ${name} - ${command.description}")
         }
         PrintUtils.printLine("")
-        PrintUtils.printLine("Usage: /cmd:<name> [arguments]")
+        PrintUtils.printLine("Usage: /<name> [arguments]")
     }
 
     /**
@@ -109,7 +166,7 @@ protected class CustomCommandManager {
         if (let Some(command) <- commands.get(name)) {
             PrintUtils.printTool("Command Help", "📖 ${name}")
             PrintUtils.printLine("Description: ${command.description}")
-            PrintUtils.printLine("Usage: /cmd:${name} [your arguments]")
+            PrintUtils.printLine("Usage: /${name} [your arguments]")
             PrintUtils.printLine("Prompt template:")
             PrintUtils.printLine("  ${command.prompt}")
         } else {
@@ -131,46 +188,70 @@ protected class CustomCommandManager {
      * Handle custom command input parsing and execution
      */
     public func handleCommand(input: String): Option<String> {
-        // Check for /cmd:command format
-        if (input.contains(":")) {
-            // /cmd:name args...
-            if (let Some(colonIndex) <- input.indexOf(":")) {
-                let remaining = input[colonIndex + 1..]
-                let cmdParts = remaining.split(" ")
-                if (!cmdParts.isEmpty()) {
-                    let cmdName = cmdParts[0]
-                    let args = if (cmdParts.size > 1) {
-                        remaining[cmdName.size..].trimAscii()
-                    } else {
-                        ""
-                    }
-                    return buildUserRequest(cmdName, args)
+        // Check for direct /<command> format
+        // /<command> args...
+        let parts = input.split(" ") |>
+            filter { x => !x.isEmpty() } |>
+            map { x => x.trimAscii() } |>
+            collectArray
+        let cmdName = parts[0][1..] // Remove the leading '/'
+        let args = String.join(parts[1..], delimiter: " ")
+
+        // /cmd xxx
+        if (cmdName == "cmd") {
+            if (args.isEmpty() || args == "list") {
+                // /cmd or /cmd list
+                listCommands()
+            } else if (parts.size >= 2 && parts[1] == "help") {
+                // /cmd help <name>
+                if (parts.size >= 3) {
+                    showHelp(parts[2])
+                } else {
+                    PrintUtils.printLine("Usage: /cmd help <command-name>")
                 }
-            }
-        }
-
-        let parts = input.split(" ")
-
-        if (parts.size == 1 || (parts.size == 2 && parts[1] == "list")) {
-            // /cmd or /cmd list
-            listCommands()
-        } else if (parts.size >= 2 && parts[1] == "help") {
-            // /cmd help <name>
-            if (parts.size >= 3) {
-                showHelp(parts[2])
+            } else if (args == "reload") {
+                // /cmd reload
+                reloadCommands()
             } else {
-                PrintUtils.printLine("Usage: /cmd help <command-name>")
+                PrintUtils.printLine("Unknown command. Available options:")
+                PrintUtils.printLine("  /cmd list          - List all commands")
+                PrintUtils.printLine("  /cmd help <name>   - Show command help")
+                PrintUtils.printLine("  /cmd reload        - Reload commands")
+                PrintUtils.printLine("  /<name> [args]     - Execute command (new)")
             }
-        } else if (parts.size >= 2 && parts[1] == "reload") {
-            // /cmd reload
-            reloadCommands()
+            return None
         } else {
-            PrintUtils.printLine("Unknown command. Available options:")
-            PrintUtils.printLine("  /cmd list          - List all commands")
-            PrintUtils.printLine("  /cmd help <name>   - Show command help")
-            PrintUtils.printLine("  /cmd reload        - Reload commands")
-            PrintUtils.printLine("  /cmd:<name> [args] - Execute command")
+            // Custom command
+            return buildUserRequest(cmdName, args)
         }
-        return None
+    }
+
+    static public func printBuiltinCommands() {
+        let message = wrapBox(
+            "Available Builtin Commands".withColor(Theme.PRIMARY),
+            lines: BUILTIN_COMMANDS |>
+                map { commandInfo: (String, String, Array<String>) =>
+                    let cmd = "/${commandInfo[0]}".padEnd(15).withColor(AnsiColor.YELLOW)
+                    let separator = " ║ ".withColor(Theme.MUTED)
+                    let message = "- ${commandInfo[1]}".withColor(Theme.MUTED)
+                    return " ${cmd}${separator}${message}"
+                } |>
+                collectArray,
+            width: 60,
+            centerTitle: true
+        )
+        PrintUtils.printLine(message)
+    }
+
+    /**
+     * Check if input is a built-in command
+     */
+    protected static func isBuiltinCommand(name: String): Bool {
+        for (builtin in BUILTIN_COMMANDS |> map { info => info[0] }) {
+            if (name == builtin) {
+                return true
+            }
+        }
+        return false
     }
 }

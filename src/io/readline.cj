@@ -1,16 +1,18 @@
 package cli.io
 
 import magic.log.LogUtils
-import std.collection.{ArrayList, LinkedList, collectArray, filter, map}
+import cli.core.config.CliConfig
+
+import std.collection.{ArrayList, LinkedList}
 import std.regex.Regex
 import std.deriving.*
 import std.fs.{File, Path, exists}
-import cli.core.config.CliConfig
+import std.time.DateTime
 
 /**
  * Input state management
  */
-private class InputState {
+class InputState {
     public var buffer: LinkedList<Rune>
     public var cursor: Int64
     public var historyIndex: Int64
@@ -142,7 +144,7 @@ private class CompletionState {
 /**
  * Display context for rendering
  */
-private class DisplayContext {
+class DisplayContext {
     public let prompt: String
     public var lastRenderedLines: Int64
     public var terminalWidth: Int64
@@ -158,7 +160,7 @@ private class DisplayContext {
  * Extract @path context based on cursor position
  * Returns (atIndex, pathStart, pathEnd, pathPrefix) or None
  */
-private func extractPathContext(text: String, cursor: Int64): Option<(Int64, Int64, Int64, String)> {
+func extractPathContext(text: String, cursor: Int64): Option<(Int64, Int64, Int64, String)> {
     let runes = text.toRuneArray()
 
     // Find the last @ symbol before the current cursor
@@ -196,91 +198,6 @@ private func extractPathContext(text: String, cursor: Int64): Option<(Int64, Int
     let pathPrefix = String(runes[pathStart..cursor])
 
     return Some((atIndex, pathStart, pathEnd, pathPrefix))
-}
-
-// Command definitions: (command_name, [subcommands])
-// Commands without subcommands have empty array
-private let COMMANDS: Array<(String, Array<String>)> = [
-    ("/help", []),
-    ("/clear", []),
-    ("/compact", []),
-    ("/memory", []),
-    ("/init", []),
-    ("/exit", []),
-    ("/mcp", ["add", "add-sse", "remove", "list"]),
-    ("/conversation", ["list", "save", "resume", "delete"]),
-    ("/cmd", ["list", "add", "remove", "edit"])
-]
-
-/**
- * Build completion list based on current input and cursor position
- * Supports both /commands and @paths (but @paths are disabled in shell mode)
- */
-private func buildCompletionList(input: String, cursor: Int64, isShellMode!: Bool = false): Option<Array<String>> {
-    let text = input
-    if (text.isEmpty()) {
-        return None
-    }
-
-    // Check for @path completion based on cursor position (disabled in shell mode)
-    if (!isShellMode) {
-        if (let Some((atIndex, pathStart, pathEnd, pathPrefix)) <- extractPathContext(text, cursor)) {
-            let pathCompletions = getPathCompletionList(prefix: pathPrefix)
-            if (pathCompletions.size > 0) {
-                // For empty prefix (just "@"), show all files
-                // For non-empty prefix, show paths that start with prefix but are different
-                if (pathPrefix.isEmpty()) {
-                    return pathCompletions
-                } else {
-                    return pathCompletions |>
-                        filter { path => path.startsWith(pathPrefix) && path != pathPrefix } |>
-                        collectArray
-                }
-            }
-        }
-    }
-
-    // Check for /command completion (only at beginning and cursor at end)
-    if (!text.startsWith("/") || cursor != text.size) {
-        return None
-    }
-
-    let allCompletions = ArrayList<String>()
-
-    // Generate all possible completions from command definitions
-    for ((commandName, subcommands) in COMMANDS) {
-        // Add the base command if it matches
-        if (commandName.startsWith(text) && commandName != text) {
-            allCompletions.add(commandName)
-        }
-
-        // Add subcommands if they match
-        if (subcommands.size > 0) {
-            for (subcommand in subcommands) {
-                let fullSubcommand = commandName + " " + subcommand
-                if (fullSubcommand.startsWith(text) && fullSubcommand != text) {
-                    allCompletions.add(fullSubcommand)
-                }
-            }
-        }
-    }
-
-    let results = allCompletions.toArray()
-    if (results.size > 0) {
-        return results
-    }
-
-    return None
-}
-
-/**
- * Calculate cursor position in wrapped boxed content
- * Uses existing calculateCursorPos function to calculate cursor position
- */
-private func calculateCursorPosition(text: String, cursor: Int64, prefix: String): (Int64, Int64) {
-    // Use wrapBox to wrap text, then use existing calculateCursorPos function
-    let wrappedContent = wrapBox(text)
-    return calculateCursorPos(wrappedContent, cursor, prefix: prefix)
 }
 
 /**
@@ -365,7 +282,7 @@ public class Readline {
             let beforePathRunes = runes[0..pathStart]
             let afterPathRunes = runes[pathEnd..]
             let selectedRunes = selected.toRuneArray()
-            
+
             // Reconstruct text using rune arrays
             newText = String(beforePathRunes) + selected + String(afterPathRunes)
             // Set cursor to end of inserted path (in rune/character count)
@@ -412,6 +329,11 @@ public class Readline {
                         this.applyCompletion(inputState, completionState, selected)
                         return None
                     }
+                }
+                // If \n is not the last character, handle it as a regular character
+                if (RawInputUtils.hasInput()) {
+                    handleRune(rune, inputState, completionState)
+                    return None
                 }
 
                 // Otherwise, finalize input
@@ -539,16 +461,22 @@ public class Readline {
                 return None // Could be used to cancel completion or exit
 
             case _ => // Regular character
-                inputState.insertChar(rune)
-
-                // Update completion list
-                let newText = inputState.getText()
-                if (let Some(completions) <- buildCompletionList(newText, inputState.cursor, isShellMode: inputState.isShellMode())) {
-                    completionState.setCompletions(completions)
-                } else {
-                    completionState.clear()
-                }
+                handleRune(rune, inputState, completionState)
                 return None
+        }
+    }
+
+    private func handleRune(rune: Rune,
+                            inputState: InputState,
+                            completionState: CompletionState): Unit {
+        inputState.insertChar(rune)
+
+        // Update completion list
+        let newText = inputState.getText()
+        if (let Some(completions) <- buildCompletionList(newText, inputState.cursor, isShellMode: inputState.isShellMode())) {
+            completionState.setCompletions(completions)
+        } else {
+            completionState.clear()
         }
     }
 
@@ -587,12 +515,9 @@ public class Readline {
         let wrappedContent = wrapBox("${displayPrompt}${displayText}", boxColor: boxColor)
 
         // Calculate cursor position for current state
-        // Use original text for cursor calculation (without color codes)
-        let cursorWrappedContent = wrapBox("${displayContext.prompt}${currentText}", boxColor: boxColor)
         let (cursorRow, cursorCol) = calculateCursorPos(
-            cursorWrappedContent,
-            inputState.cursor,
-            prefix: displayContext.prompt
+            inputState,
+            displayContext
         )
 
         // Clear previous render (similar to original redraw logic)
@@ -692,7 +617,7 @@ public class Readline {
             this.render(inputState, completionState, displayContext, isFirst: true)
 
             while (true) {
-                let rune = if (let Some(r) <- RawInputUtils.rawGetRune()) {
+                let rune = if (let Some(r) <- RawInputUtils.getRune()) {
                     r
                 } else {
                     return None // EOF

@@ -39,7 +39,7 @@ protected class InputUtils {
         // Signal that we're requesting user input
         isRequestingUserInput.store(true)
         try {
-            return READLINE.readline(prompt ?? buildPrompt('🍭'), withBox: withBox) ?? "exit"
+            return READLINE.readline(prompt ?? buildPrompt("🔮"), withBox: withBox) ?? "exit"
         } finally {
             // Clear the flag when done
             isRequestingUserInput.store(false)
@@ -62,8 +62,12 @@ protected class InputUtils {
         }
     }
 
-    public static func confirm(title: String, content: String): Confirmation {
+    public static func confirm(title: String, content: String, footer!: Option<String> = None): Confirmation {
         PrintUtils.printTool(title, content, needConfirm: !CliConfig.auto)
+        if (let Some(footer) <- footer) {
+            PrintUtils.printLine(footer)
+            PrintUtils.printLine("")
+        }
         if (CliConfig.auto) {
             return Confirmation.Approve
         }
@@ -90,9 +94,6 @@ protected class InputUtils {
                         return Confirmation.Deny
                     } else {
                         let input = getUserInput(prompt: "> ")
-                        // PrintUtils.printCancellation()
-                        // throw the exception to cancel the current execution
-                        // throw AgentCancelException(reason: "__USER_CLARIFY__")
                         throw ToolException("User denied the tool to run with guidelines: \"${input}\".\nNOTE You must follow her/his guidelines to execute. Remember that obeying user guidelines is the most important.")
                     }
                 case None => // User pressed ESC to cancel
@@ -150,7 +151,7 @@ protected class InputUtils {
             PrintUtils.printLine(String.join(optionsToDisplay, delimiter: "\n"))
 
             // Read keyboard input
-            let rune = RawInputUtils.rawGetRune()
+            let rune = RawInputUtils.getRune()
             if (rune.isNone()) {
                 return None // EOF or error
             }

@@ -8,7 +8,7 @@ const OS = "linux"
 const OS = "windows"
 
 @When[os == "macOS"]
-const OS = "macos"
+const OS = "mac"
 
 @When[os != "Linux" && os != "Windows" && os != "macOS"]
 const OS = "unknown"
@@ -58,7 +58,7 @@ func compileDynamicLib(sourceFile: String, libFile: String): Bool {
     let buildProc = match (OS) {
         case "linux" | "windows"=>
             launch("gcc", ["-shared", "-o", libFile, objectFile])
-        case "macos" =>
+        case "mac" =>
             launch("gcc", ["-dynamiclib", "-o", libFile, objectFile])
         case _ =>
             throw UnsupportedException("Unreachable")
@@ -74,13 +74,13 @@ func compileDynamicLib(sourceFile: String, libFile: String): Bool {
 func buildFFI(staticLib: Bool): Int64 {
     let ffiDir = "./ffi"
     let sourceFile = match(OS) {
-        case "linux"|"macos" => "${ffiDir}/raw_input_linux.c"
+        case "linux"|"mac" => "${ffiDir}/raw_input_linux.c"
         case "windows" => "${ffiDir}/raw_input_win.c"
         case _ => throw UnsupportedException("Unreachable")
     }
     let libFile = if (staticLib) {
         match(OS) {
-            case "linux" | "macos" => "${ffiDir}/librawinput.a"
+            case "linux" | "mac" => "${ffiDir}/librawinput.a"
             case "windows" => "${ffiDir}/librawinput.lib"
             case _ => throw UnsupportedException("Unreachable")
         }
@@ -88,7 +88,7 @@ func buildFFI(staticLib: Bool): Int64 {
          match(OS) {
             case "linux" => "${ffiDir}/librawinput.so"
             case "windows" => "${ffiDir}/librawinput.dll"
-            case "macos" => "${ffiDir}/librawinput.dylib"
+            case "mac" => "${ffiDir}/librawinput.dylib"
             case _ => throw UnsupportedException("Unreachable")
         }
     }
@@ -104,11 +104,37 @@ func buildFFI(staticLib: Bool): Int64 {
     return 0
 }
 
+func checkStdx(): Bool {
+    let version = "1.0.0.1"
+    let magicDir = Process.current.getEnv("MAGIC_PATH") ?? ""
+    let stdxDir = "${magicDir}/libs/cangjie-stdx-${OS}-${ARCH}-${version}"
+    println("stdxDir: ${stdxDir}")
+    return exists(stdxDir)
+}
+
+func downloadStdx(): Int64 {
+    // Build CangjieMagic to download stdx
+    if (let Some(magicDir) <- Process.current.getEnv("MAGIC_PATH")) {
+        let proc = launch("cjpm", ["build"], workingDirectory: Path(magicDir))
+        return proc.wait()
+    }
+    return 1
+}
+
 func stagePreBuild(): Int64 {
     if (OS == "unknown" || ARCH == "unknown") {
         println("Unsupported os or Arch")
         return 1
     }
+    if (!checkStdx()) {
+        println("stdx not found, try to download")
+        let status = downloadStdx()
+        if (status != 0) {
+            println("Download stdx failed")
+            return status
+        }
+    }
+
     let staticLib = checkStaticLinking()
     println("OS: ${OS}, ARCH: ${ARCH}, Static Link: ${staticLib}")
     return buildFFI(staticLib)

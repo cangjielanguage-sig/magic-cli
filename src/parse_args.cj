@@ -1,6 +1,7 @@
 package cli
 
 import magic.config.Config
+import magic.log.LogUtils
 
 import cli.core.config.{CliConfig, CliSettingManager}
 import cli.io.PrintUtils
@@ -18,6 +19,7 @@ func printHelp(): Unit {
     PrintUtils.printLine("  --model <model>   Set the chat model")
     PrintUtils.printLine("  --fast-model      Set the fast model, which also enables hybrid mode (use fast model for auxiliary tasks)")
     PrintUtils.printLine("  --fallback-models <models>  Set fallback models (comma-separated)")
+    PrintUtils.printLine("  --collect-data    Enable data collection for telemetry and analytics")
     PrintUtils.printLine("  --temperature, -t Set the temperature for the model (default: 1.0)")
     PrintUtils.printLine("  --prompt <prompt>, -p <prompt>  Set the prompt and run magic-cli in the noninteractive mode")
     PrintUtils.printLine("  --log-level <level>  Set the log level (default: DEBUG)")
@@ -27,12 +29,13 @@ func printHelp(): Unit {
 /**
  * Parse the command line arguments
  */
-func parseArgs(args: Array<String>): Bool {
+func parseArgsAndSetConfig(args: Array<String>): Bool {
     let argSpecs = [
         Long("auto", NoValue),
         Long("model", RequiredValue),
         Long("fast-model", RequiredValue),
         Long("fallback-models", RequiredValue),
+        Long("collect-data", NoValue),
         Full("language", r"l", RequiredValue),
         Full("help", r"h", NoValue),
         Full("prompt", r"p", RequiredValue),
@@ -58,8 +61,22 @@ func parseArgs(args: Array<String>): Bool {
     // Log file must be set together with the log level
     Config.logFile = CliConfig.logFile.toString()
 
+    // Set your API key in the .env file
+    let envInfo = Config.env.load(Path("./.env"))
+    LogUtils.info(envInfo)
+
+    // Set Magic settings
+    Config.modelRequestDir = CliConfig.dotDir.join("model-requests").toString()
+    Config.enableModelToolCall = true
+    Config.enableParallelToolCall = false
+    Config.httpReadWriteTimeout = 600000 // ms
+
+    // Set Magic-Cli settings
     if (result.options.contains("auto")) {
         CliConfig.auto = true
+    }
+    if (result.options.contains("collect-data")) {
+        CliConfig.collectData = true
     }
     if (let Some(model) <- result.options.get("model")) {
         CliConfig.setModel(model)
@@ -101,6 +118,11 @@ func parseArgs(args: Array<String>): Bool {
         changeSetting = true
     } else {
         CliConfig.language = CliSettingManager.setting.language
+    }
+
+    if (result.options.contains("collect-data")) {
+        CliSettingManager.setting.collectData = true
+        changeSetting = true
     }
 
     if (let Some(model) <- result.options.get("model")) {

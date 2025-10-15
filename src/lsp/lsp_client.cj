@@ -1,5 +1,10 @@
 package cli.lsp
 
+import magic.dsl.jsonable
+import magic.log.LogUtils
+
+import cli.utils.Toml
+
 import std.fs.File
 import std.fs.Path
 import std.fs.*
@@ -7,8 +12,7 @@ import std.process.*
 import std.collection.*
 import std.io.*
 import stdx.encoding.json.*
-import magic.dsl.jsonable
-import magic.log.LogUtils
+
 
 /**
  * LSP Client for communicating with Cangjie Language Server
@@ -32,36 +36,34 @@ public class LSPClient {
     /**
      * Initialize the LSP connection
      */
-    public func initialize(rootUri!: String = "file:///"): Unit {
+    public func initialize(root!: String = "."): Unit {
+        let rootUri = "file://${root}"
         try {
             if (this.initialized) {
                 return
             }
 
             let initializeParams = InitializeParams(
-                capabilities: ClientCapabilities(
-                    textDocument: TextDocumentClientCapabilities(
-                        semanticTokens: SemanticTokensClientCapabilities(
-                            dynamicRegistration: true,
-                            requests: SemanticTokensClientCapabilitiesRequests(
-                                full: SemanticTokensFullOptions(delta: false)
-                            )
-                        )
-                        ,
-                        hover: HoverClientCapabilities(
-                            dynamicRegistration: true,
-                            contentFormat: ["markdown", "plaintext"]
-                        ),
-                        documentSymbol: DocumentSymbolClientCapabilities(
-                            dynamicRegistration: true
-                        )
-                    )
-                ),
-                processId: 0,
                 rootUri: rootUri,
-                clientInfo: ClientInfo()
+                rootPath: root
             )
-            let result = this.jsonRpcClient.sendRequest("initialize", params: (initializeParams.toJsonValue().asObject()))
+            let initJo = JsonValue.fromStr(CLIENT_INIT_VALUE).asObject()
+            initJo.put(
+                "initializationOptions",
+                JsonObject(HashMap<String, JsonValue>([
+                    (
+                        "multiModuleOption",
+                        JsonObject(HashMap([
+                            (rootUri, this.parseMultiModuleOption(root))
+                        ]))
+                    )
+                ]))
+            )
+            // Merge the Json object
+            for ((key, value) in initializeParams.toJsonValue().asObject().getFields()) {
+                initJo.put(key, value)
+            }
+            let result = this.jsonRpcClient.sendRequest("initialize", params: initJo)
             let initResult = InitializeResult.fromJsonValue(result)
             this.capabilities = Some<ServerCapabilities>(initResult.capabilities)
             this.tokenTypes = initResult.capabilities.semanticTokensProvider.legend.tokenTypes
@@ -77,6 +79,20 @@ public class LSPClient {
             LogUtils.debug(ex)
             throw Exception("LSP initialization failed: ${ex.message}")
         }
+    }
+
+    /**
+     * Parse the cjpm.toml as MultiModuleOption
+     */
+    private func parseMultiModuleOption(path: String): JsonValue {
+        let toml = Toml("./cjpm.toml")
+        MultiModuleOption(
+            name: toml.get<String>("package.name"),
+            package_requires: JsonObject(HashMap<String, JsonValue>([
+            ])),
+            requires: JsonObject(HashMap<String, JsonValue>([
+            ]))
+        ).toJsonValue()
     }
 
     /**
@@ -105,7 +121,6 @@ public class LSPClient {
 
             // Extract token text from content
             for (token in filteredSemanticTokens) {
-                println(token.toJsonValue().toJsonString())
                 token.text = this.fileManager.getFileRangeContent(
                     filePath,
                     Range(
@@ -116,8 +131,12 @@ public class LSPClient {
             }
             // println(allSemanticTokens.toJsonValue().toJsonString())
 
+            sleep(Duration.second * 3)
+
             // Get hover info for the beginning of the line
             let hoverInfos = this.getHovers(filePath, filteredSemanticTokens)
+
+            this.getHover(filePath, 35, 17)
 
             // Get document symbols
             let symbols = this.getDocumentSymbols(filePath)
@@ -309,6 +328,7 @@ public class LSPClient {
             return Array<DocumentSymbol>.fromJsonValue(result)
         } catch (ex: Exception) {
             LogUtils.error("Failed to get document symbols for ${filePath}: ${ex}")
+            LogUtils.error(ex)
             return Array<DocumentSymbol>()
         }
     }

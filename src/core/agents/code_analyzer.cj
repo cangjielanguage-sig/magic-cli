@@ -8,10 +8,8 @@ import cli.core.tools.*
 import cli.core.config.CliConfig
 import cli.io.PrintUtils
 
-const CODE_ANALYZE_TOOL_NAME = "CodeAnalyzer"
-
 private let ANALYZE_TOOL_DESCRIPTION = """
-`${CODE_ANALYZE_TOOL_NAME}` is a utility that analyzes the codebase in the current working directory based on the user's query.
+`CodeAnalyzer` is a utility that analyzes the codebase in the current working directory based on the user's query.
 Invoke this tool when the user asks questions that require inspecting actual code content, structure, implementation logic, or technical details—and when the answer cannot be accurately provided from existing context alone.
 
 **When to Use**:
@@ -26,7 +24,7 @@ Invoke this tool when the user asks questions that require inspecting actual cod
 - The query is too broad or ambiguous (e.g., "Analyze the whole project")—instead, ask for clarification.
 - The question can be reasonably answered through reasoning or prior information without code inspection.
 
-Use ${CODE_ANALYZE_TOOL_NAME} as a targeted assistance mechanism, not a default response strategy. Rely first on your knowledge and dialogue context. Only invoke the tool when necessary, and always with a clear purpose.
+Use `CodeAnalyzer` as a targeted assistance mechanism, not a default response strategy. Rely first on your knowledge and dialogue context. Only invoke the tool when necessary, and always with a clear purpose.
 """
 
 private let ANALYZER_PROMPT = """
@@ -55,6 +53,12 @@ You are an expert software engineer and code investigator. Your task is to help 
    - Cite file paths and key code snippets when relevant.
 5. **Be Iterative**: If the first search yields no results, refine your search terms or broaden/narrow the scope.
 6. **Be Efficient**: Avoid reading large files unnecessarily. Use `grep` first to locate relevant lines.
+
+### Best Practices for grepSearch:
+- **Be Specific**: Use precise patterns instead of broad regex (e.g., `"class UserAuth"` not `"class.*"`).
+- **Watch for Truncation**: Tool returns max 100 results. If you see "[Truncated...]", refine your pattern or use `include` parameter to narrow scope.
+- **Optimize Scope**: Use `include` to filter file types (e.g., `"*.cj"`, `"*.ts"`).
+- **Batch Strategy**: When searching for many related items (e.g., all subclasses), prefer reading documentation/summary files over multiple grep queries.
 
 ### Example Workflow:
 User: "How is the API rate limit configured?"

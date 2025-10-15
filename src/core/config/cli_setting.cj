@@ -41,6 +41,11 @@ protected class CliSetting {
      * Temperature agents will use
      */
     protected var temperature: Float64 = 1.0
+
+    /**
+     * Whether to enable data collection for telemetry and analytics
+     */
+    protected var collectData: Bool = true
 }
 
 protected class CliSettingManager {

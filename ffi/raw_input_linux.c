@@ -55,16 +55,6 @@ void exitRaw() {
     }
 }
 
-unsigned char getRawByte() {
-    int n;
-    unsigned char c;
-
-    // Read the first byte
-    n = read(STDIN_FILENO, &c, 1);
-    if (n <= 0) return 0;  // EOF or read error
-    return c;
-}
-
 /**
  * Checks if there is input available on the given file descriptor with a timeout.
  * @param timeout_ms Timeout in milliseconds (0 for infinite)
@@ -87,27 +77,19 @@ static bool hasInputTimeout(int fd, int timeout_ms) {
  * @param timeout Timeout in milliseconds (0 for infinite)
  * @return 0 on success, 1 on timeout, -1 on error
  */
-int asyncGetRawByte(unsigned char* bytePtr, int timeout) {
-    struct pollfd fds;
-    int ret;
-
-    fds.fd = STDIN_FILENO;
-    fds.events = POLLIN;
-    fds.revents = 0;
-
-    ret = poll(&fds, 1, timeout);
-
-    if (ret == 0) { // Timeout
+static int asyncGetRawByte(unsigned char* bytePtr, int timeout_ms) {
+    if (!hasInputTimeout(STDIN_FILENO, timeout_ms)) {
         return 1;
-    } else if (ret == -1) { // Error
+    }
+    if (read(STDIN_FILENO, bytePtr, 1) == 1) {
+        return 0;
+    } else {
         return -1;
     }
-    if (fds.revents & POLLIN) {
-        if (read(STDIN_FILENO, bytePtr, 1) == 1) {
-            return 0;
-        }
-    }
-    return -1;
+}
+
+bool checkHasInput(uint32_t timeout_ms) {
+    return hasInputTimeout(STDIN_FILENO, (timeout_ms == 0) ? -1 : (int)timeout_ms);
 }
 
 int getByte(uint32_t timeout, uint16_t* keyCode) {
@@ -129,7 +111,6 @@ int getByte(uint32_t timeout, uint16_t* keyCode) {
 
 /**
  * Parses an escape sequence to the read buffer.
- *
  */
 static int parseEscapeSequence(unsigned char* bytes) {
     int n = 0;

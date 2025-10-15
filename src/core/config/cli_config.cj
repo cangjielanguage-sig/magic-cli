@@ -78,9 +78,9 @@ protected class CliConfig {
     /**
      * User Rules Config
      */
-    public static prop uerRuleFile: Path {
+    public static prop magicMarkdownPath: Path {
         get() {
-            CliConfig.dotDir.join("MAGIC.md")
+            CliConfig.cwd.join("MAGIC.md")
         }
     }
 
@@ -88,6 +88,11 @@ protected class CliConfig {
      * Whether agent runs autonomously, i.e., tools will be be confirmed by users
      */
     public static var auto: Bool = false
+
+    /**
+     * Whether to enable data collection for telemetry and analytics
+     */
+    public static var collectData: Bool = CliSettingManager.setting.collectData
 
     /**
      * Temperature agents will use
@@ -170,7 +175,7 @@ protected class CliConfig {
 
     public static prop userRules: String {
         get() {
-            let ruleFile = uerRuleFile
+            let ruleFile = magicMarkdownPath
             if (exists(ruleFile)) {
                 String.fromUtf8(readToEnd(File(ruleFile, OpenMode.Read)))
             } else {

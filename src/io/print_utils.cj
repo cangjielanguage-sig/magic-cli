@@ -2,81 +2,12 @@ package cli.io
 
 import magic.core.agent.{AsyncAgentResponse, AgentResponse}
 
-import cli.utils.InfoUtils
 import cli.core.config.CliConfig
 import cli.core.tools.fs_utils.writeFileBasic
 
 import std.collection.{map, enumerate, collectArray}
 import std.time.DateTime
 import std.fs.OpenMode
-import std.sync.AtomicBool
-
-/**
- * The working indicator is printed by another thread
- * We need a data structure to hold the thread future and stop the thread
- */
-protected class StatusIndicator {
-    private var future: Option<Future<Unit>> = None
-    private let cancelFlag = AtomicBool(false) // Whether the agent execution is cancelled
-    private let message: String
-
-    init(message: String) {
-        this.message = message
-    }
-
-    protected func start(): Unit {
-        this.future = spawn {
-            this.work()
-        }
-    }
-
-    static let INDICATORS = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"]
-
-    private func work(): Unit {
-        var idx = 0
-
-        // Print message once (with space for spinner)
-        PrintUtils.printString(
-            "  ${message}...".withColor(Theme.MUTED), withIndent: true
-        )
-
-        var messageChanged = false
-        while (!Thread.currentThread.hasPendingCancellation) {
-            let spinner = INDICATORS[idx % INDICATORS.size]
-            if (this.cancelFlag.load() && !messageChanged) {
-                // Change the message to display (with space for spinner)
-                PrintUtils.printString("\r") // Move cursor to the start of the line
-                PrintUtils.printString(
-                    "  ${message}... (Interrupted)".withColor(Theme.MUTED), withIndent: true
-                )
-                messageChanged = true
-            }
-
-            // Overwrite just the first character (spinner position)
-            PrintUtils.printString("\r") // Move cursor to the start of the line
-            if (PrintUtils.CURRENT_INDENT > 0) {
-                PrintUtils.printString(" " * PrintUtils.CURRENT_INDENT)
-            }
-            PrintUtils.printString("${spinner}".withColor(Theme.MUTED))
-            // Move cursor to end of the message line
-            let remainingLength = "  ${message}...".size - 1
-            moveCursor(remainingLength, direction: Direction.Right)
-
-            sleep(Duration.millisecond * 100)
-            idx = (idx + 1) % INDICATORS.size
-        }
-        clearScreen(mode: ClearMode.EntireLine)
-    }
-
-    protected func cancel(): Unit {
-        this.cancelFlag.store(true)
-    }
-
-    protected func stop(): Unit {
-        this.future?.cancel()
-        this.future?.get()
-    }
-}
 
 private let printInfoSavingFilename = "print_info.txt"
 
@@ -85,18 +16,25 @@ protected class PrintUtils {
     // When we enter a sub-agent, we need to indent the output
     static var CURRENT_INDENT = 0
 
+    static public func resetSubAgent(): Unit {
+        CURRENT_INDENT = 0
+    }
+
     static public func beginSubAgent(): Unit {
         CURRENT_INDENT += 4
     }
 
     static public func endSubAgent(): Unit {
         CURRENT_INDENT -= 4
+        if (CURRENT_INDENT < 0) {
+            CURRENT_INDENT = 0
+        }
     }
 
     //---------------------------------------------------
     // Two fundamental print methods
     static public func printLine(line: String, withIndent!: Bool = false): Unit {
-        // do not print anything if noninteractive, but saving the print info to a file
+        // do not print anything if non-interactive, but saving the print info to a file
         if (!CliConfig.nonInteractive) {
             if (withIndent && CURRENT_INDENT > 0) {
                 print(" " * CURRENT_INDENT)
@@ -152,35 +90,6 @@ protected class PrintUtils {
         PrintUtils.printLine("\n👋 Goodbye ✨!\n".withColor(Theme.SECONDARY))
     }
 
-    static let HELP_INFO = [
-        ("help",         "Show this help message"),
-        ("clear",        "Clear conversation history"),
-        ("compact",      "Compact the conversation"),
-        ("conversation", "Manage conversations"),
-        ("mcp",          "Show loaded MCP tools"),
-        ("memory",       "Show MAGIC.md content"),
-        ("cmd",          "Manage custom commands"),
-        ("init",         "Initialize MAGIC.md for project"),
-        ("exit",         "Exit the program")
-    ]
-
-    static public func printHelpMessage() {
-        let helpMessage = wrapBox(
-            "Available Commands".withColor(Theme.PRIMARY),
-            lines: HELP_INFO |>
-                map { info =>
-                    let cmd = "/${info[0]}".padEnd(15).withColor(AnsiColor.YELLOW)
-                    let separator = " ║ ".withColor(Theme.MUTED)
-                    let message = "- ${info[1]}".withColor(Theme.MUTED)
-                    " ${cmd}${separator}${message}"
-                } |>
-                collectArray,
-            width: 60,
-            centerTitle: true
-        )
-        PrintUtils.printLine(helpMessage)
-    }
-
     //----------------------------------------------------------------------------------
     // The following print methods are called by tools
     //----------------------------------------------------------------------------------
@@ -215,7 +124,7 @@ protected class PrintUtils {
             " ✔ ".withColor(Theme.SUCCESS)
         }
         let boxContent = wrapBox(
-            mark + name.withColor(Theme.PRIMARY),
+            mark + name.withColor(Theme.PRIMARY).withColor(AnsiColor.BOLD),
             content: message.withColor(Theme.INFO)
         )
         if (CURRENT_INDENT == 0) {
@@ -246,15 +155,19 @@ protected class PrintUtils {
     //----------------------------------------------------------------------------------
 
     static public func printAgentResponse(response: AgentResponse) {
+        PrintUtils.printLine("")
         PrintUtils.printLine(
-            wrapBox("${InputUtils.buildPrompt("🔮")}${response.content}")
+            wrapBox(renderMarkdown(response.content), withBorder: false)
         )
+        PrintUtils.printLine("")
     }
 
     static public func printAgentResponse(response: AsyncAgentResponse) {
+        PrintUtils.printLine("")
         PrintUtils.printLine(
-            wrapBox("${InputUtils.buildPrompt("🔮")}${response.content}")
+            wrapBox(renderMarkdown(response.content), withBorder: false)
         )
+        PrintUtils.printLine("")
     }
 
     static public func printShellResult(output: String) {

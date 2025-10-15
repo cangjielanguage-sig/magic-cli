@@ -1,14 +1,14 @@
 package cli.io
 
 import std.regex.Regex
-import std.collection.{ArrayList, collectArray}
+import std.collection.{ArrayList, collectArray, enumerate, filter, count}
 import magic.log.LogUtils
 
 // Box drawing characters for creating bordered text boxes
-private const LEFT_TOP = "┌"              // Top-left corner
-private const LEFT_BOTTOM = "└"           // Bottom-left corner
-private const RIGHT_TOP = "┐"             // Top-right corner
-private const RIGHT_BOTTOM = "┘"          // Bottom-right corner
+private const LEFT_TOP = "╭"              // Top-left corner
+private const LEFT_BOTTOM = "╰"           // Bottom-left corner
+private const RIGHT_TOP = "╮"             // Top-right corner
+private const RIGHT_BOTTOM = "╯"          // Bottom-right corner
 private const HORIZONTAL_BORDER = "─"     // Horizontal line for top/bottom borders
 private const VERTICAL_BORDER = "│"       // Vertical line for left/right borders
 private const HORIZONTAL_SEPARATOR = "─"  // Horizontal line for separating sections
@@ -94,9 +94,12 @@ private func splitLine(line: String, width: Int64): Array<String> {
  * @param centerTitle Whether to center the title (default: false, not used in this overload)
  * @return The formatted box as a string with borders
  */
-protected func wrapBox(content: String, width!: Int64 = 100, boxColor!: AnsiColor = AnsiColor.BRIGHT_BLACK,
-    centerTitle!: Bool = false): String {
-    return wrapBox("", content: content, width: width, boxColor: boxColor, centerTitle: centerTitle)
+protected func wrapBox(content: String,
+                       width!: Int64 = 100,
+                       boxColor!: AnsiColor = AnsiColor.BRIGHT_BLACK,
+                       centerTitle!: Bool = false,
+                       withBorder!: Bool = true): String {
+    return wrapBox("", content: content, width: width, boxColor: boxColor, centerTitle: centerTitle, withBorder: withBorder)
 }
 
 /**
@@ -108,10 +111,14 @@ protected func wrapBox(content: String, width!: Int64 = 100, boxColor!: AnsiColo
  * @param centerTitle Whether to center the title text (default: false)
  * @return The formatted box as a string with borders, title, and content
  */
-protected func wrapBox(title: String, content!: String, width!: Int64 = 100, boxColor!: AnsiColor = AnsiColor.BRIGHT_BLACK,
-    centerTitle!: Bool = false): String {
+protected func wrapBox(title: String,
+                       content!: String,
+                       width!: Int64 = 100,
+                       boxColor!: AnsiColor = AnsiColor.BRIGHT_BLACK,
+                       centerTitle!: Bool = false,
+                       withBorder!: Bool = true): String {
     let lines = content.split("\n")
-    return wrapBox(title, lines: lines, width: width, boxColor: boxColor, centerTitle: centerTitle)
+    return wrapBox(title, lines: lines, width: width, boxColor: boxColor, centerTitle: centerTitle, withBorder: withBorder)
 }
 
 /**
@@ -129,28 +136,42 @@ protected func wrapBox(title: String, content!: String, width!: Int64 = 100, box
  * @param centerTitle Whether to center the title text (default: false)
  * @return The complete formatted box as a string
  */
-protected func wrapBox(title: String, lines!: Array<String>, width!: Int64 = 100, boxColor!: AnsiColor = AnsiColor.BRIGHT_BLACK,
-    centerTitle!: Bool = false): String {
+protected func wrapBox(title: String,
+                       lines!: Array<String>,
+                       width!: Int64 = 100,
+                       boxColor!: AnsiColor = AnsiColor.BRIGHT_BLACK,
+                       centerTitle!: Bool = false,
+                       withBorder!: Bool = true): String {
     let strBuilder = StringBuilder()
     // Add the top border line with corner characters
-    strBuilder.append("${LEFT_TOP}${HORIZONTAL_BORDER * width}${RIGHT_TOP}".withColor(boxColor))
-    strBuilder.append("\n")
+    if (withBorder) {
+        strBuilder.append("${LEFT_TOP}${HORIZONTAL_BORDER * width}${RIGHT_TOP}".withColor(boxColor))
+        strBuilder.append("\n")
+    }
+    let verticalBorder = if (withBorder) {
+        VERTICAL_BORDER
+    } else {
+        ""
+    }
     // Add the title section if title is provided
     if (!title.isEmpty()) {
         strBuilder.append(
-            "${VERTICAL_BORDER.withColor(boxColor)}${padString(title, width: width, center: centerTitle)}${VERTICAL_BORDER.withColor(boxColor)}\n")
-        strBuilder.append("${VERTICAL_BORDER}${HORIZONTAL_SEPARATOR * width}${VERTICAL_BORDER}".withColor(boxColor))
+            "${verticalBorder.withColor(boxColor)}${padString(title.withColor(AnsiColor.BOLD), width: width, center: centerTitle)}${verticalBorder.withColor(boxColor)}\n"
+        )
+        strBuilder.append("${verticalBorder}${HORIZONTAL_SEPARATOR * width}${verticalBorder}".withColor(boxColor))
         strBuilder.append('\n')
     }
     // Add content lines with vertical borders
-    if (!lines.isEmpty()) {
-        for (line in lines) {
-            strBuilder.append("${wrapLineWithVerticalBorder(line, width: width, boxColor: boxColor)}")
+    for ((idx, line) in enumerate(lines)) {
+        strBuilder.append("${wrapLineWithVerticalBorder(line, width: width, boxColor: boxColor, withBorder: withBorder)}")
+        if (idx < lines.size - 1) {
             strBuilder.append('\n')
         }
     }
     // Add the bottom border line with corner characters
-    strBuilder.append("${LEFT_BOTTOM}${HORIZONTAL_BORDER * width}${RIGHT_BOTTOM}".withColor(boxColor))
+    if (withBorder) {
+        strBuilder.append("\n${LEFT_BOTTOM}${HORIZONTAL_BORDER * width}${RIGHT_BOTTOM}".withColor(boxColor))
+    }
     return strBuilder.toString()
 }
 
@@ -164,11 +185,18 @@ protected func wrapBox(title: String, lines!: Array<String>, width!: Int64 = 100
  * @param boxColor The color of the vertical border characters (default: AnsiColor.BRIGHT_BLACK)
  * @return The line(s) wrapped with vertical borders, joined by newlines if split
  */
-protected func wrapLineWithVerticalBorder(line: String, width!: Int64 = 100, boxColor!: AnsiColor = AnsiColor.BRIGHT_BLACK): String {
-    let border = VERTICAL_BORDER.withColor(boxColor)
+protected func wrapLineWithVerticalBorder(line: String,
+                                          width!: Int64 = 100,
+                                          boxColor!: AnsiColor = AnsiColor.BRIGHT_BLACK,
+                                          withBorder!: Bool = true): String {
+    let border = if (withBorder) {
+        VERTICAL_BORDER.withColor(boxColor)
+    } else {
+        ""
+    }
     // If line is empty, fill with spaces
     if (line.isEmpty()) {
-        return "${border}${' ' * width}${border}"
+        return "${border}${padString(String.empty, width: width)}${border}"
     }
     let subLines: ArrayList<String> = ArrayList()
     // Split the line into multiple sub-lines if it exceeds the width
@@ -235,27 +263,29 @@ protected func wrapOptionList(options: Array<String>, selectedIndex: Int64): Str
  * @param wrappedContent The complete formatted box content with borders
  * @param cursorPos The logical cursor position in the original text (0-based)
  * @param prefix Optional prefix text like prompt (default: empty)
- * @param width The width of the box content area (default: 100)
- * @param boxColor The color of the box borders (default: BRIGHT_BLACK)
  * @return Tuple of (row, column) representing the visual cursor position
  */
-protected func calculateCursorPos(wrappedContent: String, cursorPos: Int64, prefix!: String = String.empty,
-    width!: Int64 = 100, boxColor!: AnsiColor = AnsiColor.BRIGHT_BLACK): (Int64, Int64) {
-    let realCursorPos = cursorPos + runeSizeOf(prefix)
+func calculateCursorPos(inputState: InputState,
+                        displayContext: DisplayContext): (Int64, Int64) {
+    let boxColor = AnsiColor.BRIGHT_BLACK
+    // Use original text for cursor calculation (without color codes)
+    // Remove the top and bottom border lines, keep only content lines
+    let text = inputState.getText()
+    let wrappedContent= wrapBox("${displayContext.prompt}${text}", withBorder: false)
+
+    let numOfReturnBeforeCursor = text.toRuneArray()[0..inputState.cursor] |>
+        filter { rune => rune == r'\n' || rune == r'\r' } |>
+        count
+    let realCursorPos = inputState.cursor - numOfReturnBeforeCursor + runeSizeOf(displayContext.prompt)
     let widthList = ArrayList<Int64>()
-    var lines = collectArray(wrappedContent.lines())
+    var lines = wrappedContent.lines() |> collectArray
     var cursorLeft = realCursorPos
 
-    // Remove the top and bottom border lines, keep only content lines
-    lines = lines[1..(lines.size - 1)]
     var cursorWidth = 0
 
     // Process each content line to find cursor position
     for (i in 0..lines.size) {
-        let line = lines[i]
-            .removePrefix(VERTICAL_BORDER.withColor(boxColor))  // Remove left border
-            .removeSuffix(VERTICAL_BORDER.withColor(boxColor))  // Remove right border
-            .replace(PAD, '')  // Remove padding characters
+        let line = lines[i].replace(PAD, '')  // Remove padding characters
         let lineRunes = removeAnsiEscape(line).toRuneArray()  // Remove ANSI sequences for width calculation
         let lineWidth = displayWidthOf(lineRunes)
         widthList.add(lineWidth)
