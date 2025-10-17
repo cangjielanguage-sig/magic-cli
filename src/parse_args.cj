@@ -103,7 +103,6 @@ func parseArgsAndSetConfig(args: Array<String>): Bool {
         CliConfig.nonInteractive = true
         CliConfig.auto = true
         CliConfig.nonInteractivePrompt = prompt
-        CliConfig.printInfoSavingDir = Path("test").join(DateTime.now().toUnixTimeStamp().toMilliseconds().toString())
     }
 
     var changeSetting = false

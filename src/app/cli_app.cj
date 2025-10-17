@@ -72,9 +72,6 @@ protected class CliApp {
     }
 
     protected func startNonInteractive(input: String): Unit {
-        if (!exists(CliConfig.printInfoSavingDir)) {
-            Directory.create(CliConfig.printInfoSavingDir, recursive: true)
-        }
         processInput(this, input)
         return
     }

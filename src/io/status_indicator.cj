@@ -32,9 +32,7 @@ protected class StatusIndicator {
         while (!Thread.currentThread.hasPendingCancellation) {
             let spinner = INDICATORS[idx % INDICATORS.size]
             PrintUtils.printString("\r") // Move cursor to the start of the line
-            if (PrintUtils.CURRENT_INDENT > 0) {
-                PrintUtils.printString(" " * PrintUtils.CURRENT_INDENT)
-            }
+            PrintUtils.printString("", withIndent: true)
             // Overwrite just the first character (spinner position)
             PrintUtils.printString("${spinner}".withColor(Theme.MUTED))
 
@@ -46,7 +44,7 @@ protected class StatusIndicator {
     }
 
     protected func stop(): Unit {
-        this.future.getOrThrow().cancel()
-        this.future.getOrThrow().get()
+        this.future?.cancel()
+        this.future?.get()
     }
 }
