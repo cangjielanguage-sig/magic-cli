@@ -5,6 +5,7 @@ import magic.log.LogUtils
 
 import cli.core.config.{CliConfig, CliSettingManager}
 import cli.io.{InputUtils, PrintUtils}
+import cli.core.tools.fs_utils.writeFileBasic
 
 import std.fs.{exists, File, Path, Directory}
 import std.regex.Regex
