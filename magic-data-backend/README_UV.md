@@ -18,7 +18,7 @@ pip install uv
 ### 2. 创建项目环境
 
 ```bash
-cd cj-data
+cd magic-data-backend
 
 # 创建虚拟环境并安装依赖
 uv sync
