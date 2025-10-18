@@ -1,7 +1,6 @@
 package cli.core.tools.fs_utils
 
 import cli.core.config.CliConfig
-import cli.io.PrintUtils
 
 import std.collection.*
 import std.fs.*

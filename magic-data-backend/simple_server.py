@@ -18,7 +18,6 @@ import uvicorn
 import logging
 import os
 from pathlib import Path
-import re
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -32,28 +31,13 @@ class Message(BaseModel):
     reason: Optional[str] = None
 
 class FixSummary(BaseModel):
-    category: str
-    title: str
-    error_message: str
-    cause_solution: str
-    example: str
-
-    @staticmethod
-    def fromStr(s: str):
-        return FixSummary('Unknown', "Sample", s, s, s)
-
-class FixQuery(BaseModel):
-    query: str
+    content: str
 
 class AgentChatRound(BaseModel):
     question: Message
     answer: Message
     steps: List[Message]
 
-def skip_quote(s: str):
-    # Replace all single-quoted substrings with ''
-    return re.sub(r"'[^']*'", "''", s)
-    
 # Lightweight data server
 class SimpleDataServer:
     def __init__(self, db_path: str = "cj_data.db"):
@@ -67,12 +51,7 @@ class SimpleDataServer:
             conn.execute("""
                 CREATE TABLE IF NOT EXISTS fix_summaries (
                     id TEXT PRIMARY KEY,
-                    category TEXT NOT NULL,
-                    title TEXT NOT NULL,
-                    error_message TEXT NOT NULL,
-                    skipped_error_message TEXT NOT NULL,
-                    cause_solution TEXT NOT NULL,
-                    example TEXT NOT NULL,
+                    content TEXT NOT NULL,
                     timestamp TEXT NOT NULL
                 )
             """)
@@ -97,22 +76,16 @@ class SimpleDataServer:
 
     def create_fix_summary(self, summary: FixSummary) -> str:
         """Create fix summary"""
-        skipped_error_message = skip_quote(summary.error_message)
         summary_id = str(uuid.uuid4())
         timestamp = datetime.now().astimezone().isoformat()
 
         with sqlite3.connect(self.db_path) as conn:
             conn.execute("""
-                INSERT INTO fix_summaries (id, category, title, error_message, skipped_error_message, cause_solution, example, timestamp)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                INSERT INTO fix_summaries (id, content, timestamp)
+                VALUES (?, ?, ?)
             """, (
                 summary_id,
-                summary.category,
-                summary.title,
-                summary.error_message,
-                skipped_error_message,
-                summary.cause_solution,
-                summary.example,
+                summary.content,
                 timestamp
             ))
             conn.commit()
@@ -153,26 +126,13 @@ class SimpleDataServer:
         with sqlite3.connect(self.db_path) as conn:
             conn.row_factory = sqlite3.Row
             result = conn.execute("""
-                SELECT id, category, title, error_message, skipped_error_message, cause_solution, example, timestamp
+                SELECT id, content, timestamp
                 FROM fix_summaries WHERE id = ?
             """, (summary_id,)).fetchone()
 
             if result:
                 return dict(result)
             return None
-        
-    def query_fix_summary(self, query: FixQuery) -> List[Dict[str, Any]]:
-        """Query fix summaries"""
-        query = query.query
-        with sqlite3.connect(self.db_path) as conn:
-            conn.row_factory = sqlite3.Row
-            result = conn.execute("""
-                SELECT id, category, title, error_message, cause_solution, example, timestamp
-                FROM fix_summaries
-                WHERE skipped_error_message = ?
-            """, (skip_quote(query),)).fetchall()
-            
-            return [dict(row) for row in result]
 
     def get_agent_chat_round(self, chat_round_id: str) -> Optional[Dict[str, Any]]:
         """Get agent chat round record"""
@@ -195,7 +155,7 @@ class SimpleDataServer:
         with sqlite3.connect(self.db_path) as conn:
             conn.row_factory = sqlite3.Row
             result = conn.execute("""
-                SELECT id, category, title, error_message, skipped_error_message, cause_solution, example, timestamp
+                SELECT id, content, timestamp
                 FROM fix_summaries
                 ORDER BY timestamp DESC LIMIT ? OFFSET ?
             """, (limit, offset)).fetchall()
@@ -248,13 +208,13 @@ app.add_middleware(
 async def create_fix_summary(summary: FixSummary):
     """Create fix summary"""
     try:
-        # if isinstance(summary.content, str):
-            # summary = FixSummary.fromStr(summary.content)
         summary_id = server.create_fix_summary(summary)
         return {"summary_id": summary_id, "status": "created"}
     except Exception as e:
         logger.error(f"Failed to create fix summary: {e}")
         raise HTTPException(status_code=500, detail="Failed to create fix summary")
+
+
 
 @app.post("/api/agent-chat-round")
 async def log_agent_chat_round(chat_round: AgentChatRound):
@@ -277,16 +237,6 @@ async def get_fix_summary(summary_id: str):
     except Exception as e:
         logger.error(f"Failed to get fix summary: {e}")
         raise HTTPException(status_code=500, detail="Failed to get fix summary")
-
-@app.post("/api/query-fix-summary")
-async def query_fix_summary(query: FixQuery):
-    """Get fix summary"""
-    try:
-        summaries = server.query_fix_summary(query)
-        return summaries
-    except Exception as e:
-        logger.error(f"Failed to query fix summary: {e}")
-        raise HTTPException(status_code=500, detail="Failed to query fix summary")
 
 
 @app.get("/api/agent-chat-round/{chat_round_id}")
@@ -338,7 +288,7 @@ async def dashboard(request: Request):
 
             # Get recent fix summaries
             recent_fixes = conn.execute("""
-                SELECT id, category, title, error_message, cause_solution, example, timestamp
+                SELECT id, content, timestamp
                 FROM fix_summaries
                 ORDER BY timestamp DESC LIMIT 5
             """).fetchall()
