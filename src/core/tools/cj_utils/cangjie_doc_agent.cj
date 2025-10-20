@@ -6,6 +6,7 @@ import magic.config.Config
 
 import cli.core.config.CliConfig
 import cli.utils.InfoUtils
+import cli.io.PrintUtils
 
 private let CANGJIE_CONTEXT7_PROMPT = """
 You are an intelligent assistant for the Cangjie programming language. You have access to two tools:
@@ -57,7 +58,10 @@ protected class CangjieDocAgent {
         HttpMCPClient("https://mcp.context7.com/mcp", headers: [
             (
                 "CONTEXT7_API_KEY",
-                Config.env["CONTEXT7_API_KEY"].getOrThrow({ => AgentCancelException(reason: "CONTEXT7_API_KEY is not set") })
+                Config.env["CONTEXT7_API_KEY"].getOrThrow({ =>
+                    PrintUtils.printLine("CONTEXT7_API_KEY is not set")
+                    AgentCancelException(reason: "CONTEXT7_API_KEY is not set")
+                })
             )
         ])
     }

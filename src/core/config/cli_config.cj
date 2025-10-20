@@ -9,6 +9,11 @@ import std.io.readToEnd
 import std.collection.{map, collectArray}
 
 protected class CliConfig {
+    /**
+     * The version of Cangjie Magic
+     */
+    public static const version = "0.1.0"
+
     private static const DOT_DIR_NAME = ".magic-cli"
 
     private static var _dotDir: Option<Path> = None
