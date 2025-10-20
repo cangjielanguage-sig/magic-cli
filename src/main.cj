@@ -12,7 +12,6 @@ main(args: Array<String>): Int64 {
 
     // Parse the command line arguments and set the config
     if (!parseArgsAndSetConfig(args)) {
-        printHelp()
         return 0
     }
 

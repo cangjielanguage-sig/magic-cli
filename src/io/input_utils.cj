@@ -3,7 +3,6 @@ package cli.io
 import cli.core.config.CliConfig
 
 import magic.log.LogUtils
-import magic.core.agent.AgentCancelException
 import magic.core.tool.ToolException
 
 import std.collection.{map, enumerate, collectArray}
