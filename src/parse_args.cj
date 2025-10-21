@@ -21,9 +21,10 @@ func printHelp(): Unit {
     PrintUtils.printLine("  --fallback-models <models>  Set fallback models (comma-separated)")
     PrintUtils.printLine("  --collect-data    Enable data collection for telemetry and analytics")
     PrintUtils.printLine("  --temperature, -t Set the temperature for the model (default: 1.0)")
-    PrintUtils.printLine("  --prompt <prompt>, -p <prompt>  Set the prompt and run magic-cli in the noninteractive mode")
+    PrintUtils.printLine("  --prompt <prompt>, -p <prompt>  Set the prompt and run magic-cli in the non-interactive mode")
     PrintUtils.printLine("  --log-level <level>  Set the log level (default: DEBUG)")
     PrintUtils.printLine("  --help, -h           Print this help message")
+    PrintUtils.printLine("  --version, -v        Print the version of magic-cli")
 }
 
 /**
@@ -38,6 +39,7 @@ func parseArgsAndSetConfig(args: Array<String>): Bool {
         Long("collect-data", NoValue),
         Full("language", r"l", RequiredValue),
         Full("help", r"h", NoValue),
+        Full("version", r"v", NoValue),
         Full("prompt", r"p", RequiredValue),
         Full("temperature", r"t", RequiredValue),
         Long("log-level", RequiredValue)
@@ -49,6 +51,11 @@ func parseArgsAndSetConfig(args: Array<String>): Bool {
         return false
     }
     if (result.options.contains("help") || result.options.contains("h")) {
+        printHelp()
+        return false
+    }
+    if (result.options.contains("version") || result.options.contains("v")) {
+        PrintUtils.printLine(CliConfig.version)
         return false
     }
 
@@ -103,7 +110,6 @@ func parseArgsAndSetConfig(args: Array<String>): Bool {
         CliConfig.nonInteractive = true
         CliConfig.auto = true
         CliConfig.nonInteractivePrompt = prompt
-        CliConfig.printInfoSavingDir = Path("test").join(DateTime.now().toUnixTimeStamp().toMilliseconds().toString())
     }
 
     var changeSetting = false

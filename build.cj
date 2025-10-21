@@ -1,5 +1,6 @@
 import std.process.*
 import std.fs.*
+import std.env.exit
 
 @When[os == "Linux"]
 const OS = "linux"
@@ -93,7 +94,8 @@ func buildFFI(staticLib: Bool): Int64 {
         }
     }
 
-    if (!exists(libFile)) {
+    if (!exists(libFile) ||
+        FileInfo(libFile).lastModificationTime < FileInfo(sourceFile).lastModificationTime) {
         let status = if (staticLib) {
             compileStaticLib(sourceFile, libFile)
         } else {
@@ -104,9 +106,18 @@ func buildFFI(staticLib: Bool): Int64 {
     return 0
 }
 
+func getEnvOrExit(key: String): String {
+    match (Process.current.getEnv(key)) {
+        case Some(value) => value
+        case None =>
+            eprintln("${key} not set")
+            exit(1)
+    }
+}
+
 func checkStdx(): Bool {
     let version = "1.0.0.1"
-    let magicDir = Process.current.getEnv("MAGIC_PATH") ?? ""
+    let magicDir = getEnvOrExit("MAGIC_PATH")
     let stdxDir = "${magicDir}/libs/cangjie-stdx-${OS}-${ARCH}-${version}"
     println("stdxDir: ${stdxDir}")
     return exists(stdxDir)
@@ -114,11 +125,9 @@ func checkStdx(): Bool {
 
 func downloadStdx(): Int64 {
     // Build CangjieMagic to download stdx
-    if (let Some(magicDir) <- Process.current.getEnv("MAGIC_PATH")) {
-        let proc = launch("cjpm", ["build"], workingDirectory: Path(magicDir))
-        return proc.wait()
-    }
-    return 1
+    let magicDir = getEnvOrExit("MAGIC_PATH")
+    let proc = launch("cjpm", ["build"], workingDirectory: Path(magicDir))
+    return proc.wait()
 }
 
 func stagePreBuild(): Int64 {

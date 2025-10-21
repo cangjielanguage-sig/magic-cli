@@ -417,6 +417,13 @@ int getRawUtf8(BYTE *bytes)
             bytes[0] = 0x05;
             return 1;
 
+        case '3': // Delete key: ESC [ 3 ~ → Ctrl+D (0x04)
+            if (size >= 4 && bytes[3] == 0x7E) { // Verify it's ESC [ 3 ~
+                bytes[0] = 0x04;
+                return 1;
+            }
+            return 0; // Invalid sequence
+
         default:
             return 0; // Unknown CSI
         }
