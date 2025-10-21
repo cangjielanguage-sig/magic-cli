@@ -94,7 +94,8 @@ func buildFFI(staticLib: Bool): Int64 {
         }
     }
 
-    if (!exists(libFile)) {
+    if (!exists(libFile) ||
+        FileInfo(libFile).lastModificationTime < FileInfo(sourceFile).lastModificationTime) {
         let status = if (staticLib) {
             compileStaticLib(sourceFile, libFile)
         } else {
