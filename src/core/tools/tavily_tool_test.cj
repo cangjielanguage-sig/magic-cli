@@ -3,6 +3,8 @@ package cli.core.tools
 import std.env.setVariable
 import std.unittest.testmacro.{Test, PowerAssert}
 
+import cli.io.PrintUtils
+
 /**
  * TavilyTool test cases
  */

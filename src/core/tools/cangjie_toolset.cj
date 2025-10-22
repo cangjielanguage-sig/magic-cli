@@ -16,6 +16,11 @@ import std.fs.*
 
 @toolset
 public class CangjieToolset {
+    private var callbacks: HashMap<String, (String) -> String> = HashMap()
+    public init() {}
+    public init(callbacks: HashMap<String, (String) -> String>) {
+        this.callbacks = callbacks
+    }
     @tool[
         description: "An tool specialized in the Cangjie programming language, capable of retrieving Cangjie language documentation based on user queries. ",
         parameters: {
@@ -69,7 +74,13 @@ public class CangjieToolset {
         let projectDir = path.map { p => Path(p) } ?? CliConfig.cwd
 
         PrintUtils.printTool("cjpm build", projectDir.toString())
-        return cjpmBuild(projectDir)
+        let result = cjpmBuild(projectDir)
+        if (let Some(cb) <- callbacks.get("cangjieBuildProject")) {
+            cb(result)
+        } else {
+            result
+        }
+        // callbacks.get("cangjieBuildProject").map { x => x(result) }.getOrDefault(result)
     }
 
     // @tool[

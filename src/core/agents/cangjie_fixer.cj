@@ -6,12 +6,13 @@ import magic.config.Config
 import magic.log.LogUtils
 
 import cli.core.tools.*
-import cli.core.tools.cj_utils.cjpmBuild
+import cli.core.tools.cj_utils.{cjpmBuild, CjpmBuildError, FixSummary}
 import cli.core.config.CliConfig
 import cli.io.PrintUtils
 import cli.telemetry.DataCollector
 
 import std.fs.{File, Path, OpenMode}
+import std.collection.{map, collectArray, HashSet}
 
 const CANGJIE_FIX_TOOL_NAME = "fixCangjieProjectCompileError"
 
@@ -26,47 +27,27 @@ Summarizes the compilation error fixes in Markdown format after all errors have 
 The summary includes the error description, the fix applied, and optionally example code to document the solution for future reference.
 This serves as a knowledge base entry for common Cangjie language issues.
 
-Output: A Markdown-formatted string containing the detailed summary of the compilation errors that were fixed. This should include sections for each error type (The title does not need numbering), the cause, the solution, and code examples showing the incorrect and correct syntax. The content is saved locally for future reference and learning.
+Output: A JSON string containing the detailed summary of the compilation errors that were fixed, follow this JSON Schema. The content is saved locally for future reference and learning.
 
-Example:
+Examples:
+[
+  {
+    "title": "`enum` cannot be used with `==` or `!=` operators",
+    "error_message": "no invalid binary operator '==' on type 'Enum-E' and 'Enum-E'",
+    "solution_hint": "`enum` types cannot be used with `==` or `!=` operators unless they implement `Equatable`.\n`std.deriving.Derive` helps to implement `Equatable` for `enum` types quickly.",
+    "example": "```cangjie\nimport std.deriving.Derive\n\n@Derive[Equatable]\nenum E {\n    | A\n    | B\n}\n```"
+  },
+  {
+    "title": "Fix `match` case expression",
+    "error_message": "expected '=>' in lambda expression",
+    "solution_hint": "The `match` case clause does not require curly braces `{ }`. Using them may cause compile errors such as: `expected '=>' in lambda expression`.",
+    "example": "## Incorrect\\n\\n```cangjie\\nmatch (someOption) {\\n    case None => { foo() }\\n    case Some(_) => { bar() }\\n}\\n```\\n\\n## Correct\\n\\n```cangjie\\nmatch (someOption) {\\n    case None => foo()\\n    case Some(_) => bar()\\n}\\n```"
+  }
+]
 
-### `enum` cannot be used with `==` or `!=` operators
+For error messages please refer to Additional Information, use only the error message relavent to certain fix summary.
 
-`enum` types cannot be used with `==` or `!=` operators unless they implement `Equatable`.
-`std.deriving.Derive` helps to implement `Equatable` for `enum` types quickly.
-
-Example:
-
-```cangjie
-import std.deriving.Derive
-
-@Derive[Equatable]
-enum E {
-    | A
-    | B
-}
-```
-
-### Fix `match` case expression
-
-The `match` case clause does not require curly braces `{ }`. Using them may cause compile errors such as: `expected '=>' in lambda expression`.
-
-### Incorrect
-
-```cangjie
-match (someOption) {
-    case None => { foo() }
-    case Some(_) => { bar() }
-}
-
-```cangjie
-match (someOption) {
-    case None => foo()
-    case Some(_) => bar()
-}
-```
-"""
-    )
+""")
 }
 
 private let FIX_RULES = """
@@ -253,17 +234,34 @@ Follow this iterative, disciplined process to fix compile errors:
 **Final Goal**: A successfully compiling Cangjie project—**nothing more, nothing less**.
 """
 
+func buildCangjieToolSetCallbacks(errorMessages: HashSet<String>): HashMap<String, (String) -> String> {
+    let cangjieBuildProjectCallback = { response: String =>
+        errorMessages.add(CjpmBuildError.tryParse(response)?.message ?? "")
+        LogUtils.debug("errorMessages: ${errorMessages}")
+        response
+    }
+    HashMap([("cangjieBuildProject", cangjieBuildProjectCallback)])
+}
+
 @agent[
     model: CliConfig.model,
     temperature: CliConfig.temperature,
     executor: "tool-loop:1000",
     tools: [
         FSToolset(),
-        CangjieToolset()
+        CangjieToolset(buildCangjieToolSetCallbacks(this.errorMessages))
     ]
 ]
 protected class CangjieFixer {
-    CangjieFixer(private let projectDir: Path) { }
+    // first cjpm build full message
+    let currentStatus: String
+    // cjpm build error messages collected in the CangjieFixer lifetime
+    let error_message: ArrayList<CjpmBuildError> = HashSet()
+    CangjieFixer(private let projectDir: Path) { 
+        currentStatus = cjpmBuild(this.projectDir)
+        let errmsg = CjpmBuildError.tryParse(currentStatus)?.message
+        errorMessages.add(errmsg ?? "")
+    }
 
     @prompt(
         """
@@ -272,7 +270,9 @@ protected class CangjieFixer {
         ${CliConfig.userRules}
 
         The current Cangjie project directory: ${this.projectDir}。
-        The current project build status:\n${cjpmBuild(this.projectDir)}
+        The current project build status:\n${currentStatus}
+
+        ${queryFixRules(currentStatus)}
         """
     )
 
@@ -292,19 +292,6 @@ protected class CangjieFixer {
         PrintUtils.printTool("Deep Thinking", thought)
         return msg
     }
-
-    // @tool[
-    //     description: "${EDIT_FILE_DESCRIPTION}",
-    //     parameters: {
-    //         thought: "Reasoning and thought process for the fix",
-    //         filePath: "File path, must be an absolute path",
-    //         oldContent: "The exact literal text to replace, preferably unescaped. For single replacements (default), include at least 3 lines of context BEFORE and AFTER the target text, matching whitespace and indentation precisely. For multiple replacements, specify expected_replacements parameter. If this string is not the exact literal text (i.e. you escaped it) or does not match exactly, the tool will fail.",
-    //         newContent: "The exact literal text to replace `oldContent` with, preferably unescaped. Provide the EXACT text. Ensure the resulting code is correct and idiomatic."
-    //     }
-    // ]
-    // public func generatePatch(thought: String, filePath: String, oldContent: String, newContent: String): String {
-
-    // }
 }
 
 private const FIX_TOOL_DESCRIPTION = """
@@ -333,32 +320,48 @@ func fixCangjieProjectCompileError(path: String): String {
 
         let fixer = CangjieFixer(Path(path))
         let response = fixer.chat(AgentRequest("Now, start to work"))
+
         if (response.status == AgentResponseStatus.Cancelled) {
             throw AgentCancelException(reason: response.content)
         }
         spawn { // Spawn a new background thread to write the fix rules to a file
-            saveFixingRules(response)
+            saveFixingRules(response, fixer.errorMessages.toArray())
         }
         return response.content
+    } catch (ex: Exception) {
+        LogUtils.error(ex.message)
+        return ""
     } finally {
         PrintUtils.endSubAgent()
     }
 }
 
-private func saveFixingRules(response: AgentResponse): Unit {
+private func saveFixingRules(response: AgentResponse, errorMessages: Array<String>): Unit {
     try(file = File(CliConfig.dotDir.join("magic-fix-rules.md"), OpenMode.Append)) {
-        let summary = CodeFixSummarizer().chat(
+        let summary = CodeFixSummarizer().chatGet<Array<FixSummary>>(
             AgentRequest(
-                "Summarize the compilation error fixes in Markdown format.",
+                "Summarize the compilation error fixes in Markdown format.\n## Additional Information:\nerror messages collected in this chat round:\n${String.join(errorMessages, delimiter:'\n')}",
                 conversation: Conversation(response.execution.chatRound)
             )
         )
-        if (summary.status == AgentResponseStatus.Success) {
-            file.write(summary.content.toArray())
-            // Report the fix summary to the server
-            DataCollector.collectFixSummary(summary.content)
+        match (summary) {
+            case Some(arr) =>
+                file.write(String.join(arr |> map {x => x.toMarkdown()} |> collectArray, delimiter: "\n\n").toArray())
+                file.write("\n\n".toArray())
+                DataCollector.collectFixSummary(arr)
+            // error generating summary, do nothing
+            case None => ()
         }
     } catch (ex: Exception) {
         LogUtils.error("Failed to write summary file: ${ex}")
+    }
+}
+
+private func queryFixRules(cjpm_error: String): String {
+    let rules: Array<String> = DataCollector.queryFixSummary(cjpm_error) |> map { x => x.toMarkdown() } |> collectArray
+    if (rules.size > 0) {
+        "Fix hints:\n" + String.join(rules, delimiter: "\n\n")
+    } else {
+        ""
     }
 }

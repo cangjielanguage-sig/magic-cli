@@ -2,7 +2,6 @@ package cli.io
 
 import magic.core.agent.{AsyncAgentResponse, AgentResponse}
 import cli.core.config.CliConfig
-import cli.core.tools.fs_utils.writeFileBasic
 import std.fs.OpenMode
 import std.collection.{ArrayList, enumerate, map, collectArray}
 import std.time.DateTime

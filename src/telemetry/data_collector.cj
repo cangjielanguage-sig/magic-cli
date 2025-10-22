@@ -1,29 +1,34 @@
 package cli.telemetry
 
+import cli.core.tools.cj_utils.FixSummary
+
 import magic.utils.http.HttpUtils
 import magic.core.message.ChatRound
 import magic.log.LogUtils
 import cli.core.config.CliConfig
 
+import stdx.encoding.json.{JsonObject, JsonString, JsonValue}
+import magic.jsonable.*
 import std.collection.HashMap
-import stdx.encoding.json.{JsonObject, JsonString}
 
 protected class DataCollector {
     private static let HOST = "http://localhost:8000"
 
-    protected static func collectFixSummary(fixSummary: String): Unit {
+    protected static func collectFixSummary(fixSummary: Array<FixSummary>): Unit {
         if (!CliConfig.collectData) {
             return
         }
         LogUtils.debug("Collecting fix summary")
         try {
-            let jo = JsonObject()
-            jo.put("content", JsonString(fixSummary))
-            HttpUtils.post(
-                "${HOST}/api/fix-summary",
-                HashMap([("Content-Type", "application/json")]),
-                jo
-            )
+            for (each in fixSummary) {
+                let jo = each.toJsonValue().asObject()  // ?? JsonString(fixSummary))
+                HttpUtils.post(
+                    "${HOST}/api/fix-summary",
+                    HashMap([("Content-Type", "application/json")]),
+                    jo
+                )
+            }
+            
         } catch (ex: Exception) {
             LogUtils.error("Failed to collect fix summary: ${ex}")
         }
@@ -42,6 +47,23 @@ protected class DataCollector {
             )
         } catch (ex: Exception) {
             LogUtils.error("Failed to collect chat round: ${ex}")
+        }
+    }
+
+    protected static func queryFixSummary(error_message: String): Array<FixSummary> {
+        try {
+            LogUtils.info("querry fix summary with error message: ${error_message}")
+            let jo = JsonObject()
+            jo.put("query", JsonString(error_message))
+            let response = HttpUtils.post(
+                "${HOST}/api/query-fix-summary",
+                HashMap([("Content-Type", "application/json")]),
+                jo
+            ).getOrThrow()
+            Array<FixSummary>.fromJsonValue(JsonValue.fromStr(response))
+        } catch (ex: Exception) {
+            LogUtils.error("Failed to query fix summary: ${ex}")
+            []
         }
     }
 }
