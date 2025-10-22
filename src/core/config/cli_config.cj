@@ -7,6 +7,7 @@ import magic.log.LogUtils
 import std.fs.*
 import std.io.readToEnd
 import std.collection.{map, collectArray}
+import std.time.DateTime
 
 protected class CliConfig {
     /**
@@ -48,7 +49,8 @@ protected class CliConfig {
      */
     public static prop logFile: Path {
         get() {
-            CliConfig.dotDir.join("abc.log")
+            let time = DateTime.now().format("yyyy_MM_dd-HH:mm:ss:SSS")
+            CliConfig.dotDir.join("${time}.log")
         }
     }
 

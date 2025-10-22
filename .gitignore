@@ -1,5 +1,6 @@
 .magic-cli/
 **/*.bak
+**/backups/**
 # Build artifacts
 target/
 *.macrocall

@@ -12,6 +12,12 @@ import std.time.*
 import std.fs.*
 import std.convert.Parsable
 
+enum ParseArgsResult {
+    | Continue
+    | Exit
+    | Sandbox
+}
+
 func printHelp(): Unit {
     PrintUtils.printLine("Magic Cli")
     PrintUtils.printLine("  --auto            The agent runs autonomously")
@@ -20,6 +26,7 @@ func printHelp(): Unit {
     PrintUtils.printLine("  --fast-model      Set the fast model, which also enables hybrid mode (use fast model for auxiliary tasks)")
     PrintUtils.printLine("  --fallback-models <models>  Set fallback models (comma-separated)")
     PrintUtils.printLine("  --collect-data    Enable data collection for telemetry and analytics")
+    PrintUtils.printLine("  --sandbox         Enable sandbox mode (default: false)")
     PrintUtils.printLine("  --temperature, -t Set the temperature for the model (default: 1.0)")
     PrintUtils.printLine("  --prompt <prompt>, -p <prompt>  Set the prompt and run magic-cli in the non-interactive mode")
     PrintUtils.printLine("  --log-level <level>  Set the log level (default: DEBUG)")
@@ -30,13 +37,14 @@ func printHelp(): Unit {
 /**
  * Parse the command line arguments
  */
-func parseArgsAndSetConfig(args: Array<String>): Bool {
+func parseArgsAndSetConfig(args: Array<String>): ParseArgsResult {
     let argSpecs = [
         Long("auto", NoValue),
         Long("model", RequiredValue),
         Long("fast-model", RequiredValue),
         Long("fallback-models", RequiredValue),
         Long("collect-data", NoValue),
+        Long("sandbox", NoValue),
         Full("language", r"l", RequiredValue),
         Full("help", r"h", NoValue),
         Full("version", r"v", NoValue),
@@ -48,17 +56,16 @@ func parseArgsAndSetConfig(args: Array<String>): Bool {
         parseArguments(args, argSpecs)
     } catch (ex: ArgumentParseException) {
         PrintUtils.printLine(ex.message)
-        return false
+        return ParseArgsResult.Exit
     }
     if (result.options.contains("help") || result.options.contains("h")) {
         printHelp()
-        return false
+        return ParseArgsResult.Exit
     }
     if (result.options.contains("version") || result.options.contains("v")) {
         PrintUtils.printLine(CliConfig.version)
-        return false
+        return ParseArgsResult.Exit
     }
-
     // Log level must be set first
     if (let Some(level) <- result.options.get("log-level")) {
         Config.logLevel = level
@@ -71,6 +78,11 @@ func parseArgsAndSetConfig(args: Array<String>): Bool {
     // Set your API key in the .env file
     let envInfo = Config.env.load(Path("./.env"))
     LogUtils.info(envInfo)
+
+    // Now, we can start the sandbox because it will inherits environment variables
+    if (result.options.contains("sandbox")) {
+        return ParseArgsResult.Sandbox
+    }
 
     // Set Magic settings
     Config.modelRequestDir = CliConfig.dotDir.join("model-requests").toString()
@@ -102,7 +114,7 @@ func parseArgsAndSetConfig(args: Array<String>): Bool {
             CliConfig.temperature = Float64.parse(temperature)
         } catch (ex: IllegalArgumentException) {
             PrintUtils.printLine("Failed to parse temperature: ${ex.message}")
-            return false
+            return ParseArgsResult.Exit
         }
     }
     if (result.options.contains("prompt") || result.options.contains("p")) {
@@ -152,5 +164,5 @@ func parseArgsAndSetConfig(args: Array<String>): Bool {
     if (changeSetting) {
         CliSettingManager.save()
     }
-    return true
+    return ParseArgsResult.Continue
 }
