@@ -34,6 +34,11 @@ protected class InputUtils {
 
     private static let READLINE = Readline(CliConfig.readlineFile)
 
+    // Set token info provider - used to break circular dependency
+    public static func setTokenInfoProvider(provider: () -> (Int64, Int64)): Unit {
+        READLINE.setTokenInfoProvider(provider)
+    }
+
     public static func getUserInput(prompt!: Option<String> = None, withBox!: Bool = true): String {
         // Signal that we're requesting user input
         isRequestingUserInput.store(true)

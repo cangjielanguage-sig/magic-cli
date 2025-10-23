@@ -8,7 +8,7 @@ import cli.core.mcp.MCPConfigManager
 import cli.core.conversation.ConversationManager
 import cli.core.commands.CustomCommandManager
 import cli.core.token_status.TokenStatusManager
-import cli.core.config.CliConfig
+import cli.core.config.{CliConfig, ModelTokenLimits}
 import cli.core.agents.*
 import cli.io.{InputUtils, PrintUtils, StatusIndicator}
 
@@ -44,6 +44,13 @@ protected class CliApp {
         this.conversationManager = ConversationManager(Compactor())
         this.customCommandManager = CustomCommandManager()
         this.tokenStatusManager = TokenStatusManager()
+
+        // Set token info provider (callback pattern used to avoid circular dependency)
+        InputUtils.setTokenInfoProvider({ =>
+            let currentTokens = this.tokenStatusManager.getLastPromptTokens()
+            let maxTokens = ModelTokenLimits.getContextLimit(CliConfig.model.fullName)
+            return (currentTokens, maxTokens)
+        })
 
         // Initialize event handlers and callbacks
         registerHooks(this)
