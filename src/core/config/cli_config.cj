@@ -49,7 +49,7 @@ protected class CliConfig {
      */
     public static prop logFile: Path {
         get() {
-            let time = DateTime.now().format("yyyy_MM_dd-HH:mm:ss:SSS")
+            let time = DateTime.now().format("yyyy_MM_dd-HH_mm_ss_SSS")
             CliConfig.dotDir.join("${time}.log")
         }
     }
