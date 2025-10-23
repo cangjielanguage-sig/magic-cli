@@ -6,7 +6,7 @@ import magic.config.Config
 
 import cli.core.config.CliConfig
 import cli.utils.InfoUtils
-import cli.io.PrintUtils
+import cli.io.{PrintUtils, WithColor, AnsiColor}
 
 private let CANGJIE_CONTEXT7_PROMPT = """
 You are an intelligent assistant for the Cangjie programming language. You have access to two tools:
@@ -59,7 +59,7 @@ protected class CangjieDocAgent {
             (
                 "CONTEXT7_API_KEY",
                 Config.env["CONTEXT7_API_KEY"].getOrThrow({ =>
-                    PrintUtils.printLine("CONTEXT7_API_KEY is not set")
+                    PrintUtils.printLine("CONTEXT7_API_KEY is not set. Please set the environment variable to use Cangjie documentation retrieval.".withColor(AnsiColor.color256(136)))
                     AgentCancelException(reason: "CONTEXT7_API_KEY is not set")
                 })
             )

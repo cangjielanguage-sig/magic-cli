@@ -225,6 +225,7 @@ private func clearPreviousRender(lines: Int64) {
 public class Readline {
     private let history: ArrayList<String>
     private let historyFile: Option<Path>
+    private var tokenInfoProvider: Option<() -> (Int64, Int64)> = None
 
     public init() {
         this.history = ArrayList<String>()
@@ -235,6 +236,10 @@ public class Readline {
         this.history = ArrayList<String>()
         this.historyFile = path
         this.loadHistoryFile(path)
+    }
+
+    public func setTokenInfoProvider(provider: () -> (Int64, Int64)): Unit {
+        this.tokenInfoProvider = Some(provider)
     }
 
     private func loadHistoryFile(path: Path): Unit {
@@ -512,7 +517,23 @@ public class Readline {
             currentText
         }
 
-        let wrappedContent = wrapBox("${displayPrompt}${displayText}", boxColor: boxColor)
+        var wrappedContent = wrapBox("${displayPrompt}${displayText}", boxColor: boxColor)
+
+        // Append token info if provider is set
+        if (let Some(provider) <- this.tokenInfoProvider) {
+            let (currentTokens, maxTokens) = provider()
+            if (maxTokens > 0) {
+                let percentage = if (currentTokens > 0) {
+                    (currentTokens * 100) / maxTokens
+                } else {
+                    0  // No usage yet, 0% used
+                }
+                let remaining = 100 - percentage
+                // Use subtle color (dim gray)
+                let tokenInfo = "\n  Context: ${remaining}% remaining".withColor(AnsiColor.color256(240))
+                wrappedContent = wrappedContent + tokenInfo
+            }
+        }
 
         // Calculate cursor position for current state
         let (cursorRow, cursorCol) = calculateCursorPos(
