@@ -2,6 +2,7 @@ package cli
 
 import magic.config.Config
 import magic.log.LogUtils
+import magic.utils.readFile
 
 import cli.core.config.{CliConfig, CliSettingManager}
 import cli.io.PrintUtils
@@ -29,6 +30,7 @@ func printHelp(): Unit {
     PrintUtils.printLine("  --sandbox         Enable sandbox mode (default: false)")
     PrintUtils.printLine("  --temperature, -t Set the temperature for the model (default: 1.0)")
     PrintUtils.printLine("  --prompt <prompt>, -p <prompt>  Set the prompt and run magic-cli in the non-interactive mode")
+    PrintUtils.printLine("  --prompt-file <file>            Set the prompt from a file and run magic-cli in the non-interactive mode")
     PrintUtils.printLine("  --log-level <level>  Set the log level (default: DEBUG)")
     PrintUtils.printLine("  --help, -h           Print this help message")
     PrintUtils.printLine("  --version, -v        Print the version of magic-cli")
@@ -49,6 +51,7 @@ func parseArgsAndSetConfig(args: Array<String>): ParseArgsResult {
         Full("help", r"h", NoValue),
         Full("version", r"v", NoValue),
         Full("prompt", r"p", RequiredValue),
+        Long("prompt-file", RequiredValue),
         Full("temperature", r"t", RequiredValue),
         Long("log-level", RequiredValue)
     ]
@@ -117,6 +120,19 @@ func parseArgsAndSetConfig(args: Array<String>): ParseArgsResult {
             return ParseArgsResult.Exit
         }
     }
+    if (result.options.contains("prompt-file")) {
+        let promptFile = result.options.get("prompt-file").getOrThrow()
+        if (exists(promptFile)) {
+            let content = readFile(Path(promptFile))
+            CliConfig.nonInteractive = true
+            CliConfig.auto = true
+            CliConfig.nonInteractivePrompt = content
+        } else {
+            LogUtils.error("Failed to read prompt file: ${promptFile}")
+            return ParseArgsResult.Exit
+        }
+    }
+    // It can override the prompt file
     if (result.options.contains("prompt") || result.options.contains("p")) {
         let prompt = result.options.get("prompt").getOrDefault { result.options.get("p").getOrThrow() }
         CliConfig.nonInteractive = true
