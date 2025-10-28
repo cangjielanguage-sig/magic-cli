@@ -8,7 +8,7 @@ import cli.core.config.CliConfig
 import cli.core.mcp.MCPConfigManager
 import cli.core.conversation.ConversationManager
 import cli.core.agents.CodeAnalyzer
-mport cli.core.context.{MentionParser, FileContext}
+import cli.core.context.{MentionParser, FileContext}
 import cli.io.{InputUtils, PrintUtils, WithColor, AnsiColor, Confirmation}
 import cli.core.commands.CustomCommandManager
 import cli.utils.ShellUtils
