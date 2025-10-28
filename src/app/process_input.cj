@@ -8,6 +8,7 @@ import cli.core.config.CliConfig
 import cli.core.mcp.MCPConfigManager
 import cli.core.conversation.ConversationManager
 import cli.core.agents.CodeAnalyzer
+mport cli.core.context.{MentionParser, FileContext}
 import cli.io.{InputUtils, PrintUtils, WithColor, AnsiColor, Confirmation}
 import cli.core.commands.CustomCommandManager
 import cli.utils.ShellUtils
@@ -107,6 +108,117 @@ private func executeAgentTask(app: CliApp, input: String): Unit {
     LogUtils.debug("Handle user input `${input}`")
     // Each time we execute an agent task, we need to reset the sub-agent indent
     PrintUtils.resetSubAgent()
+    
+    // 1. Check for file changes before processing
+    let changes = app.fileWatcher.checkChanges()
+    if (changes.size > 0) {
+        let syncedChanges = app.fileWatcher.syncContext()
+        PrintUtils.printLine("${AnsiColor.BRIGHT_BLACK}📝 Detected ${syncedChanges.size} file change(s), cache updated${AnsiColor.RESET}")
+    }
+    
+    // 2. Parse @mention file references
+    let parseResult = MentionParser.parse(input)
+    var finalInput = parseResult.cleanedInput
+    
+    // 3. If there are file mentions, read and format them
+    if (parseResult.mentions.size > 0) {
+        PrintUtils.printLine("")
+        PrintUtils.printLine("${AnsiColor.BRIGHT_WHITE}📎 Referenced Files:${AnsiColor.RESET}")
+        for (mention in parseResult.mentions) {
+            let info = MentionParser.formatMentionInfo(mention)
+            PrintUtils.printLine("  ${AnsiColor.BRIGHT_BLACK}•${AnsiColor.RESET} ${info}")
+        }
+        
+        // 🆕 Phase 4: Recommend related files
+        LogUtils.debug("Analyzing file dependencies for recommendations...")
+        for (mention in parseResult.mentions) {
+            // First analyze file dependencies
+            let _ = app.dependencyAnalyzer.analyzeFile(mention.path)
+            
+            // Recommend up to 3 related files
+            let related = app.dependencyAnalyzer.recommendRelatedFiles(mention.path, 3)
+            if (related.size > 0) {
+                PrintUtils.printLine("${AnsiColor.BRIGHT_BLACK}  💡 Related files:${AnsiColor.RESET}")
+                for (relFile in related) {
+                    // Calculate relatedness
+                    let relatedness = app.dependencyAnalyzer.calculateRelatedness(mention.path, relFile)
+                    let score = Int64(relatedness * 100.0)
+                    PrintUtils.printLine("${AnsiColor.BRIGHT_BLACK}     • ${relFile.toString()} (${score}% similar)${AnsiColor.RESET}")
+                }
+            }
+        }
+        PrintUtils.printLine("")
+        
+        // 4. Append file contents to the input (with caching and compression)
+        let fileContents = ArrayList<String>()
+        var totalTokens: Int64 = 0
+        let maxTokensPerFile: Int64 = 1000  // Max 1000 tokens per file
+        
+        for (mention in parseResult.mentions) {
+            // Try to get from cache
+            var content = ""
+            let cachedContent = app.contextEngine.getFile(mention.path)
+            match (cachedContent) {
+                case Some(c) =>
+                    content = c
+                    LogUtils.debug("Using cached content for: ${mention.path.toString()}")
+                case _ =>
+                    // Cache miss, read file and cache it
+                    content = MentionParser.readFileContent(mention)
+                    if (!content.isEmpty()) {
+                        app.contextEngine.addFile(mention.path, content)
+                        // Start tracking new file
+                        app.fileWatcher.track(mention.path)
+                    }
+            }
+            
+            if (!content.isEmpty()) {
+                // 🆕 Phase 4: Smart compression for large files
+                var finalContent = content
+                if (let Some(fileContext) <- app.contextEngine.getFileContext(mention.path)) {
+                    totalTokens += fileContext.tokenCount
+                    
+                    // If file tokens exceed limit, auto-compress
+                    if (fileContext.tokenCount > maxTokensPerFile) {
+                        finalContent = app.contextEngine.autoCompress(fileContext, maxTokensPerFile)
+                        // Simple estimate: words / 4
+                        let words = finalContent.split(" ").size
+                        let compressedTokens = (words / 4) + (if (words % 4 != 0) { 1 } else { 0 })
+                        LogUtils.debug("Compressed file ${mention.path.toString()}: ${fileContext.tokenCount} -> ${compressedTokens} tokens")
+                        PrintUtils.printLine("${AnsiColor.BRIGHT_BLACK}  ⚡ Compressed ${mention.path.toString()} (${fileContext.tokenCount} -> ${compressedTokens} tokens)${AnsiColor.RESET}")
+                    }
+                }
+                
+                let header = "--- File: ${mention.path.toString()} ---"
+                fileContents.add(header)
+                fileContents.add(finalContent)
+                fileContents.add("--- End of ${mention.path.toString()} ---")
+            }
+        }
+        
+        // 🆕 Phase 4: Display context statistics
+        if (totalTokens > 0) {
+            PrintUtils.printLine("${AnsiColor.BRIGHT_BLACK}📊 Context: ${parseResult.mentions.size} file(s), ~${totalTokens} tokens${AnsiColor.RESET}")
+        }
+        
+        // 🆕 Phase 4: If context is insufficient, recommend related files
+        if (parseResult.mentions.size < 3 && parseResult.mentions.size > 0) {
+            let firstFile = parseResult.mentions[0].path
+            let recommended = app.dependencyAnalyzer.recommendRelatedFiles(firstFile, 2)
+            
+            if (recommended.size > 0) {
+                PrintUtils.printLine("${AnsiColor.BRIGHT_BLACK}💡 Suggested context (use @ to include):${AnsiColor.RESET}")
+                for (rec in recommended) {
+                    PrintUtils.printLine("${AnsiColor.BRIGHT_BLACK}   @${rec.toString()}${AnsiColor.RESET}")
+                }
+            }
+        }
+        PrintUtils.printLine("")
+        
+        if (fileContents.size > 0) {
+            finalInput = "${finalInput}\n\n${String.join(fileContents.toArray(), delimiter: "\n")}"
+        }
+    }
 
     // Try all available models in sequence
      let allModels = ModelFallback.getAllModels()
@@ -121,32 +233,41 @@ private func executeAgentTask(app: CliApp, input: String): Unit {
                 app.switchToFallbackModel(currModel)
             }
 
-            // Execute with current model
+            // Execute with current model (use finalInput with file contents)
             let asyncResponse = app.agent.asyncChat(
-                AgentRequest(input, conversation: app.conversationManager.conversation)
+                AgentRequest(finalInput, conversation: app.conversationManager.conversation)
             )
-            // Start cancellation checker
-            let cancelChecker = CancelChecker(app, asyncResponse)
-            cancelChecker.start()
+            // Start interactive controller (replaces old CancelChecker)
+            let controller = InteractiveController(app, asyncResponse)
+            controller.start()
+            
             // Since async agent response is in polled mode, we must have a thread to poll it
-            // If the response completes, stop the cancel checker
+            // If the response completes, stop the controller
             spawn {
                 try {
                     let _content = asyncResponse.content
                 } catch (_ex: Exception) {
                     // Skip the exception
                 } finally {
-                    cancelChecker.stop()
+                    controller.stop()
                 }
             }
+            
             // Wait for response completion or cancellation
-            cancelChecker.waitUntilStop()
+            controller.waitUntilStop()
+            
             // Check if cancellation occurred
-            if (cancelChecker.hasCancel()) {
+            if (controller.hasCancel()) {
                 app.stopThinkIndicator()
-                // PrintUtils.printLine("Cancelled".withColor(AnsiColor.color256(240)))
+                PrintUtils.printLine("${"✗ Execution cancelled by user".withColor(AnsiColor.BRIGHT_BLACK)}")
                 return
             } else {
+                // Check if user added additional information
+                if (let Some(info) <- controller.getAdditionalInfo()) {
+                    PrintUtils.printLine("${"ℹ️  User provided additional context: ${info}".withColor(AnsiColor.BRIGHT_BLUE)}")
+                    // Note: The additional info was logged but couldn't be injected mid-execution
+                    // This would require extending the Agent API
+                }
                 handleAgentResponse(app, asyncResponse)
             }
             // Compact is called once per successful execution, not per retry attempt
