@@ -36,6 +36,19 @@ Expectation for required parameters:
 **Important:** If ANY of the above are not satisfied, the tool will fail. CRITICAL for `oldContent`: Must uniquely identify the single instance to change. Include at least 3 lines of context BEFORE and AFTER the target text, matching whitespace and indentation precisely. If this string matches multiple locations, or does not match exactly, the tool will fail.
 """
 
+/**
+ * Check if line ending mismatch exists between oldContent and fileContent
+ * Returns hint information without modifying content
+ */
+private func checkLineEndingMismatch(oldContent: String, fileContent: String): String {
+    if (fileContent.contains("\r\n") && !oldContent.contains("\r\n")) {
+        return "File uses Windows line endings (CRLF), but your content uses Unix (LF). Consider using \\r\\n instead of \\n."
+    } else if (!fileContent.contains("\r\n") && oldContent.contains("\r\n")) {
+        return "File uses Unix line endings (LF), but your content uses Windows (CRLF). Consider using \\n instead of \\r\\n."
+    }
+    return ""
+}
+
 @toolset
 public class FSToolset {
     @tool[
@@ -196,12 +209,16 @@ public class FSToolset {
             let oldFileContent = String.fromUtf8(File.readFrom(filePath))
 
             if (!oldFileContent.contains(oldContent)) {
+                // 检查是否存在换行符不匹配问题
+                let hint = " " + checkLineEndingMismatch(oldContent, oldFileContent)
                 PrintUtils.printToolFailure(
                     "Edit File (${filePath})",
-                    failureInfo: "File does not contain the specified content"
+                    failureInfo: "File does not contain the specified content." + hint
                 )
-                return "Failed to edit. File ${filePath} does not contain the specified content '${oldContent}'."
+                return "Failed to edit. File ${filePath} does not contain the specified content '${oldContent}'." + hint
             }
+            
+            // 使用原始内容进行替换
             let newFileContent = oldFileContent.replace(oldContent, newContent)
             if (oldFileContent == newFileContent) {
                 PrintUtils.printToolFailure(
