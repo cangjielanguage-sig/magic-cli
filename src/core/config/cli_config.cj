@@ -173,6 +173,7 @@ protected class CliConfig {
      */
     public static var nonInteractive: Bool = false
     public static var nonInteractivePrompt: String = ""
+    public static var printInfoSavingDir: Path = Path("")
 
     /**
     * language in [cangjie, general, unknown]
