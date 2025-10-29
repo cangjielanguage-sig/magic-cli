@@ -23,9 +23,9 @@ protected class StatusIndicator {
     private func work(): Unit {
         // During the working indicator, we hide the cursor
         hideCursor()
-        // Print message once (with space for spinner)
+        // Print message once (with space for spinner) - now includes ESC hint
         PrintUtils.printString(
-            "  ${message}...".withColor(Theme.MUTED), withIndent: true
+            "  ${message}... (Press ESC to interrupt)".withColor(Theme.MUTED), withIndent: true
         )
 
         var idx = 0
