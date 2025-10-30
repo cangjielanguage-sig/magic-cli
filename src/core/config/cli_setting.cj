@@ -45,7 +45,7 @@ protected class CliSetting {
     /**
      * Whether to enable data collection for telemetry and analytics
      */
-    protected var collectData: Bool = true
+    protected var collectData: Bool = false
 }
 
 protected class CliSettingManager {

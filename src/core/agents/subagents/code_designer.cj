@@ -1,9 +1,8 @@
-package cli.core.agents
+package cli.core.agents.subagents
 
 import magic.dsl.*
 import magic.prelude.*
-
-import cli.core.config.CliConfig
+import cli.core.model.CliModelManager
 
 private let CANGJIE_BASICS = """
 Basics of Cangjie Programming Language to write the Cangjie project architecture designs.
@@ -175,7 +174,7 @@ project/
 """
 
 @agent[
-    model: CliConfig.model,
+    model: CliModelManager.model,
     executor: "naive"
 ]
 public class CodeDesigner {

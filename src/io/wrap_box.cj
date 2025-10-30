@@ -1,8 +1,10 @@
 package cli.io
 
+import magic.log.LogUtils
+
+import std.deriving.Derive
 import std.regex.Regex
 import std.collection.{ArrayList, collectArray, enumerate, filter, count}
-import magic.log.LogUtils
 
 // Box drawing characters for creating bordered text boxes
 private const LEFT_TOP = "╭"              // Top-left corner
@@ -13,6 +15,15 @@ private const HORIZONTAL_BORDER = "─"     // Horizontal line for top/bottom bo
 private const VERTICAL_BORDER = "│"       // Vertical line for left/right borders
 private const HORIZONTAL_SEPARATOR = "─"  // Horizontal line for separating sections
 private const PAD = "\u{202F}"            // Narrow no-break space for padding (2-byte UTF-8)
+private const DEFAULT_WIDTH = 100
+
+@Derive[ToString, Equatable]
+protected enum Align {
+    | Left
+    | Right
+    | Center
+}
+
 /**
  * Pad a string to a specified width with padding characters
  * @param content The text content to pad
@@ -20,14 +31,15 @@ private const PAD = "\u{202F}"            // Narrow no-break space for padding (
  * @param center Whether to center the content (default: left-align)
  * @return The padded string
  */
-func padString(content: String, width!: Int64, center!: Bool = false): String {
+protected func padString(content: String, width!: Int64 = DEFAULT_WIDTH, align!: Align = Left): String {
     let sizeToPad = max(0, width - displayWidthOf(content))
-    if (center) {
-        let leftToPad = sizeToPad / 2
-        let rightToPad = sizeToPad - leftToPad
-        return "${PAD * leftToPad}${content}${PAD * rightToPad}"
-    } else {
-        return "${content}${(PAD * sizeToPad)}"
+    return match (align) {
+        case Align.Left => "${content}${PAD * sizeToPad}"
+        case Align.Right => "${PAD * sizeToPad}${content}"
+        case Align.Center =>
+            let leftToPad = sizeToPad / 2
+            let rightToPad = sizeToPad - leftToPad
+            "${PAD * leftToPad}${content}${PAD * rightToPad}"
     }
 }
 
@@ -95,11 +107,11 @@ private func splitLine(line: String, width: Int64): Array<String> {
  * @return The formatted box as a string with borders
  */
 protected func wrapBox(content: String,
-                       width!: Int64 = 100,
+                       width!: Int64 = DEFAULT_WIDTH,
                        boxColor!: AnsiColor = AnsiColor.BRIGHT_BLACK,
-                       centerTitle!: Bool = false,
+                       align!: Align = Left,
                        withBorder!: Bool = true): String {
-    return wrapBox("", content: content, width: width, boxColor: boxColor, centerTitle: centerTitle, withBorder: withBorder)
+    return wrapBox("", content: content, width: width, boxColor: boxColor, align: align, withBorder: withBorder)
 }
 
 /**
@@ -113,12 +125,12 @@ protected func wrapBox(content: String,
  */
 protected func wrapBox(title: String,
                        content!: String,
-                       width!: Int64 = 100,
+                       width!: Int64 = DEFAULT_WIDTH,
                        boxColor!: AnsiColor = AnsiColor.BRIGHT_BLACK,
-                       centerTitle!: Bool = false,
+                       align!: Align = Left,
                        withBorder!: Bool = true): String {
     let lines = content.split("\n")
-    return wrapBox(title, lines: lines, width: width, boxColor: boxColor, centerTitle: centerTitle, withBorder: withBorder)
+    return wrapBox(title, lines: lines, width: width, boxColor: boxColor, align: align, withBorder: withBorder)
 }
 
 /**
@@ -138,9 +150,9 @@ protected func wrapBox(title: String,
  */
 protected func wrapBox(title: String,
                        lines!: Array<String>,
-                       width!: Int64 = 100,
+                       width!: Int64 = DEFAULT_WIDTH,
                        boxColor!: AnsiColor = AnsiColor.BRIGHT_BLACK,
-                       centerTitle!: Bool = false,
+                       align!: Align = Left,
                        withBorder!: Bool = true): String {
     let strBuilder = StringBuilder()
     // Add the top border line with corner characters
@@ -156,7 +168,7 @@ protected func wrapBox(title: String,
     // Add the title section if title is provided
     if (!title.isEmpty()) {
         strBuilder.append(
-            "${verticalBorder.withColor(boxColor)}${padString(title.withColor(AnsiColor.BOLD), width: width, center: centerTitle)}${verticalBorder.withColor(boxColor)}\n"
+            "${verticalBorder.withColor(boxColor)}${padString(title.withColor(AnsiColor.BOLD), width: width, align: align)}${verticalBorder.withColor(boxColor)}\n"
         )
         strBuilder.append("${verticalBorder}${HORIZONTAL_SEPARATOR * width}${verticalBorder}".withColor(boxColor))
         strBuilder.append('\n')
@@ -186,7 +198,7 @@ protected func wrapBox(title: String,
  * @return The line(s) wrapped with vertical borders, joined by newlines if split
  */
 protected func wrapLineWithVerticalBorder(line: String,
-                                          width!: Int64 = 100,
+                                          width!: Int64 = DEFAULT_WIDTH,
                                           boxColor!: AnsiColor = AnsiColor.BRIGHT_BLACK,
                                           withBorder!: Bool = true): String {
     let border = if (withBorder) {

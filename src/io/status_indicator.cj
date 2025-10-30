@@ -25,7 +25,7 @@ protected class StatusIndicator {
         hideCursor()
         // Print message once (with space for spinner) - now includes ESC hint
         PrintUtils.printString(
-            "  ${message}... (Press ESC to interrupt)".withColor(Theme.MUTED), withIndent: true
+            "  ${message}... (ESC to interrupt)".withColor(Theme.MUTED), withIndent: true
         )
 
         var idx = 0

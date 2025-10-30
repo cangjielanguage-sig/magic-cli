@@ -1,11 +1,12 @@
-package cli.core.agents
+package cli.core.agents.subagents
 
 import magic.dsl.*
 import magic.prelude.*
 import magic.config.Config
 
-import cli.core.tools.*
 import cli.core.config.CliConfig
+import cli.core.model.CliModelManager
+import cli.core.tools.*
 import cli.io.PrintUtils
 
 private let ANALYZE_TOOL_DESCRIPTION = """
@@ -81,7 +82,7 @@ You:
 
 @agent[
     description: "${ANALYZE_TOOL_DESCRIPTION}",
-    model: CliConfig.model,
+    model: CliModelManager.model,
     executor: "tool-loop:1000",
     tools: [
         FSToolset()
