@@ -2,7 +2,7 @@ package cli.app
 
 import magic.core.agent.AgentRequest
 
-import cli.core.agents.CodeAnalyzer
+import cli.core.agents.subagents.CodeAnalyzer
 import cli.core.config.CliConfig
 import cli.io.{InputUtils, PrintUtils, Confirmation}
 

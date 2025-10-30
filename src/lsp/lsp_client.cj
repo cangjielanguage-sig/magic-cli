@@ -325,7 +325,12 @@ public class LSPClient {
             )
 
             let result = this.jsonRpcClient.sendRequest("textDocument/documentSymbol", params: (params.toJsonValue().asObject()))
-            return Array<DocumentSymbol>.fromJsonValue(result)
+            if (let JsonKind.JsArray <- result.kind()) {
+                return Array<DocumentSymbol>.fromJsonValue(result)
+            } else {
+                LogUtils.debug("Failed to get document symbols for ${filePath}: ${result}")
+                return []
+            }
         } catch (ex: Exception) {
             LogUtils.error("Failed to get document symbols for ${filePath}: ${ex}")
             LogUtils.error(ex)

@@ -1,8 +1,9 @@
-package cli.core.token_status
+package cli.core.model
 
 import magic.core.model.ChatUsage
 
 import cli.io.{PrintUtils, Theme, wrapBox, WithColor}
+import cli.core.config.CliConfig
 
 /**
  * Manage token status
@@ -20,8 +21,20 @@ protected class TokenStatusManager {
         this.lastPromptTokens = usage.promptTokens  // Store the latest request's prompt tokens
     }
 
-    public func getLastPromptTokens(): Int64 {
-        return this.lastPromptTokens
+    protected prop contextUsagePercentage: Int64 {
+        get() {
+            let model = CliModelManager.lastAvailableModel ?? CliModelManager.model
+            // Get the context limit for the model
+            let tokenLimit = ModelTokenLimits.getContextLimit(model.fullName)
+            // The last prompt length is the current context size
+            let currentTokens = this.lastPromptTokens
+            // Now, compute the percentage of used context
+            if (tokenLimit > 0 && currentTokens > 0) {
+                (currentTokens * 100) / tokenLimit
+            } else {
+                0
+            }
+        }
     }
 
     protected func printStatus(): Unit {
@@ -30,7 +43,8 @@ protected class TokenStatusManager {
             lines: [
                 " ∙ Input:  ${promptTokens}",
                 " ∙ Output: ${completionTokens}",
-                " ∙ Total:  ${totalTokens}"
+                " ∙ Total:  ${totalTokens}",
+                " ∙ Context Usage: ${contextUsagePercentage}%"
             ]
         )
         PrintUtils.printLine(message)

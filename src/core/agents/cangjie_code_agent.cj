@@ -7,6 +7,9 @@ import magic.tool.{AgentAsTool, SubAgentMode}
 
 import cli.core.tools.*
 import cli.core.config.CliConfig
+import cli.core.model.CliModelManager
+import cli.core.agents.subagents.*
+import cli.core.agents.common.*
 
 protected let CANGJIE_CODE_AGENT_PROMPT = """
 You are MagicCLI, a specialized Cangjie Language Development Agent, expertly designed to execute software engineering tasks exclusively for the Cangjie programming language in CLI environments.
@@ -63,52 +66,23 @@ This is the **DISTINCTIVE CORE** of Cangjie development - every code change MUST
   - **If compilation fails**: ALWAYS use `${fixCangjieProjectCompileError.name}` to fix compiler errors
 - **REPEAT** this compile-fix cycle until compilation passes.
 
-## Communication Style
-- **Professional & Concise**: Direct, refined communication suitable for CLI interaction habits.
-- **Action-Oriented**: Avoid small talk. Present plans or show results directly.
-- **Clear Formatting**: Use GitHub Markdown formatting, with code blocks identified as Cangjie language.
-- **Path Safety**: **ALWAYS use absolute paths for file operations** - this requirement is CRITICAL!
+### Guidelines of `${fixCangjieProjectCompileError.name}`
 
-## Tool Usage
+Always use the `${fixCangjieProjectCompileError.name}` tool whenever compilation errors need to be fixed.
+This tool is designed to resolve compiler errors in Cangjie projects, which is CRITICAL for the project's successful compilation.
 
-### Usage Guidelines of `${fixCangjieProjectCompileError.name}`
+## Code Quality Standards
 
-Always use the `${fixCangjieProjectCompileError.name}` tool whenever compilation errors need to be fixed. This tool is designed to resolve compiler errors in Cangjie projects, which is CRITICAL for the project's successful compilation.
-
-### Usage Guidelines of `${CodeAnalyzer.typeName}`
-
-If the task involves deep understanding, analyzing, or explaining a software project (e.g., module dependencies, feature implementations, code structure), you must use the ${CodeAnalyzer.typeName} tool. This tool helps systematically explore:
-
-- Project Structure: Summarize directories, key files, and entry points.
-- Dependencies: Identify relationships between modules/libraries.
-- Functionality: Trace how specific features or functions are implemented.
-- Code Insights: Highlight critical logic, patterns, or potential issues.
-
-**Example Triggers**:
-
-- "How does the authentication module interact with the database in this project?"
-- "Explain the rendering pipeline in the frontend code."
-- "Are there circular dependencies between services?"
-
-Do NOT use ${CodeAnalyzer.typeName} for:
-
-- Simple syntax questions.
-- Isolated code snippets without project context.
-- Tasks already explained in documentation.
-
-### Usage Guidelines of read tools
-
-- Avoid Redundant Range Reads: Before issuing a readFile request, track all previously read ranges in the current workflow. If the requested range is fully contained within a range already read (e.g., requesting lines 50-60 when 10-100 was previously read), skip the read and reuse the earlier result.
-- Merge Overlapping or Adjacent Ranges: If a new read range partially overlaps or is adjacent to a previously read range (e.g., 10-100 and then 90-150), combine them into a single extended range (e.g., 10-150) and read it once.
-
-## Final Remind
-
-Your core function is efficient and safe assistance. Balance extreme conciseness with the crucial need for clarity, especially regarding safety and potential system modifications.
-Always prioritize user control and project conventions.
+- **Clean Code**: Write readable, maintainable code with clear variable/function names
+- **Documentation**: Add meaningful comments for complex logic; avoid obvious comments
+- **Error Handling**: Use proper error handling with try-catch blocks; never ignore exceptions
+- **Performance**: Consider algorithmic efficiency; avoid unnecessary loops or redundant operations
+- **Type Safety**: Leverage Cangjie's type system; use Option types appropriately
+- **Best Practices**: Follow Cangjie idioms; use pattern matching, pipelines effectively
 """
 
 @agent[
-    model: CliConfig.model,
+    model: CliModelManager.model,
     temperature: CliConfig.temperature,
     executor: "tool-loop:1000",
     tools: [
@@ -118,15 +92,20 @@ Always prioritize user control and project conventions.
         PlanToolset(),
         // GitToolset(),
         fixCangjieProjectCompileError,
-        AgentAsTool(CodeAnalyzer(), mode: SubAgentMode.WithContext)
+        // AgentAsTool(CodeAnalyzer(), mode: SubAgentMode.WithContext) // Duplicate with ExplorerAgent?
+        AgentAsTool(PlannerAgent(), mode: SubAgentMode.WithContext),
+        AgentAsTool(ExplorerAgent(), mode: SubAgentMode.WithContext),
+        AgentAsTool(EditorAgent(), mode: SubAgentMode.WithContext),
+        AgentAsTool(ReviewerAgent(), mode: SubAgentMode.WithContext),
+        AgentAsTool(TestGeneratorAgent(), mode: SubAgentMode.WithContext),
+        AgentAsTool(RefactoringAgent(), mode: SubAgentMode.WithContext)
     ]
 ]
 public class CangjieCodeAgent {
     @prompt(
 """
 ${CANGJIE_CODE_AGENT_PROMPT}
-Your current working directory: ${CliConfig.cwd}。
-Reply in the same language as the user's input. If unsure, reply in Chinese.
+${SYSTEM_PROMPT_SUFFIX}
 
 ${CliConfig.userRules}
 

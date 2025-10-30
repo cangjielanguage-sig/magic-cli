@@ -3,9 +3,11 @@ package cli
 import magic.config.Config
 import magic.log.LogUtils
 import magic.utils.readFile
+import magic.model.ModelManager
 
 import cli.core.config.{CliConfig, CliSettingManager}
 import cli.io.PrintUtils
+import cli.core.model.ModelTokenLimits
 
 import std.collection.{ArrayList, map, collectArray}
 import std.argopt.{parseArguments, ArgumentSpec, ArgumentMode, ArgumentParseException}
@@ -69,11 +71,12 @@ func parseArgsAndSetConfig(args: Array<String>): ParseArgsResult {
         PrintUtils.printLine(CliConfig.version)
         return ParseArgsResult.Exit
     }
+
     // Log level must be set first
     if (let Some(level) <- result.options.get("log-level")) {
         Config.logLevel = level
     } else {
-        Config.logLevel = "DEBUG"
+        Config.logLevel = "INFO"
     }
     // Log file must be set together with the log level
     Config.logFile = CliConfig.logFile.toString()
@@ -97,29 +100,51 @@ func parseArgsAndSetConfig(args: Array<String>): ParseArgsResult {
     if (result.options.contains("auto")) {
         CliConfig.auto = true
     }
+
     if (result.options.contains("collect-data")) {
         CliConfig.collectData = true
     }
+
+    // Mark that we need to update the setting file
+    var changeSetting = false
+
+    // Initialize the main model
     if (let Some(model) <- result.options.get("model")) {
-        CliConfig.setModel(model)
+        CliConfig.model = model
+        CliSettingManager.setting.model = model
+        changeSetting = true
+    } else {
+        CliConfig.model = CliSettingManager.setting.model
     }
+
     if (let Some(model) <- result.options.get("fast-model")) {
-        CliConfig.setFastModel(model)
+        CliConfig.fastModel = model
+        CliSettingManager.setting.fastModel = model
+        changeSetting = true
     }
+
+    // Set fallback models if provided
     if (let Some(modelsStr) <- result.options.get("fallback-models")) {
         let models = modelsStr.split(",") |>
             map { model => model.trimAscii() } |>
             collectArray
-        CliConfig.setFallbackModels(models)
+        CliConfig.fallbackModels = models
+        CliSettingManager.setting.fallbackModels = models
+        changeSetting = true
     }
+
     if (let Some(temperature) <- result.options.get("temperature")) {
         try {
-            CliConfig.temperature = Float64.parse(temperature)
+            let temperature = Float64.parse(temperature)
+            CliConfig.temperature = temperature
+            CliSettingManager.setting.temperature = temperature
+            changeSetting = true
         } catch (ex: IllegalArgumentException) {
             PrintUtils.printLine("Failed to parse temperature: ${ex.message}")
             return ParseArgsResult.Exit
         }
     }
+
     if (result.options.contains("prompt-file")) {
         let promptFile = result.options.get("prompt-file").getOrThrow()
         if (exists(promptFile)) {
@@ -132,6 +157,7 @@ func parseArgsAndSetConfig(args: Array<String>): ParseArgsResult {
             return ParseArgsResult.Exit
         }
     }
+
     // It can override the prompt file
     if (result.options.contains("prompt") || result.options.contains("p")) {
         let prompt = result.options.get("prompt").getOrDefault { result.options.get("p").getOrThrow() }
@@ -139,8 +165,6 @@ func parseArgsAndSetConfig(args: Array<String>): ParseArgsResult {
         CliConfig.auto = true
         CliConfig.nonInteractivePrompt = prompt
     }
-
-    var changeSetting = false
 
     if (let Some(language) <- result.options.get("language")) {
         CliConfig.language = language.toAsciiLower()
@@ -159,24 +183,7 @@ func parseArgsAndSetConfig(args: Array<String>): ParseArgsResult {
         changeSetting = true
     }
 
-    if (let Some(model) <- result.options.get("model")) {
-        CliSettingManager.setting.model = model
-        changeSetting = true
-    }
-    if (let Some(model) <- result.options.get("fast-model")) {
-        CliSettingManager.setting.fastModel = model
-        changeSetting = true
-    }
-    if (let Some(models) <- result.options.get("fallback-models")) {
-        CliSettingManager.setting.fallbackModels = CliConfig.fallbackModels |>
-            map { model => model.fullName } |>
-            collectArray
-        changeSetting = true
-    }
-    if (let Some(temp) <- result.options.get("temperature")) {
-        CliSettingManager.setting.temperature = CliConfig.temperature
-        changeSetting = true
-    }
+    // Save the settings if any change
     if (changeSetting) {
         CliSettingManager.save()
     }

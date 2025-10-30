@@ -1,4 +1,4 @@
-package cli.core.agents
+package cli.core.agents.subagents
 
 import magic.dsl.*
 import magic.prelude.*
@@ -6,9 +6,11 @@ import magic.config.Config
 import magic.log.LogUtils
 
 import cli.core.tools.*
-import cli.core.tools.cj_utils.cjpmBuild
 import cli.core.config.CliConfig
+import cli.core.tools.cj_utils.cjpmBuild
+import cli.core.model.CliModelManager
 import cli.io.PrintUtils
+import cli.core.agents.common.*
 import cli.telemetry.DataCollector
 
 import std.fs.{File, Path, OpenMode}
@@ -16,7 +18,7 @@ import std.fs.{File, Path, OpenMode}
 const CANGJIE_FIX_TOOL_NAME = "fixCangjieProjectCompileError"
 
 @agent[
-    model: CliConfig.fastModel ?? CliConfig.model,
+    model: CliModelManager.fastModel ?? CliModelManager.model,
     executor: "naive"
 ]
 class CodeFixSummarizer {
@@ -254,7 +256,7 @@ Follow this iterative, disciplined process to fix compile errors:
 """
 
 @agent[
-    model: CliConfig.model,
+    model: CliModelManager.model,
     temperature: CliConfig.temperature,
     executor: "tool-loop:1000",
     tools: [
@@ -326,7 +328,7 @@ Designed to fix compilation errors in the Cangjie project.
         path: "Path to the Cangjie project, must be an absolute path. If omitted, the current working directory will be used."
    }
 ]
-func fixCangjieProjectCompileError(path: String): String {
+protected func fixCangjieProjectCompileError(path: String): String {
     try {
         PrintUtils.printTool("CangjieFixer", "path: ${path}")
         PrintUtils.beginSubAgent()

@@ -1,6 +1,6 @@
-package cli.core.agents
+package cli.core.agents.common
 
-let CANGJIE_INTRO = """
+protected let CANGJIE_INTRO = """
 Cangjie is a recently introduced programming language. We briefly describe
 the syntax of Cangjie below.
 

@@ -225,7 +225,7 @@ private func clearPreviousRender(lines: Int64) {
 public class Readline {
     private let history: ArrayList<String>
     private let historyFile: Option<Path>
-    private var tokenInfoProvider: Option<() -> (Int64, Int64)> = None
+    private var footnote: Option<String> = None
 
     public init() {
         this.history = ArrayList<String>()
@@ -238,8 +238,8 @@ public class Readline {
         this.loadHistoryFile(path)
     }
 
-    public func setTokenInfoProvider(provider: () -> (Int64, Int64)): Unit {
-        this.tokenInfoProvider = Some(provider)
+    public func setFootnote(footnote: String): Unit {
+        this.footnote = Some(footnote)
     }
 
     private func loadHistoryFile(path: Path): Unit {
@@ -519,19 +519,10 @@ public class Readline {
 
         var wrappedContent = wrapBox("${displayPrompt}${displayText}", boxColor: boxColor)
 
-        // Append token info if provider is set
-        if (let Some(provider) <- this.tokenInfoProvider) {
-            let (currentTokens, maxTokens) = provider()
-            if (maxTokens > 0) {
-                let percentage = if (currentTokens > 0) {
-                    (currentTokens * 100) / maxTokens
-                } else {
-                    0  // No usage yet, 0% used
-                }
-                let remaining = 100 - percentage
-                // Use subtle color (dim gray)
-                let tokenInfo = "\n  Context: ${remaining}% remaining".withColor(AnsiColor.color256(240))
-                wrappedContent = wrappedContent + tokenInfo
+        // Append footnote if set
+        if (let Some(footnote) <- this.footnote) {
+            if (!footnote.trimAscii().isEmpty()) {
+                wrappedContent = wrappedContent + "\n" + footnote
             }
         }
 
@@ -543,7 +534,7 @@ public class Readline {
 
         // Clear previous render (similar to original redraw logic)
         if (!isFirst && displayContext.lastRenderedLines > 0) {
-            // Move up based on previous cursor position + 1, like original implementation
+            // Move up based on previous cursor position + 1
             moveCursor(displayContext.lastRenderedLines, direction: Direction.Up)
             moveCursor(col: 0)
             clearScreen(mode: ClearMode.AfterCursorScreen)

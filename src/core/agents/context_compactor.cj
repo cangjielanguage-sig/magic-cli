@@ -9,8 +9,8 @@ import magic.log.LogUtils
 import magic.tokenizer.Cl100kTokenizer
 import magic.model.ModelManager
 
-import cli.core.config.CliConfig
-import cli.core.config.ModelTokenLimits
+import cli.core.model.CliModelManager
+import cli.core.model.ModelTokenLimits
 import cli.utils.CL100K_BASE_TIKTOKEN
 
 import std.fs.{canonicalize, Path}
@@ -73,7 +73,7 @@ The structure MUST be as follows:
 """
 
 @agent[
-    model: CliConfig.fastModel ?? CliConfig.model,
+    model: CliModelManager.fastModel ?? CliModelManager.model,
     executor: "naive"
 ]
 private class CompactContextAgent {
@@ -107,7 +107,9 @@ public class Compactor <: ConversationCompactor {
 
     public func calculateCompactIndex(conversation: Conversation): Option<Int64> {
         let (totalTokens, roundTokens) = this.calculateToken(conversation)
-        let modelContextLimit = ModelTokenLimits.getContextLimit(CliConfig.model.fullName)
+        let modelContextLimit = ModelTokenLimits.getContextLimit(
+            (CliModelManager.lastAvailableModel ?? CliModelManager.model).fullName
+        )
         // If the total token of conversation is less than 70% of the model context token limit, then no need to compact
         let threshold = Int64(Float64(modelContextLimit) * COMPACT_TOKEN_THRESHOLD)
         if (totalTokens <= threshold) {

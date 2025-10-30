@@ -4,7 +4,7 @@ import magic.dsl.*
 import magic.prelude.*
 import magic.config.Config
 
-import cli.core.config.CliConfig
+import cli.core.model.CliModelManager
 import cli.utils.InfoUtils
 import cli.io.{PrintUtils, WithColor, AnsiColor}
 
@@ -50,7 +50,7 @@ The output must be concise and directly usable for code generation.
 
 @agent[
     description: "An tool specialized in the Cangjie programming language, capable of retrieving Cangjie language documentation based on user queries. Input user query: Topics to focus documentation on (e.g., 'hooks', 'routing').",
-    model: CliConfig.fastModel ?? CliConfig.model,
+    model: CliModelManager.fastModel ?? CliModelManager.model,
     executor: "react"
 ]
 protected class CangjieDocAgent {

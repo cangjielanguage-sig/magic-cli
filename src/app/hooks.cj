@@ -9,8 +9,10 @@ import magic.tool.AgentAsTool
 
 import cli.core.agents.*
 import cli.core.tools.cj_utils.CangjieDocAgent
-import cli.io.{InputUtils, PrintUtils, StatusIndicator}
+import cli.io.{InputUtils, PrintUtils, WithColor, Theme}
 import cli.utils.StringUtils
+import cli.core.agents.subagents.*
+import cli.core.config.CliConfig
 
 import std.collection.ArrayList
 import std.env.atExit
@@ -23,7 +25,13 @@ func registerHooks(app: CliApp) {
         CodeAnalyzer.typeName,
         CodeDesigner.typeName,
         CangjieFixer.typeName,
-        CangjieDocAgent.typeName
+        CangjieDocAgent.typeName,
+        ExplorerAgent.typeName,
+        ReviewerAgent.typeName,
+        RefactoringAgent.typeName,
+        PlannerAgent.typeName,
+        EditorAgent.typeName,
+        TestGeneratorAgent.typeName
     ])
     for (tool in app.agent.toolManager.tools) {
         if (tool is AgentAsTool) {
@@ -45,7 +53,8 @@ func registerHooks(app: CliApp) {
         if (allowedAgentName.contains(evt.agent.name)) {
             app.stopThinkIndicator()
         }
-        if (let Some(usage) <- evt.chatResponse.usage) {
+        // Add the token usage of the main agent only
+        if (let Some(usage) <- evt.chatResponse.usage && evt.agent.name == app.agent.name) {
             app.tokenStatusManager.addUsage(usage)
         }
     }
@@ -74,11 +83,12 @@ func registerHooks(app: CliApp) {
     }
     EventHandlerManager.global.addHandler { evt: SubAgentEndEvent =>
         if (evt.agentResponse.status == AgentResponseStatus.Success) {
-            let name = StringUtils.splitCamelCase(evt.agent.name)
+            let name = StringUtils.splitCamelCase(evt.agent.name).withColor(Theme.current.accent)
             PrintUtils.printLine("🎉 SubAgent ${name} completed 🍻", withIndent: true)
         }
         PrintUtils.endSubAgent()
     }
+
     // Register the callback to auto-save conversation when exiting the program
     atExit({
         => app.conversationManager.autoSave()
