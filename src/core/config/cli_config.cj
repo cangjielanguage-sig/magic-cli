@@ -13,7 +13,7 @@ protected class CliConfig {
     /**
      * The version of Cangjie Magic
      */
-    public static const version = "0.1.0"
+    public static const version = "0.1.1"
 
     private static const DOT_DIR_NAME = ".magic-cli"
 
