@@ -2,8 +2,8 @@ package cli.core.tools.cj_utils
 
 import magic.dsl.*
 import magic.prelude.*
-import magic.model.ModelManager
 
+import cli.core.model.CliModelManager
 import cli.core.config.CliConfig
 import cli.utils.ApiClient
 
@@ -12,7 +12,7 @@ import stdx.encoding.json.*
 
 @agent[
     executor: "naive",
-    model: CliConfig.fastModel ?? CliConfig.model
+    model: CliModelManager.fastModel ?? CliModelManager.model
 ]
 private class DocSummaryAssistant {
     @prompt("""

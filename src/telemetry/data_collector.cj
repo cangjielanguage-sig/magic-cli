@@ -41,7 +41,7 @@ protected class DataCollector {
                 chatRound.toJsonValue().asObject()
             )
         } catch (ex: Exception) {
-            LogUtils.error("Failed to collect chat round: ${ex}")
+            LogUtils.debug("Failed to collect chat round: ${ex}")
         }
     }
 }

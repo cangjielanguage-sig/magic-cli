@@ -8,7 +8,7 @@ import magic.log.LogUtils
 import magic.utils.readFile
 
 import cli.core.config.CliConfig
-import cli.io.{PrintUtils, CompletionListUtils, wrapBox, WithColor, Theme, AnsiColor}
+import cli.io.{PrintUtils, CompletionListUtils, wrapBox, WithColor, Theme, AnsiColor, Align}
 
 import std.fs.{exists, Directory, Path, File}
 import std.collection.{HashMap, ArrayList, enumerate, filter, map, collectArray}
@@ -238,7 +238,7 @@ protected class CustomCommandManager {
                 } |>
                 collectArray,
             width: 60,
-            centerTitle: true
+            align: Align.Center
         )
         PrintUtils.printLine(message)
     }

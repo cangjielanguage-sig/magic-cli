@@ -20,6 +20,8 @@ protected class InputUtils {
     // Global flag to coordinate between ESC checker and user input
     private static var isRequestingUserInput: AtomicBool = AtomicBool(false)
 
+    protected static let readline = Readline(CliConfig.readlineFile)
+
     public static func enterRawMode(): Unit {
         RawInputUtils.rawEnter()
     }
@@ -32,13 +34,11 @@ protected class InputUtils {
         return " ${prompt} > ".withColor(Theme.MUTED)
     }
 
-    private static let READLINE = Readline(CliConfig.readlineFile)
-
     public static func getUserInput(prompt!: Option<String> = None, withBox!: Bool = true): String {
         // Signal that we're requesting user input
         isRequestingUserInput.store(true)
         try {
-            return READLINE.readline(prompt ?? buildPrompt("🔮"), withBox: withBox) ?? "exit"
+            return readline.readline(prompt ?? buildPrompt("🔮"), withBox: withBox) ?? "exit"
         } finally {
             // Clear the flag when done
             isRequestingUserInput.store(false)

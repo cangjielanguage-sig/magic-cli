@@ -170,6 +170,13 @@ static int parseEscapeSequence(unsigned char* bytes) {
                 bytes[0] = 0x04;  // Send Ctrl+D (0x04) for Delete key to differentiate from Backspace
                 return 1;
 
+            case '1': // Modified keys like Ctrl+Arrow: ESC [ 1 ; 5 A/B/C/D
+                // Consume the remaining bytes: ; <modifier> <key>
+                read(STDIN_FILENO, &c, 1); // Read ';'
+                read(STDIN_FILENO, &c, 1); // Read modifier (e.g., '5' for Ctrl)
+                read(STDIN_FILENO, &c, 1); // Read key (A/B/C/D)
+                return 1;
+
             default:
                 return -1; // Unknown CSI
         }

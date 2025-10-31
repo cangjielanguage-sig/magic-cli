@@ -7,10 +7,10 @@ import magic.core.model.ChatModel
 import cli.core.mcp.MCPConfigManager
 import cli.core.conversation.ConversationManager
 import cli.core.commands.CustomCommandManager
-import cli.core.token_status.TokenStatusManager
+import cli.core.model.TokenStatusManager
 import cli.core.config.CliConfig
 import cli.core.agents.*
-import cli.io.{InputUtils, PrintUtils, StatusIndicator}
+import cli.io.*
 
 import std.collection.ArrayList
 import std.fs.{Path, exists, Directory}
@@ -80,6 +80,9 @@ protected class CliApp {
         PrintUtils.printWelcome()
         // Simplified event loop
         while (true) {
+            // Update the context usage footnote after each input processing
+            this.setContextUsageFootnote()
+
             let input = InputUtils.getUserInput()
             if (input.trimAscii().isEmpty()) {
                 continue
@@ -88,6 +91,25 @@ protected class CliApp {
             if (!processInput(this, input)) {
                 break
             }
+        }
+    }
+
+    /**
+    * Display the context usage percentage as the footnote of the readline prompt
+    */
+    private func setContextUsageFootnote(): Unit {
+        // Get the last available model or the default model
+        try {
+            let percentage = this.tokenStatusManager.contextUsagePercentage
+            let remaining = max(0, 100 - percentage)
+            let footnote = padString(
+                "Context: ${remaining}% remaining".withColor(Theme.current.muted),
+                align: Align.Right
+            )
+            InputUtils.readline.setFootnote(footnote)
+        } catch (ex: Exception) {
+            LogUtils.error("Failed to compute context usage ${ex.message}")
+            InputUtils.readline.setFootnote("")
         }
     }
 }

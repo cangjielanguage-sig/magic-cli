@@ -7,12 +7,13 @@ import magic.log.LogUtils
 import std.fs.*
 import std.io.readToEnd
 import std.collection.{map, collectArray}
+import std.time.DateTime
 
 protected class CliConfig {
     /**
      * The version of Cangjie Magic
      */
-    public static const version = "0.1.0"
+    public static const version = "0.1.1"
 
     private static const DOT_DIR_NAME = ".magic-cli"
 
@@ -48,7 +49,8 @@ protected class CliConfig {
      */
     public static prop logFile: Path {
         get() {
-            CliConfig.dotDir.join("abc.log")
+            let time = DateTime.now().format("yyyy_MM_dd-HH_mm_ss_SSS")
+            CliConfig.dotDir.join("${time}.log")
         }
     }
 
@@ -107,67 +109,57 @@ protected class CliConfig {
     /**
      * The chat model to use
      */
-    public static var _model: Option<ChatModel> = None
-    public static prop model: ChatModel {
+    public static var _model: Option<String> = None
+    public static mut prop model: String {
         get() {
-            if (let Some(m) <- _model) {
-                return m
-            }
-            setModel(CliSettingManager.setting.model)
             return _model.getOrThrow()
         }
-    }
-
-    public static func setModel(model: String): Unit {
-        let m = ModelManager.createChatModel(model)
-        m.maxTokens = ModelTokenLimits.getMaxTokensLimit(model)
-        _model = m
+        set(v) {
+            _model = Some(v)
+        }
     }
 
     /**
      * Fast model for auxiliary tasks in hybrid mode
      */
-    public static var _fastModel: Option<ChatModel> = None
+    public static var _fastModel: Option<String> = None
 
-    public static prop fastModel: Option<ChatModel> {
+    public static mut prop fastModel: Option<String> {
         get() {
             if (let Some(m) <- _fastModel) {
                 return m
             }
             if (let Some(m) <- CliSettingManager.setting.fastModel) {
-                _fastModel = ModelManager.createChatModel(m)
+                _fastModel = m
             }
             return _fastModel
         }
-    }
 
-    public static func setFastModel(model: String): Unit {
-        _fastModel = ModelManager.createChatModel(model)
+        set(v) {
+            _fastModel = v
+        }
     }
 
     /**
      * Fallback models to use when primary model fails
      */
-    private static var _fallbackModels: Array<ChatModel> = []
-    public static prop fallbackModels: Array<ChatModel> {
+    private static var _fallbackModels: Array<String> = []
+
+    public static mut prop fallbackModels: Array<String> {
         get() {
             if (_fallbackModels.isEmpty()) {
-                _fallbackModels = CliSettingManager.setting.fallbackModels |>
-                    map { model => ModelManager.createChatModel(model) } |>
-                    collectArray
+                _fallbackModels = CliSettingManager.setting.fallbackModels
             }
             return _fallbackModels
         }
-    }
 
-    public static func setFallbackModels(models: Array<String>): Unit {
-        _fallbackModels = models |>
-            map { model => ModelManager.createChatModel(model) } |>
-            collectArray
+        set(v) {
+            _fallbackModels = v
+        }
     }
 
     /**
-     * The prompt when running magic-cli in noninteractive mode
+     * The prompt when running magic-cli in non-interactive mode
      */
     public static var nonInteractive: Bool = false
     public static var nonInteractivePrompt: String = ""

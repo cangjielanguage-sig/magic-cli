@@ -2,15 +2,24 @@ package cli
 
 import magic.config.Config
 import magic.log.LogUtils
+import magic.utils.readFile
+import magic.model.ModelManager
 
 import cli.core.config.{CliConfig, CliSettingManager}
 import cli.io.PrintUtils
+import cli.core.model.ModelTokenLimits
 
 import std.collection.{ArrayList, map, collectArray}
 import std.argopt.{parseArguments, ArgumentSpec, ArgumentMode, ArgumentParseException}
 import std.time.*
 import std.fs.*
 import std.convert.Parsable
+
+enum ParseArgsResult {
+    | Continue
+    | Exit
+    | Sandbox
+}
 
 func printHelp(): Unit {
     PrintUtils.printLine("Magic Cli")
@@ -20,8 +29,10 @@ func printHelp(): Unit {
     PrintUtils.printLine("  --fast-model      Set the fast model, which also enables hybrid mode (use fast model for auxiliary tasks)")
     PrintUtils.printLine("  --fallback-models <models>  Set fallback models (comma-separated)")
     PrintUtils.printLine("  --collect-data    Enable data collection for telemetry and analytics")
+    PrintUtils.printLine("  --sandbox         Enable sandbox mode (default: false)")
     PrintUtils.printLine("  --temperature, -t Set the temperature for the model (default: 1.0)")
     PrintUtils.printLine("  --prompt <prompt>, -p <prompt>  Set the prompt and run magic-cli in the non-interactive mode")
+    PrintUtils.printLine("  --prompt-file <file>            Set the prompt from a file and run magic-cli in the non-interactive mode")
     PrintUtils.printLine("  --log-level <level>  Set the log level (default: DEBUG)")
     PrintUtils.printLine("  --help, -h           Print this help message")
     PrintUtils.printLine("  --version, -v        Print the version of magic-cli")
@@ -30,17 +41,19 @@ func printHelp(): Unit {
 /**
  * Parse the command line arguments
  */
-func parseArgsAndSetConfig(args: Array<String>): Bool {
+func parseArgsAndSetConfig(args: Array<String>): ParseArgsResult {
     let argSpecs = [
         Long("auto", NoValue),
         Long("model", RequiredValue),
         Long("fast-model", RequiredValue),
         Long("fallback-models", RequiredValue),
         Long("collect-data", NoValue),
+        Long("sandbox", NoValue),
         Full("language", r"l", RequiredValue),
         Full("help", r"h", NoValue),
         Full("version", r"v", NoValue),
         Full("prompt", r"p", RequiredValue),
+        Long("prompt-file", RequiredValue),
         Full("temperature", r"t", RequiredValue),
         Long("log-level", RequiredValue)
     ]
@@ -48,22 +61,22 @@ func parseArgsAndSetConfig(args: Array<String>): Bool {
         parseArguments(args, argSpecs)
     } catch (ex: ArgumentParseException) {
         PrintUtils.printLine(ex.message)
-        return false
+        return ParseArgsResult.Exit
     }
     if (result.options.contains("help") || result.options.contains("h")) {
         printHelp()
-        return false
+        return ParseArgsResult.Exit
     }
     if (result.options.contains("version") || result.options.contains("v")) {
         PrintUtils.printLine(CliConfig.version)
-        return false
+        return ParseArgsResult.Exit
     }
 
     // Log level must be set first
     if (let Some(level) <- result.options.get("log-level")) {
         Config.logLevel = level
     } else {
-        Config.logLevel = "DEBUG"
+        Config.logLevel = "INFO"
     }
     // Log file must be set together with the log level
     Config.logFile = CliConfig.logFile.toString()
@@ -71,6 +84,11 @@ func parseArgsAndSetConfig(args: Array<String>): Bool {
     // Set your API key in the .env file
     let envInfo = Config.env.load(Path("./.env"))
     LogUtils.info(envInfo)
+
+    // Now, we can start the sandbox because it will inherits environment variables
+    if (result.options.contains("sandbox")) {
+        return ParseArgsResult.Sandbox
+    }
 
     // Set Magic settings
     Config.modelRequestDir = CliConfig.dotDir.join("model-requests").toString()
@@ -82,37 +100,71 @@ func parseArgsAndSetConfig(args: Array<String>): Bool {
     if (result.options.contains("auto")) {
         CliConfig.auto = true
     }
+
     if (result.options.contains("collect-data")) {
         CliConfig.collectData = true
     }
+
+    // Mark that we need to update the setting file
+    var changeSetting = false
+
+    // Initialize the main model
     if (let Some(model) <- result.options.get("model")) {
-        CliConfig.setModel(model)
+        CliConfig.model = model
+        CliSettingManager.setting.model = model
+        changeSetting = true
+    } else {
+        CliConfig.model = CliSettingManager.setting.model
     }
+
     if (let Some(model) <- result.options.get("fast-model")) {
-        CliConfig.setFastModel(model)
+        CliConfig.fastModel = model
+        CliSettingManager.setting.fastModel = model
+        changeSetting = true
     }
+
+    // Set fallback models if provided
     if (let Some(modelsStr) <- result.options.get("fallback-models")) {
         let models = modelsStr.split(",") |>
             map { model => model.trimAscii() } |>
             collectArray
-        CliConfig.setFallbackModels(models)
+        CliConfig.fallbackModels = models
+        CliSettingManager.setting.fallbackModels = models
+        changeSetting = true
     }
+
     if (let Some(temperature) <- result.options.get("temperature")) {
         try {
-            CliConfig.temperature = Float64.parse(temperature)
+            let temperature = Float64.parse(temperature)
+            CliConfig.temperature = temperature
+            CliSettingManager.setting.temperature = temperature
+            changeSetting = true
         } catch (ex: IllegalArgumentException) {
             PrintUtils.printLine("Failed to parse temperature: ${ex.message}")
-            return false
+            return ParseArgsResult.Exit
         }
     }
+
+    if (result.options.contains("prompt-file")) {
+        let promptFile = result.options.get("prompt-file").getOrThrow()
+        if (exists(promptFile)) {
+            let content = readFile(Path(promptFile))
+            CliConfig.nonInteractive = true
+            CliConfig.auto = true
+            CliConfig.nonInteractivePrompt = content
+        } else {
+            LogUtils.error("Failed to read prompt file: ${promptFile}")
+            return ParseArgsResult.Exit
+        }
+    }
+
+    // It can override the prompt file
     if (result.options.contains("prompt") || result.options.contains("p")) {
         let prompt = result.options.get("prompt").getOrDefault { result.options.get("p").getOrThrow() }
         CliConfig.nonInteractive = true
         CliConfig.auto = true
         CliConfig.nonInteractivePrompt = prompt
     }
-
-    var changeSetting = false
 
     if (let Some(language) <- result.options.get("language")) {
         CliConfig.language = language.toAsciiLower()
@@ -131,26 +183,9 @@ func parseArgsAndSetConfig(args: Array<String>): Bool {
         changeSetting = true
     }
 
-    if (let Some(model) <- result.options.get("model")) {
-        CliSettingManager.setting.model = model
-        changeSetting = true
-    }
-    if (let Some(model) <- result.options.get("fast-model")) {
-        CliSettingManager.setting.fastModel = model
-        changeSetting = true
-    }
-    if (let Some(models) <- result.options.get("fallback-models")) {
-        CliSettingManager.setting.fallbackModels = CliConfig.fallbackModels |>
-            map { model => model.fullName } |>
-            collectArray
-        changeSetting = true
-    }
-    if (let Some(temp) <- result.options.get("temperature")) {
-        CliSettingManager.setting.temperature = CliConfig.temperature
-        changeSetting = true
-    }
+    // Save the settings if any change
     if (changeSetting) {
         CliSettingManager.save()
     }
-    return true
+    return ParseArgsResult.Continue
 }

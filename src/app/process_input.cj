@@ -4,11 +4,11 @@ import magic.core.agent.*
 import magic.log.LogUtils
 import magic.core.model.ChatModel
 
+import cli.io.*
 import cli.core.config.CliConfig
+import cli.core.model.{ModelTokenLimits, CliModelManager}
 import cli.core.mcp.MCPConfigManager
 import cli.core.conversation.ConversationManager
-import cli.core.agents.CodeAnalyzer
-import cli.io.{InputUtils, PrintUtils, WithColor, AnsiColor, Confirmation}
 import cli.core.commands.CustomCommandManager
 import cli.utils.ShellUtils
 import cli.telemetry.DataCollector
@@ -109,7 +109,7 @@ private func executeAgentTask(app: CliApp, input: String): Unit {
     PrintUtils.resetSubAgent()
 
     // Try all available models in sequence
-     let allModels = ModelFallback.getAllModels()
+     let allModels = CliModelManager.getAllModels()
      for ((idx, currModel) in enumerate(allModels)) {
         try {
             // Switch to fallback model if needed
@@ -150,12 +150,12 @@ private func executeAgentTask(app: CliApp, input: String): Unit {
                 handleAgentResponse(app, asyncResponse)
             }
             // Compact is called once per successful execution, not per retry attempt
-            ModelFallback.lastAvailableModel = currModel
+            CliModelManager.lastAvailableModel = currModel
             return // Success, exit retry loop
         } catch (ex: Exception) {
             if (idx == allModels.size - 1) { // All models are tried
                 throw ex
-            } else if (ModelFallback.shouldFallback(ex)) {
+            } else if (CliModelManager.shouldFallback(ex)) {
                 LogUtils.info("Model ${currModel.fullName} failed, trying fallback")
             } else {
                 throw ex

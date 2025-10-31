@@ -1,6 +1,7 @@
 package cli.utils
 
 import std.collection.ArrayList
+import std.random.Random
 
 protected class StringUtils {
     /**
@@ -42,5 +43,16 @@ protected class StringUtils {
         }
 
         return String.join(result.toArray(), delimiter: " ")
+    }
+
+    protected static func randomBytes(count: Int64): String {
+        let rand = Random()
+        let chars = "0123456789abcdef".toRuneArray()
+        var result = StringBuilder()
+        for (i in 0..count) {
+            let randomIndex = Int64(rand.nextInt64() % chars.size)
+            result.append(chars[randomIndex])
+        }
+        return result.toString()
     }
 }

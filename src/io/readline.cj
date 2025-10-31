@@ -225,6 +225,7 @@ private func clearPreviousRender(lines: Int64) {
 public class Readline {
     private let history: ArrayList<String>
     private let historyFile: Option<Path>
+    private var footnote: Option<String> = None
 
     public init() {
         this.history = ArrayList<String>()
@@ -235,6 +236,10 @@ public class Readline {
         this.history = ArrayList<String>()
         this.historyFile = path
         this.loadHistoryFile(path)
+    }
+
+    public func setFootnote(footnote: String): Unit {
+        this.footnote = Some(footnote)
     }
 
     private func loadHistoryFile(path: Path): Unit {
@@ -512,7 +517,14 @@ public class Readline {
             currentText
         }
 
-        let wrappedContent = wrapBox("${displayPrompt}${displayText}", boxColor: boxColor)
+        var wrappedContent = wrapBox("${displayPrompt}${displayText}", boxColor: boxColor)
+
+        // Append footnote if set
+        if (let Some(footnote) <- this.footnote) {
+            if (!footnote.trimAscii().isEmpty()) {
+                wrappedContent = wrappedContent + "\n" + footnote
+            }
+        }
 
         // Calculate cursor position for current state
         let (cursorRow, cursorCol) = calculateCursorPos(
@@ -522,7 +534,7 @@ public class Readline {
 
         // Clear previous render (similar to original redraw logic)
         if (!isFirst && displayContext.lastRenderedLines > 0) {
-            // Move up based on previous cursor position + 1, like original implementation
+            // Move up based on previous cursor position + 1
             moveCursor(displayContext.lastRenderedLines, direction: Direction.Up)
             moveCursor(col: 0)
             clearScreen(mode: ClearMode.AfterCursorScreen)

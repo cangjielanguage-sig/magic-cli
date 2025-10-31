@@ -2,7 +2,7 @@ package cli.app
 
 import magic.core.agent.AgentRequest
 
-import cli.core.agents.CodeAnalyzer
+import cli.core.agents.subagents.CodeAnalyzer
 import cli.core.config.CliConfig
 import cli.io.{InputUtils, PrintUtils, Confirmation}
 
@@ -17,6 +17,12 @@ Requirements:
 3. Infer appropriate coding standards and best practices
 4. Generate project-specific development guidelines and considerations
 5. Include specific guidance for AI assistant behavior
+
+Language requirements:
+- Detect the primary language used in existing project files, documentation, and comments
+- Generate the MAGIC.md content in the same language as the project's primary language
+- If unable to determine project language, default to Chinese
+- For mixed language projects, prioritize the language used in README files and main documentation
 
 Output format requirements:
 - Return the complete MAGIC.md file content directly, no explanatory text
@@ -55,4 +61,3 @@ func initMagicFile(): Unit {
         PrintUtils.printLine("❌ Failed to write MAGIC.md: ${e.message}")
     }
 }
-

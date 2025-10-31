@@ -6,6 +6,8 @@ set -euo pipefail
 #   source /opt/CangjieSDK/envsetup.sh
 # fi
 
-args="$@"
+# args="$@"
 # echo "Args: $args"
-magic-cli $args
+# magic-cli $args
+
+exec "$@"
