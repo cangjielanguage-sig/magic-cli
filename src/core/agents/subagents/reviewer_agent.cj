@@ -22,7 +22,7 @@ import cli.core.tools.*
     executor: "tool-loop:30",
     description: "Specialized in code review and quality assurance",
     tools: [
-        FSToolset(),
+        ReadOnlyFSToolset(),
         ShellTool(),
         // LSPToolset(),
         CangjieToolset()

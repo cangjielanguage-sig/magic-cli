@@ -32,6 +32,11 @@ protected interface Printer {
     func printToolFailure(toolInfo: String, failureInfo!: String): Unit
 
     /**
+     * Print tool result
+     */
+    func printToolResult(result: String): Unit
+
+    /**
      * Print agent response
      */
     func printAgentResponse(response: AgentResponse): Unit

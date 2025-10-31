@@ -30,11 +30,11 @@ private func executeShellCommand(command: String, app: CliApp): Unit {
     }
     //let items = command.split(" ")  // Simple split by space, does not handle quotes
     //let args = if (items.size > 1) { items[1..] } else { Array<String>() }
-    let (exitCode, stdOutData, stdErrData) = ShellUtils.execute([command], workDir: CliConfig.cwd)
+    let (exitCode, stdout, stderr) = ShellUtils.execute([command], workDir: CliConfig.cwd)
     let output = if (exitCode == 0) {
-        String.fromUtf8(stdOutData).trimAscii()
+        stdout.trimAscii()
     } else {
-        String.fromUtf8(stdErrData).trimAscii()
+        stderr.trimAscii()
     }
     LogUtils.info("Shell command exited with code ${exitCode}, output: ${output}")
     PrintUtils.printShellResult(output)

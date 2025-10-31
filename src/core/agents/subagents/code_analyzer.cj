@@ -85,7 +85,7 @@ You:
     model: CliModelManager.model,
     executor: "tool-loop:1000",
     tools: [
-        FSToolset()
+        ReadOnlyFSToolset()
     ]
 ]
 public class CodeAnalyzer {
