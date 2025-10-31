@@ -111,6 +111,17 @@ protected class PrintUtils {
         getPrinter().printToolFailure(toolInfo, failureInfo: failureInfo)
     }
 
+    static public func printToolResult(result: String, maxLength!: Int64 = 200): Unit {
+        let runes = result.toRuneArray()
+        let truncated = if (runes.size > maxLength) {
+            let truncatedRunes = runes[0..maxLength]
+            "${String(truncatedRunes)}\n... [truncated ${runes.size - maxLength} chars]"
+        } else {
+            result
+        }
+        getPrinter().printToolResult(truncated)
+    }
+
     //----------------------------------------------------------------------------------
 
     static public func printAgentResponse(response: AgentResponse) {

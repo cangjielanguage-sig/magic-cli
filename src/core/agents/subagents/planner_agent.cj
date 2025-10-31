@@ -21,8 +21,8 @@ import cli.core.tools.*
     executor: "tool-loop:50",
     description: "Specialized in task decomposition and planning for software engineering tasks",
     tools: [
-        FSToolset(),
-        SearchToolset()
+        // SearchToolset()
+        ReadOnlyFSToolset()
     ]
 ]
 public class PlannerAgent {

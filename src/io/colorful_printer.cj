@@ -76,6 +76,14 @@ protected class ColorfulPrinter <: Printer {
         }
     }
 
+    public func printToolResult(result: String): Unit {
+        let boxContent = wrapBox(result, withBorder: false)
+        for (line in boxContent.split("\n")) {
+            printLine("  ${line}".withColor(Theme.current.muted), withIndent: true)
+        }
+        printLine("")
+    }
+
     public func printAgentResponse(response: AgentResponse): Unit {
         printLine("")
         printLine(wrapBox(renderMarkdown(response.content), withBorder: false))
