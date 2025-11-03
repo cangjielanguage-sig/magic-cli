@@ -49,10 +49,11 @@ func initMagicFile(): Unit {
         File.writeTo(CliConfig.magicMarkdownPath, response.content.toArray())
         PrintUtils.printTool("MAGIC.md Init", "✅ MAGIC.md initialized successfully!")
 
-        let preview = if (response.content.size > 300) {
-            response.content[0..300] + "..."
+        let runes = response.content.toRuneArray()
+        let preview = if (runes.size > 300) {
+            String(runes[0..300]) + "..."
         } else {
-            response.content
+            String(runes)
         }
         PrintUtils.printLine("📝 Content preview:")
         PrintUtils.printLine(preview)
