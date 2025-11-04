@@ -14,13 +14,13 @@ import cli.utils.StringUtils
 import cli.core.agents.subagents.*
 import cli.core.config.CliConfig
 
-import std.collection.ArrayList
+import std.collection.{ArrayList, HashSet}
 import std.env.atExit
 
 func registerHooks(app: CliApp) {
     // Collect all subAgents as allowed agents that is able to print the thinking indicator
     // Some agents are special which are not added as subAgents
-    let allowedAgentName = ArrayList<String>([
+    let allowedAgentName = HashSet<String>([
         app.agent.name,
         CodeAnalyzer.typeName,
         CodeDesigner.typeName,
@@ -85,6 +85,7 @@ func registerHooks(app: CliApp) {
         if (evt.agentResponse.status == AgentResponseStatus.Success) {
             let name = StringUtils.splitCamelCase(evt.agent.name).withColor(Theme.current.accent)
             PrintUtils.printLine("🎉 SubAgent ${name} completed 🍻", withIndent: true)
+            PrintUtils.printToolResult(evt.agentResponse.content)
         }
         PrintUtils.endSubAgent()
     }

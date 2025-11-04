@@ -46,6 +46,13 @@ protected class MarkdownPrinter <: Printer {
         printLine("- ${cleanFailureInfo}")
     }
 
+    public func printToolResult(result: String): Unit {
+        let cleanResult = removeAnsiEscape(result)
+        printLine("## Tool Result\n")
+        printLine(cleanResult)
+        printLine("")
+    }
+
     public func printAgentResponse(response: AgentResponse): Unit {
         printLine("---\n")
         printLine("## Agent Response\n")

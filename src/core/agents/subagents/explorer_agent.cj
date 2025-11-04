@@ -28,7 +28,7 @@ import cli.core.tools.*
     tools: [
         // SearchToolset(),
         // LSPToolset(),
-        FSToolset()
+        ReadOnlyFSToolset()
     ]
 ]
 public class ExplorerAgent {

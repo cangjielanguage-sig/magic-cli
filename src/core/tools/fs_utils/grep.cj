@@ -121,13 +121,13 @@ private func grepWithTraditional(pattern: String, path: Option<String>, include:
         LogUtils.debug("[Run command] ${command}")
 
         let workingDir = path.map { s => Path(s) } ?? CliConfig.cwd
-        let (exitCode, stdOutData, stdErrData) = ShellUtils.execute([command],  workDir: workingDir)
+        let (exitCode, stdout, stderr) = ShellUtils.execute([command],  workDir: workingDir)
 
         if (exitCode == 0) {
-            let outString = String.fromUtf8(stdOutData).trimAscii()
+            let outString = stdout.trimAscii()
             return parseGrepOutput(outString, workingDir)
         } else {
-            let errString = String.fromUtf8(stdErrData).trimAscii()
+            let errString = stderr.trimAscii()
             return errString
         }
     } catch (e: Exception) {
