@@ -16,6 +16,10 @@ import std.fs.*
 
 @toolset
 public class CangjieToolset {
+    protected CangjieToolset(
+        private let buildWithJsonOutput!: Bool = false
+    ) { }
+
     @tool[
         description: "An tool specialized in the Cangjie programming language, capable of retrieving Cangjie language documentation based on user queries. ",
         parameters: {
@@ -71,7 +75,7 @@ public class CangjieToolset {
         let projectDir = path.map { p => Path(p) } ?? CliConfig.cwd
 
         PrintUtils.printTool("cjpm build", projectDir.toString())
-        let result = cjpmBuild(projectDir)
+        let result = cjpmBuild(projectDir, outputJson: this.buildWithJsonOutput)
         PrintUtils.printToolResult(result)
         return result
     }
