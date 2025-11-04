@@ -7,7 +7,7 @@ import magic.log.LogUtils
 
 import cli.core.tools.*
 import cli.core.config.CliConfig
-import cli.core.tools.cj_utils.cjpmBuild
+import cli.core.tools.cj_utils.{cjpmBuild, modifyCjpmToml, restoreCjpmToml}
 import cli.core.model.CliModelManager
 import cli.io.PrintUtils
 import cli.core.agents.common.*
@@ -193,10 +193,10 @@ Follow this iterative, disciplined process to fix compile errors:
 ### Iterative Fix Process
 
 1. **Build the Project**
-   Always begin and verify with the `buildCangjieProject` tool. Use its output as the **authoritative source** of all compile errors. Never assume the state of the build without calling this tool.
+   Always begin and verify with the `${CangjieToolset._cangjieBuildProject}` tool. Use its output as the **authoritative source** of all compile errors. Never assume the state of the build without calling this tool.
 
 2. **Diagnose Error**
-   For each unique error:
+   For each error:
    - Classify it: syntax error, undefined symbol, type mismatch, incorrect API usage, etc.
    - If the fix is clear and you are confident, proceed to editing.
    - Check rules in "### Cangjie Fix Rules", if you can fix according to these rules, fix directly.
@@ -209,13 +209,13 @@ Follow this iterative, disciplined process to fix compile errors:
 
 4. **Verify Progress**
    After each change:
-   - Re-run `buildCangjieProject` to get updated feedback.
+   - Re-run `${CangjieToolset._cangjieBuildProject}` to get updated feedback.
    - If other errors appear, iterate to analyze and fix them.
    - If an error persists despite your fix, re-evaluate the root cause and use the `${CangjieToolset._cangjieRetrieveDocuments}` tool if needed.
-  - Never assume you have fixed all errors unless you have called `buildCangjieProject` and it reported zero compile errors. This is VERY IMPORTANT.
+  - Never assume you have fixed all errors unless you have called `${CangjieToolset._cangjieBuildProject}` and it reported zero compile errors. This is VERY IMPORTANT.
 
 5. **Repeat Until Success**
-   Continue iterating until `buildCangjieProject` reports **zero compile errors**.
+   Continue iterating until `${CangjieToolset._cangjieBuildProject}` reports **zero compile errors**.
 
 ## Tool Usage
 
@@ -230,16 +230,14 @@ Follow this iterative, disciplined process to fix compile errors:
   - Never delete, rename, or add any files.
   - Never modify the project directory layout or module structure.
 
-- **Never Modify Configuration Files**
+- **Never Modify `cjpm.toml`**
   - **ABSOLUTE PROHIBITION**: Under no circumstances should you edit `cjpm.toml`.
   - Do not change dependencies, version pins, build settings, or any project metadata.
   - **Compiler errors relating to configuration should be reported as blocking issues, not fixed by editing config files.**
-  - If a compilation error suggests changing `cjpm.toml`, **DO NOT** follow that suggestion. Instead, find an alternative code-only solution or report the issue.
 
 - **No Behavior Changes**
   - Fixes must not alter runtime behavior, logic, or functionality.
   - Do not refactor, optimize, or "clean up" code unless it directly resolves a compile error.
-  - **NEVER add backticks (`) around identifiers or function names** - backticks are not part of normal Cangjie syntax and will cause compilation errors.
 
 - **No Guessing**
   - If you are unsure about Cangjie syntax, APIs, or semantics, **always use** `${CangjieToolset._cangjieRetrieveDocuments}` before making changes.
@@ -261,7 +259,7 @@ Follow this iterative, disciplined process to fix compile errors:
     executor: "tool-loop:1000",
     tools: [
         FSToolset(),
-        CangjieToolset()
+        CangjieToolset(buildWithJsonOutput: true)
     ]
 ]
 protected class CangjieFixer {
@@ -274,7 +272,7 @@ protected class CangjieFixer {
         ${CliConfig.userRules}
 
         The current Cangjie project directory: ${this.projectDir}。
-        The current project build status:\n${cjpmBuild(this.projectDir)}
+        The current project build status:\n${cjpmBuild(this.projectDir, outputJson: true)}
         """
     )
 
@@ -294,19 +292,6 @@ protected class CangjieFixer {
         PrintUtils.printTool("Deep Thinking", thought)
         return msg
     }
-
-    // @tool[
-    //     description: "${EDIT_FILE_DESCRIPTION}",
-    //     parameters: {
-    //         thought: "Reasoning and thought process for the fix",
-    //         filePath: "File path, must be an absolute path",
-    //         oldContent: "The exact literal text to replace, preferably unescaped. For single replacements (default), include at least 3 lines of context BEFORE and AFTER the target text, matching whitespace and indentation precisely. For multiple replacements, specify expected_replacements parameter. If this string is not the exact literal text (i.e. you escaped it) or does not match exactly, the tool will fail.",
-    //         newContent: "The exact literal text to replace `oldContent` with, preferably unescaped. Provide the EXACT text. Ensure the resulting code is correct and idiomatic."
-    //     }
-    // ]
-    // public func generatePatch(thought: String, filePath: String, oldContent: String, newContent: String): String {
-
-    // }
 }
 
 private const FIX_TOOL_DESCRIPTION = """
@@ -329,11 +314,18 @@ Designed to fix compilation errors in the Cangjie project.
    }
 ]
 protected func fixCangjieProjectCompileError(path: String): String {
+    var modified = false // Whether the cjpm.toml file is modified
+    let projectDir = Path(path)
     try {
         PrintUtils.printTool("CangjieFixer", "path: ${path}")
         PrintUtils.beginSubAgent()
 
-        let fixer = CangjieFixer(Path(path))
+        // Modify the cjpm.toml file to output json build result
+        if (modifyCjpmToml(projectDir)) {
+            modified = true
+        }
+        let fixer = CangjieFixer(projectDir)
+
         let response = fixer.chat(AgentRequest("Now, start to work"))
         if (response.status == AgentResponseStatus.Cancelled) {
             throw AgentCancelException(reason: response.content)
@@ -343,6 +335,9 @@ protected func fixCangjieProjectCompileError(path: String): String {
         }
         return response.content
     } finally {
+        if (modified) {
+            restoreCjpmToml(projectDir)
+        }
         PrintUtils.endSubAgent()
     }
 }

@@ -10,10 +10,6 @@ import cli.sandbox.startSandbox
 import std.collection.{filter, collectArray}
 import std.env.getVariable
 
-import cli.core.tools.fs_utils.glob
-import cli.utils.ShellUtils
-import std.fs.Path
-
 @When[os == "Windows"]
 import magic.utils.winGetArgs
 

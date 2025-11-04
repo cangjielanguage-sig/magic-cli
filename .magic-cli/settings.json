@@ -1,30 +1,3 @@
 {
-  "mcpServers": {
-    // "Cangjie-Graph-RAG": {
-    //   "url": "http://127.0.0.1:8787/sse"
-    //  },
-    // "sequential-thinking": {
-    //   "command": "npx -y @modelcontextprotocol/server-sequential-thinking",
-    //   "env": []
-    // },
-    // "zhipu-web-search-sse": {
-    //     "url": "https://open.bigmodel.cn/api/mcp/web_search/sse?Authorization=12c3630f3d2845eabdc34ce7ee0c31eb.msu2uACmGWTusuQh"
-    // },
-    // "time": {
-    //     "command": "uvx",
-    //     "args": ["mcp-server-time"]
-    // },
-    // "MiniMax": {
-    //     "command": "uvx",
-    //     "args": [
-    //         "minimax-mcp"
-    //     ],
-    //     "env": {
-    //         "MINIMAX_API_KEY": "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJHcm91cE5hbWUiOiJXaWxsaWFtIiwiVXNlck5hbWUiOiJXaWxsaWFtIiwiQWNjb3VudCI6IiIsIlN1YmplY3RJRCI6IjE5MTUyMTU3MzUzMDM0NDI4ODkiLCJQaG9uZSI6IjE3Nzg2NzM0ODI2IiwiR3JvdXBJRCI6IjE5MTUyMTU3MzUyNzQwODI3NjEiLCJQYWdlTmFtZSI6IiIsIk1haWwiOiIiLCJDcmVhdGVUaW1lIjoiMjAyNS0wOC0yNiAxMDoyNToxMCIsIlRva2VuVHlwZSI6MSwiaXNzIjoibWluaW1heCJ9.yljKx1W8EpSh6UORzmKTTfEz4PIoT4mrGhdsya2uufcP40-jfquffIudPY5Tw4mDpOzuLnTkf779gI2SfK79T79S_dLgtUO2L9mvIkmR31UGbU1kxmsDdzR_oGqM7KgYuyT5itveQ1wjlum27eHJp1dPtn1dlDMwusem_dA8lA3RFZeoGcs1MxDhWHu2b4oi5SAVWAB0_F7JrctSNiFTRQVJt2lztJY1397d-F6Cq-El6ofoBsZvZIJkyl1n4MgRCOkVGnq1xvJL6lXngxzRef6hrPjjU4xPyB0nrPvCO4YQErWVoBROf7hdRl5nEO7VZsEO8OKrKKrPWIKM2VHB4g",
-    //         "MINIMAX_MCP_BASE_PATH": "~/Downloads",
-    //         "MINIMAX_API_HOST": "https://api.minimaxi.com",
-    //         "MINIMAX_API_RESOURCE_MODE": "local"
-    //     }
-    // }
-  }
+  "mcpServers": {}
 }
