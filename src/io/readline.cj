@@ -365,8 +365,29 @@ public class Readline {
                 }
                 return None
 
-            case r'\u{4}' => // Delete key - delete character at cursor (forward delete)
-                // This is mapped from ESC[3~ in the C FFI
+            case r'\u{4}' => // Ctrl+D
+                // Check if buffer is empty - Ctrl+D on empty line should exit
+                if (inputState.buffer.size == 0) {
+                    // Empty line - Ctrl+D sends EOF and exits the program
+                    return Some("/exit")
+                }
+
+                // Non-empty line - Ctrl+D acts as delete-char
+                if (inputState.deleteCharAt()) {
+                    // Always clear completions when deleting characters
+                    completionState.clear()
+
+                    // Update completion list based on new text
+                    let newText = inputState.getText()
+                    if (!newText.isEmpty()) {
+                        if (let Some(completions) <- buildCompletionList(newText, inputState.cursor, isShellMode: inputState.isShellMode())) {
+                            completionState.setCompletions(completions)
+                        }
+                    }
+                }
+                return None
+
+            case r'\u{2326}' => // Delete key (⌦) - mapped from ESC[3~ in FFI
                 if (inputState.deleteCharAt()) {
                     // Always clear completions when deleting characters
                     completionState.clear()

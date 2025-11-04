@@ -20,22 +20,26 @@ static int raw_mode = 0;
  *
  * @return 0 on success, -1 on error (e.g., tcgetattr fails)
  */
-int enterRaw() {
+int enterRaw()
+{
     struct termios raw;
 
     // Get current terminal attributes
-    if (tcgetattr(STDIN_FILENO, &orig_termios) == -1) {
+    if (tcgetattr(STDIN_FILENO, &orig_termios) == -1)
+    {
         return -1;
     }
 
     // Only modify terminal if not already in raw mode
-    if (!raw_mode) {
+    if (!raw_mode)
+    {
         raw = orig_termios;
         // cfmakeraw(&raw);                  // Apply basic raw mode (no signals, no echo, etc.)
-        raw.c_lflag &= ~(ECHO | ICANON);  // cfmakeraw doesn't disable ECHO, so we do it manually
-        raw.c_cc[VMIN]  = 1;
+        raw.c_lflag &= ~(ECHO | ICANON); // cfmakeraw doesn't disable ECHO, so we do it manually
+        raw.c_cc[VMIN] = 1;
         raw.c_cc[VTIME] = 0;
-        if (tcsetattr(STDIN_FILENO, TCSANOW, &raw) == -1) {
+        if (tcsetattr(STDIN_FILENO, TCSANOW, &raw) == -1)
+        {
             return -1;
         }
         raw_mode = 1;
@@ -48,8 +52,10 @@ int enterRaw() {
  * Exits raw mode and restores the original terminal settings.
  * This function is idempotent — calling it multiple times has no side effect.
  */
-void exitRaw() {
-    if (raw_mode) {
+void exitRaw()
+{
+    if (raw_mode)
+    {
         tcsetattr(STDIN_FILENO, TCSANOW, &orig_termios);
         raw_mode = 0;
     }
@@ -60,12 +66,12 @@ void exitRaw() {
  * @param timeout_ms Timeout in milliseconds (0 for infinite)
  * @return true if input is available, false if timed out or error
  */
-static bool hasInputTimeout(int fd, int timeout_ms) {
+static bool hasInputTimeout(int fd, int timeout_ms)
+{
     struct pollfd pfd = {
         .fd = fd,
         .events = POLLIN, // Poll read event
-        .revents = 0
-    };
+        .revents = 0};
     int ret = poll(&pfd, 1, timeout_ms); // One fd and with timeout timeout_ms
     return ret > 0 && (pfd.revents & POLLIN);
 }
@@ -77,34 +83,49 @@ static bool hasInputTimeout(int fd, int timeout_ms) {
  * @param timeout Timeout in milliseconds (0 for infinite)
  * @return 0 on success, 1 on timeout, -1 on error
  */
-static int asyncGetRawByte(unsigned char* bytePtr, int timeout_ms) {
-    if (!hasInputTimeout(STDIN_FILENO, timeout_ms)) {
+static int asyncGetRawByte(unsigned char *bytePtr, int timeout_ms)
+{
+    if (!hasInputTimeout(STDIN_FILENO, timeout_ms))
+    {
         return 1;
     }
-    if (read(STDIN_FILENO, bytePtr, 1) == 1) {
+    if (read(STDIN_FILENO, bytePtr, 1) == 1)
+    {
         return 0;
-    } else {
+    }
+    else
+    {
         return -1;
     }
 }
 
-bool checkHasInput(uint32_t timeout_ms) {
+bool checkHasInput(uint32_t timeout_ms)
+{
     return hasInputTimeout(STDIN_FILENO, (timeout_ms == 0) ? -1 : (int)timeout_ms);
 }
 
-int getByte(uint32_t timeout, uint16_t* keyCode) {
+int getByte(uint32_t timeout, uint16_t *keyCode)
+{
     unsigned char c;
     int ret = asyncGetRawByte(&c, (timeout == 0) ? -1 : (int)timeout);
-    if (ret == 0) {
-        if (c <= 0x7F) {
+    if (ret == 0)
+    {
+        if (c <= 0x7F)
+        {
             *keyCode = (uint16_t)c;
             return 1;
-        } else {
+        }
+        else
+        {
             return 2;
         }
-    } else if (ret == 1) {
+    }
+    else if (ret == 1)
+    {
         return 0;
-    } else {
+    }
+    else
+    {
         return -1;
     }
 }
@@ -112,75 +133,87 @@ int getByte(uint32_t timeout, uint16_t* keyCode) {
 /**
  * Parses an escape sequence to the read buffer.
  */
-static int parseEscapeSequence(unsigned char* bytes) {
+static int parseEscapeSequence(unsigned char *bytes)
+{
     int n = 0;
     unsigned char c = 0;
 
-    if (!hasInputTimeout(STDIN_FILENO, 10)) { // Just ESC
+    if (!hasInputTimeout(STDIN_FILENO, 10))
+    { // Just ESC
         return 1;
     }
     n = read(STDIN_FILENO, &c, 1);
-    if (n <= 0) return 1; // Error, just return the first ESC
+    if (n <= 0)
+        return 1; // Error, just return the first ESC
     bytes[1] = c; // Save the byte
 
     // CSI: ESC [
-    if (c == 0x5b) {
+    if (c == 0x5b)
+    {
         n = read(STDIN_FILENO, &c, 1);
-        if (n <= 0) return 1; // Error, just return the first ESC
+        if (n <= 0)
+            return 1; // Error, just return the first ESC
         bytes[2] = c;
 
         // Check for arrow keys
-        switch (c) {
-            case 'A': // Up Arrow → U+2191 ↑
-                bytes[0] = 0xE2;  // UTF-8 for U+2191
-                bytes[1] = 0x86;
-                bytes[2] = 0x91;
-                return 3;
+        switch (c)
+        {
+        case 'A':            // Up Arrow → U+2191 ↑
+            bytes[0] = 0xE2; // UTF-8 for U+2191
+            bytes[1] = 0x86;
+            bytes[2] = 0x91;
+            return 3;
 
-            case 'B': // Down Arrow → U+2193 ↓
-                bytes[0] = 0xE2;
-                bytes[1] = 0x86;
-                bytes[2] = 0x93;
-                return 3;
+        case 'B': // Down Arrow → U+2193 ↓
+            bytes[0] = 0xE2;
+            bytes[1] = 0x86;
+            bytes[2] = 0x93;
+            return 3;
 
-            case 'C': // Right Arrow → U+2192 →
-                bytes[0] = 0xE2;
-                bytes[1] = 0x86;
-                bytes[2] = 0x92;
-                return 3;
+        case 'C': // Right Arrow → U+2192 →
+            bytes[0] = 0xE2;
+            bytes[1] = 0x86;
+            bytes[2] = 0x92;
+            return 3;
 
-            case 'D': // Left Arrow → U+2190 ←
-                bytes[0] = 0xE2;
-                bytes[1] = 0x86;
-                bytes[2] = 0x90;
-                return 3;
+        case 'D': // Left Arrow → U+2190 ←
+            bytes[0] = 0xE2;
+            bytes[1] = 0x86;
+            bytes[2] = 0x90;
+            return 3;
 
-            case 'H': // Home → Ctrl+A
-                bytes[0] = 0x01;
-                return 1;
+        case 'H': // Home → Ctrl+A
+            bytes[0] = 0x01;
+            return 1;
 
-            case 'F': // End → Ctrl+E
-                bytes[0] = 0x05;
-                return 1;
+        case 'F': // End → Ctrl+E
+            bytes[0] = 0x05;
+            return 1;
 
-            case '3': // DELETE
-                n = read(STDIN_FILENO, &c, 1);
-                if (n <= 0) return -1;
-                if (c != '~') return -1;
-                bytes[0] = 0x04;  // Send Ctrl+D (0x04) for Delete key to differentiate from Backspace
-                return 1;
+        case '3': // DELETE → U+2326 (⌦ ERASE TO THE RIGHT)
+            n = read(STDIN_FILENO, &c, 1);
+            if (n <= 0)
+                return -1;
+            if (c != '~')
+                return -1;
+            bytes[0] = 0xE2; // UTF-8 encoding of U+2326
+            bytes[1] = 0x8C;
+            bytes[2] = 0xA6;
+            return 3;
 
-            case '1': // Modified keys like Ctrl+Arrow: ESC [ 1 ; 5 A/B/C/D
-                // Consume the remaining bytes: ; <modifier> <key>
-                read(STDIN_FILENO, &c, 1); // Read ';'
-                read(STDIN_FILENO, &c, 1); // Read modifier (e.g., '5' for Ctrl)
-                read(STDIN_FILENO, &c, 1); // Read key (A/B/C/D)
-                return 1;
+        case '1': // Modified keys like Ctrl+Arrow: ESC [ 1 ; 5 A/B/C/D
+            // Consume the remaining bytes: ; <modifier> <key>
+            read(STDIN_FILENO, &c, 1); // Read ';'
+            read(STDIN_FILENO, &c, 1); // Read modifier (e.g., '5' for Ctrl)
+            read(STDIN_FILENO, &c, 1); // Read key (A/B/C/D)
+            return 1;
 
-            default:
-                return -1; // Unknown CSI
+        default:
+            return -1; // Unknown CSI
         }
-    } else {
+    }
+    else
+    {
         return 1; // Unknown escaped chars
     }
 }
@@ -193,49 +226,64 @@ static int parseEscapeSequence(unsigned char* bytes) {
  * @param bytes Output buffer (at least 4 bytes)
  * @return Number of bytes written, 0 on EOF, -1 on error
  */
-int getRawUtf8(unsigned char *bytes) {
+int getRawUtf8(unsigned char *bytes)
+{
     unsigned char c = 0;
     int n = 0;
 
     // Read first byte
     n = read(STDIN_FILENO, &c, 1);
-    if (n <= 0) return n;
+    if (n <= 0)
+        return n;
     bytes[0] = c;
 
     // --- 0. Escape Sequence (Special Keys) ---
-    if (c == 0x1b) {  // ESC
+    if (c == 0x1b)
+    { // ESC
         return parseEscapeSequence(bytes);
     }
 
     // --- 1. ASCII (1-byte UTF-8) ---
-    if ((c & 0x80) == 0x00) {
+    if ((c & 0x80) == 0x00)
+    {
         return 1;
     }
 
     // --- 2. 2-byte UTF-8 ---
-    if ((c & 0xE0) == 0xC0) {
+    if ((c & 0xE0) == 0xC0)
+    {
         n = read(STDIN_FILENO, &bytes[1], 1);
-        if (n <= 0) return -1;
-        if ((bytes[1] & 0xC0) != 0x80) return -1;
+        if (n <= 0)
+            return -1;
+        if ((bytes[1] & 0xC0) != 0x80)
+            return -1;
         return 2;
     }
 
     // --- 3. 3-byte UTF-8 ---
-    if ((c & 0xF0) == 0xE0) {
-        for (int i = 1; i <= 2; i++) {
+    if ((c & 0xF0) == 0xE0)
+    {
+        for (int i = 1; i <= 2; i++)
+        {
             n = read(STDIN_FILENO, &bytes[i], 1);
-            if (n <= 0) return -1;
-            if ((bytes[i] & 0xC0) != 0x80) return -1;
+            if (n <= 0)
+                return -1;
+            if ((bytes[i] & 0xC0) != 0x80)
+                return -1;
         }
         return 3;
     }
 
     // --- 4. 4-byte UTF-8 ---
-    if ((c & 0xF8) == 0xF0) {
-        for (int i = 1; i <= 3; i++) {
+    if ((c & 0xF8) == 0xF0)
+    {
+        for (int i = 1; i <= 3; i++)
+        {
             n = read(STDIN_FILENO, &bytes[i], 1);
-            if (n <= 0) return -1;
-            if ((bytes[i] & 0xC0) != 0x80) return -1;
+            if (n <= 0)
+                return -1;
+            if ((bytes[i] & 0xC0) != 0x80)
+                return -1;
         }
         return 4;
     }
