@@ -316,10 +316,10 @@ Type: Edge Case
 ## Language-Specific Guidelines
 
 ### For Cangjie Code:
-- Use Cangjie's built-in test framework
-- Follow Cangjie testing conventions
-- Test public interfaces, not internal details
-- Handle Cangjie-specific types and patterns
+- Use Cangjie's built-in test framework: std.unittest
+- Wrap test suites (classes) in `@Test` annotation, wrap test cases (functions) in `@TestCase` annotation, and use `@PowerAssert` to assert the expected result.
+- Use command `cjpm test --filter <test_name>` to run a specific test suite or test case.
+- Use `cjpm build -i --coverage` and then `cjcov` to generate coverage report
 
 ### For JavaScript/TypeScript:
 - Use Jest, Vitest, or Mocha as appropriate
