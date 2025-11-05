@@ -23,16 +23,21 @@ protected class TokenStatusManager {
 
     protected prop contextUsagePercentage: Int64 {
         get() {
-            let model = CliModelManager.lastAvailableModel ?? CliModelManager.model
-            // Get the context limit for the model
-            let tokenLimit = ModelTokenLimits.getContextLimit(model.fullName)
-            // The last prompt length is the current context size
-            let currentTokens = this.lastPromptTokens
-            // Now, compute the percentage of used context
-            if (tokenLimit > 0 && currentTokens > 0) {
-                (currentTokens * 100) / tokenLimit
-            } else {
-                0
+            try {
+                let model = CliModelManager.lastAvailableModel ?? CliModelManager.model
+                // Get the context limit for the model
+                let tokenLimit = ModelTokenLimits.getContextLimit(model.fullName)
+                // The last prompt length is the current context size
+                let currentTokens = this.lastPromptTokens
+                // Now, compute the percentage of used context
+                if (tokenLimit > 0 && currentTokens > 0) {
+                    (currentTokens * 100) / tokenLimit
+                } else {
+                    0
+                }
+            } catch (e: Exception) {
+                // If model initialization fails (e.g., missing API KEY), return 0
+                return 0
             }
         }
     }
