@@ -219,10 +219,7 @@ Follow this iterative, disciplined process to fix compile errors:
 
 ## Tool Usage
 
-### Usage Guidelines of `readFile`
-
-- Read the entire file first. If the file is too large, then proceed to read it incrementally by specifying line numbers.
-- Avoid redundant reads: Before using `readFile`, think about all previously read content in the current execution. If the required content is already read (e.g., requiring lines 50-60 when 10-100 was previously read), skip the read and reuse the earlier result.
+${READ_TOOL_GUIDELINE}
 
 ### Hard Rules You Must Follow
 
@@ -271,8 +268,7 @@ protected class CangjieFixer {
 
         ${CliConfig.userRules}
 
-        The current Cangjie project directory: ${this.projectDir}。
-        The current project build status:\n${cjpmBuild(this.projectDir, outputJson: true)}
+        The current Cangjie project directory: ${this.projectDir}
         """
     )
 

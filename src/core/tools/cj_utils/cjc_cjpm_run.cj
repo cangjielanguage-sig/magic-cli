@@ -31,14 +31,31 @@ class BuildResult {
     /**
      * Filter out only same error diagnostics
      */
-    func filterSameErrors(): Unit {
+    func filterSameErrors(limit!: Option<Int64> = None): Unit {
         // Filter out only error diagnostics
         this.Diags.removeIf ({ diag => diag.Severity != "error" })
         if (this.Diags.isEmpty()) {
             return
         }
+        // Filter out only same error diagnostics
         let error = this.Diags[0].Message
         this.Diags.removeIf ({ diag => diag.Message != error })
+        // Limit the number of errors
+        if (let Some(_limit) <- limit && _limit < this.Diags.size) {
+            this.Diags.remove(_limit..this.Diags.size)
+        }
+    }
+
+    /**
+     * Add code snippets of the error
+     */
+    func addCodeSnippets(): Unit {
+        for (diag in this.Diags) {
+            let start = max(0, diag.Location.Line - 2)
+            let end = diag.Location.Line + 2
+            let code = readFile(Path(diag.Location.File), withLineNumber: true, startLine: start, endLine: end)
+            diag.CodeSnippet = code
+        }
     }
 
     func toString(): String {
@@ -49,8 +66,12 @@ class BuildResult {
             } else {
                 "${diag.Message}; ${diag.MainHint.Content}"
             }
-            writer.append("Location: ${diag.Location.File}:${diag.Location.Line}\n")
-            writer.append("Error: ${msg}\n\n")
+            writer.append("<error location=\"${diag.Location.File}:${diag.Location.Line}\" message=\"${msg}\" >\n")
+            if (let Some(code) <- diag.CodeSnippet) {
+                writer.append("${code}\n")
+            }
+            writer.append("</error>\n")
+            writer.append("\n")
         }
         return writer.toString()
     }
@@ -63,6 +84,7 @@ class Diagnostic {
     let Message: String
     let Location: DiagLocation
     let MainHint: DiagHint
+    var CodeSnippet: Option<String>
 }
 
 @jsonable
@@ -154,7 +176,7 @@ protected func modifyCjpmToml(projectDir: Path): Bool {
                     }
 
                     // Add --error-count-limit=all if not already present
-                    if (!unquotedValue.contains("--error-count-limit=all")) {
+                    if (!unquotedValue.contains("--error-count-limit")) {
                         unquotedValue += " --error-count-limit=all"
                     }
 
@@ -195,19 +217,38 @@ protected func modifyCjpmToml(projectDir: Path): Bool {
     }
 }
 
-protected func cjpmBuild(projectDir: Path, outputJson!: Bool = false): String {
+protected struct CJPMBuildResult {
+    CJPMBuildResult(
+        public let rawOutput: String, // The raw output from cjpm build command
+        public let processedOutput: String // The processed output with error messages for LLM
+    ) { }
+}
+
+/**
+ *
+ */
+protected func cjpmBuild(projectDir: Path,
+                         outputJson!: Bool = false,
+                         withCode!: Bool = false): CJPMBuildResult {
     // Execute the build
     let output = cjpmRun(["build", "-i"], projectDir)
     // Check if build succeeded; if so, return success message
     if (output.contains("cjpm build success")) {
-        return "cjpm build success"
+        return CJPMBuildResult(
+            output,
+            "${output}\nHint: the project is successfully built, so there are no errors to fix."
+        )
     }
     if (outputJson) {
         try {
             let result = ParserUtils.extractFirstValue<BuildResult>(output)
-            result.filterSameErrors()
+            result.filterSameErrors(limit: 5)
+            result.addCodeSnippets()
             if (!result.Diags.isEmpty()) {
-                return "<compile error>\n${result.toString()}\n</compile error>"
+                return CJPMBuildResult(
+                    output,
+                    "<compile error>\n${result.toString()}\n</compile error>"
+                )
             }
         } catch (ex: Exception) {
             LogUtils.error("Failed to parse cjpm build Json output\n```\n${output}\n```")
@@ -218,9 +259,15 @@ protected func cjpmBuild(projectDir: Path, outputJson!: Bool = false): String {
     let errors = output.split("error: ")
     // Only return the first error if there are multiple errors
     if (errors.size > 1) {
-        return "${errors[0]}error: ${errors[1]}"
+        return CJPMBuildResult(
+            output,
+            "${errors[0]}error: ${errors[1]}"
+        )
     } else {
-        return output
+        return CJPMBuildResult(
+            output,
+            output
+        )
     }
 }
 
