@@ -76,8 +76,8 @@ public class CangjieToolset {
 
         PrintUtils.printTool("cjpm build", projectDir.toString())
         let result = cjpmBuild(projectDir, outputJson: this.buildWithJsonOutput)
-        PrintUtils.printToolResult(result)
-        return result
+        PrintUtils.printToolResult(result.rawOutput)
+        return result.processedOutput
     }
 
     // @tool[
