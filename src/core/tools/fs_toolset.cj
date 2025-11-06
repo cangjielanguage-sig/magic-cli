@@ -21,7 +21,6 @@ import cli.io.{InputUtils, PrintUtils, Confirmation}
 import cli.core.tools.fs_utils.*
 import cli.core.config.CliConfig
 
-import memory_management.user_end.code.*
 
 //==============================================================================
 // CLAIM
@@ -93,23 +92,6 @@ func listDirectory(path: String): String {
     }
 }
 
-func compressCode(filePath: String, startLine!: Int = 1, endLine!: Int = Int.Max): String {
-    let cmm = CodeMemoryManagement("", "")
-    var content = cmm.analyzeFile(filePath, startLine: startLine, endLine: endLine)
-    content = """
-The returned code is too large to return in full. Instead, you will receive a compressed index of code entities (functions, classes, structs, enums, etc.). The index contains: the signature of each entity, its hierarchical structure (e.g., a method inside a class), and its location (start and end line numbers). The following are the compressed index of code entities:
-
-```
-${content}
-```
-
-To get the full code for an entity, you can read the source file from the provided start line to end line, and expand the range slightly to include surrounding context, such as comments, annotations, or preprocessor directives, which may be crucial.
-"""
-    return content
-}
-
-let threshold = 5000 // TODO: decide the threshold and put it into CLIConfig
-
 @tool[
     description: "Reads and returns a specific range of lines from a file with line numbers. If startLine and endLine is omitted, the entire file will be read.",
     parameters: {
@@ -125,7 +107,7 @@ func readFile(filePath: String, startLine: Option<Int64>, endLine: Option<Int64>
     PrintUtils.printTool("Read File", message)
     var content = catRange(filePath, startLine ?? 1, endLine: endLine ?? Int64.Max)
 
-    if (filePath.endsWith(".cj") && content.size > threshold) { // set the threshold here
+    if (filePath.endsWith(".cj") && content.size > getCompressionThreshold(false)) {
         content = compressCode(filePath, startLine: startLine ?? 1, endLine: endLine ?? Int64.Max)
     }
 
@@ -309,13 +291,19 @@ public func batchReadFiles(filePaths: String): String {
         }
     }
 
-    ///// code compression
+    //code compression
+    var totalChars = results.iterator().fold(0) { sum: Int, r: ?String => sum + (r?.size ?? 0) }
     for (i in 0..totalFiles) {
-        if (cleanPaths[i].endsWith(".cj") && results[i].isSome() && results[i].getOrThrow().size > threshold) {
+        if (totalChars <= getCompressionThreshold(true)) {
+            break
+        }
+        if (cleanPaths[i].endsWith(".cj") && results[i].isSome()) {
+            let old = results[i].getOrThrow().size
             results[i] = compressCode(cleanPaths[i])
+            let new = results[i].getOrThrow().size
+            totalChars += (new - old)
         }
     }
-    /////
 
     // 转换结果为JSON格式
     let fileResults = ArrayList<JsonValue>()

@@ -179,4 +179,12 @@ protected class CliConfig {
             }
         }
     }
+
+    /**
+     * Code compression
+     */
+    // When the number of characters of the code exceeds this threshold * LLM's content window * 4, the code will be compressed.
+    // The reason we multiple by 4 is because 1 token has about 4 characters on average.
+    public static var readFileThreshold: Float64 = 0.05
+    public static var batchReadFilesThreshold: Float64 = 0.2 
 }
