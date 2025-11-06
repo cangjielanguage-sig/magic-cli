@@ -12,6 +12,7 @@
 
 [dependencies]
   magic = { path = "${MAGIC_PATH}" }
+  memory_management = { path = "${MEMORY_PATH}" }
 
 [ffi.c]
   rawinput = { path="./ffi/" }
