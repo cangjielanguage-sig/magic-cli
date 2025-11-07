@@ -1,6 +1,4 @@
-package cli.core.tools.fs_utils
-
-import memory_management.user_end.code.*
+package cli.core.tools.code_compression
 
 import cli.core.config.CliConfig
 import cli.core.model.ModelTokenLimits
@@ -29,5 +27,7 @@ protected func getCompressionThreshold(batchRead: Bool): Int {
     } else {
         CliConfig.readFileThreshold
     }
-    Int64(compressionThreshold * Float64(modelTokenLimit) * 4.0) // each token has about 4 characters on average
+
+    // each token has about 4 characters on average
+    Int64(compressionThreshold * Float64(modelTokenLimit) * 4.0) 
 }

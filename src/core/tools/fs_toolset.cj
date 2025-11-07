@@ -19,6 +19,7 @@ import magic.log.LogUtils
 import cli.utils.*
 import cli.io.{InputUtils, PrintUtils, Confirmation}
 import cli.core.tools.fs_utils.*
+import cli.core.tools.code_compression.*
 import cli.core.config.CliConfig
 
 
