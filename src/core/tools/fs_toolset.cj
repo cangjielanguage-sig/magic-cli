@@ -7,6 +7,7 @@ import magic.log.LogUtils
 import cli.utils.{InfoUtils, ShellUtils}
 import cli.io.{InputUtils, PrintUtils, Confirmation}
 import cli.core.tools.fs_utils.*
+import cli.core.tools.code_compression.*
 import cli.core.config.CliConfig
 
 import std.collection.{map, collectArray}
@@ -64,8 +65,12 @@ func readFile(filePath: String, startLine: Option<Int64>, endLine: Option<Int64>
     let end = endLine.map { n => n.toString() } ?? "EOF"
     let message = "${filePath} (${start}-${end})"
     PrintUtils.printTool("Read File", message)
+    var content = catRange(filePath, startLine ?? 1, endLine: endLine ?? Int64.Max)
 
-    let content = catRange(filePath, startLine ?? 1, endLine: endLine ?? Int64.Max)
+    if (filePath.endsWith(".cj") && content.size > getCompressionThreshold(false)) {
+        content = compressCode(filePath, startLine: startLine ?? 1, endLine: endLine ?? Int64.Max)
+    }
+
     PrintUtils.printToolResult(content)
     return "<file-content path=${filePath} start=${start} end=${end}>\n${content}\n</file-content>"
 }
