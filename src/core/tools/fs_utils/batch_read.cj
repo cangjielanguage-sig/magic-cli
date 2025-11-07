@@ -4,6 +4,8 @@ import magic.dsl.{jsonable, field}
 import magic.jsonable.*
 import magic.log.LogUtils
 
+import cli.core.tools.code_compression.*
+
 import std.collection.{map, collectArray, ArrayList, HashMap}
 import std.fs.File
 import stdx.encoding.json.*
@@ -89,6 +91,21 @@ protected func batchRead(files: Array<ReadFileParam>): String {
         for (fut in futures) {
             let (fileIndex, content) = fut.get()
             results[fileIndex] = content
+        }
+    }
+
+    //code compression
+    var totalChars = results.iterator().fold(0) { sum: Int, r: ?String => sum + (r?.size ?? 0) }
+    for (i in 0..totalFiles) {
+        if (totalChars <= getCompressionThreshold(true)) {
+            break
+        }
+        let filePath = files[i].path
+        if (filePath.endsWith(".cj") && results[i].isSome()) {
+            let old = results[i].getOrThrow().size
+            results[i] = compressCode(filePath)
+            let new = results[i].getOrThrow().size
+            totalChars += (new - old)
         }
     }
 
