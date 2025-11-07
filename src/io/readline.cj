@@ -16,11 +16,13 @@ class InputState {
     public var buffer: LinkedList<Rune>
     public var cursor: Int64
     public var historyIndex: Int64
+    public var currentInputCache: Option<String>  // Cache for current input
 
     public init() {
         this.buffer = LinkedList<Rune>()
         this.cursor = 0
         this.historyIndex = 0
+        this.currentInputCache = None
     }
 
     /**
@@ -344,6 +346,9 @@ public class Readline {
                 // Otherwise, finalize input
                 let text = inputState.getText()
 
+                // Clear the current input cache when submitting
+                inputState.currentInputCache = None
+
                 if (text.size > 0) {
                     this.history.add(text)
                     this.appendHistoryFile(text)
@@ -365,8 +370,29 @@ public class Readline {
                 }
                 return None
 
-            case r'\u{4}' => // Delete key - delete character at cursor (forward delete)
-                // This is mapped from ESC[3~ in the C FFI
+            case r'\u{4}' => // Ctrl+D
+                // Check if buffer is empty - Ctrl+D on empty line should exit
+                if (inputState.buffer.size == 0) {
+                    // Empty line - Ctrl+D sends EOF and exits the program
+                    return Some("/exit")
+                }
+
+                // Non-empty line - Ctrl+D acts as delete-char
+                if (inputState.deleteCharAt()) {
+                    // Always clear completions when deleting characters
+                    completionState.clear()
+
+                    // Update completion list based on new text
+                    let newText = inputState.getText()
+                    if (!newText.isEmpty()) {
+                        if (let Some(completions) <- buildCompletionList(newText, inputState.cursor, isShellMode: inputState.isShellMode())) {
+                            completionState.setCompletions(completions)
+                        }
+                    }
+                }
+                return None
+
+            case r'\u{2326}' => // Delete key (⌦) - mapped from ESC[3~ in FFI
                 if (inputState.deleteCharAt()) {
                     // Always clear completions when deleting characters
                     completionState.clear()
@@ -395,6 +421,10 @@ public class Readline {
                 } else {
                     // Navigate history
                     if (inputState.historyIndex > 0) {
+                        // Save current input to cache when first navigating away from new input
+                        if (inputState.historyIndex == this.history.size) {
+                            inputState.currentInputCache = Some(inputState.getText())
+                        }
                         inputState.historyIndex -= 1
                         inputState.setFromHistory(this.history[inputState.historyIndex])
                     }
@@ -411,7 +441,14 @@ public class Readline {
                         inputState.setFromHistory(this.history[inputState.historyIndex])
                     } else if (inputState.historyIndex + 1 == this.history.size) {
                         inputState.historyIndex = this.history.size
-                        inputState.clear()
+                        // Restore cached current input when navigating back to bottom
+                        if (let Some(cached) <- inputState.currentInputCache) {
+                            inputState.setFromHistory(cached)
+                        } else {
+                            inputState.clear()
+                        }
+                        // Clear the cache after restoring
+                        inputState.currentInputCache = None
                     }
                 }
                 return None

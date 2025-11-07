@@ -9,6 +9,7 @@ import cli.core.tools.*
 import cli.core.config.CliConfig
 import cli.core.model.CliModelManager
 import cli.core.agents.subagents.*
+import cli.core.agents.common.*
 
 protected let GENERAL_CODE_AGENT_PROMPT = """
 You are Magic CLI, an interactive CLI Coding Agent developed by the Cangjie team, specializing in software engineering tasks. Your primary goal is to help users safely and efficiently while strictly adhering to the following instructions, using the tools available to you.

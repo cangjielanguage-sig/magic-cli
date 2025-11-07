@@ -1,58 +1,17 @@
 package cli.core.tools
 
-import std.fs.*
-import std.process.*
-import std.io.*
-import std.env.*
-import std.posix.*
-import std.collection.*
-import std.regex.Regex
-import std.sort.sort
-import std.time.DateTime
-import std.sync.{Mutex, AtomicInt64}
-import stdx.encoding.json.*
-
-import magic.dsl.*
+import magic.dsl.{tool, toolset}
 import magic.prelude.*
 import magic.log.LogUtils
 
-import cli.utils.*
+import cli.utils.{InfoUtils, ShellUtils}
 import cli.io.{InputUtils, PrintUtils, Confirmation}
 import cli.core.tools.fs_utils.*
 import cli.core.tools.code_compression.*
 import cli.core.config.CliConfig
 
-
-//==============================================================================
-// CLAIM
-// Some prompts in this file are copied from Gemini Cli
-// https://github.com/google-gemini/gemini-cli/tree/main/packages/core/src/tools
-//==============================================================================
-
-let EDIT_FILE_DESCRIPTION = """
-Replaces text within a file. By default, replaces a single occurrence.
-This tool requires providing significant context around the change to ensure precise targeting. Always use the readFile tool to examine the file's current content before attempting a text replacement.
-
-Expectation for required parameters:
-1. path MUST be an absolute path; otherwise an error will be thrown.
-2. oldContent MUST be the exact literal text to replace (including all whitespace, indentation, newlines, and surrounding code etc.).
-3. newContent MUST be the exact literal text to replace `oldContent` with (also including all whitespace, indentation, newlines, and surrounding code etc.). Ensure the resulting code is correct and idiomatic.
-4. NEVER escape `oldContent` or `newContent`, that would break the exact literal text requirement.
-**Important:** If ANY of the above are not satisfied, the tool will fail. CRITICAL for `oldContent`: Must uniquely identify the single instance to change. Include at least 3 lines of context BEFORE and AFTER the target text, matching whitespace and indentation precisely. If this string matches multiple locations, or does not match exactly, the tool will fail.
-"""
-
-/**
- * Check if line ending mismatch exists between oldContent and fileContent
- * Returns hint information without modifying content
- */
-private func checkLineEndingMismatch(oldContent: String, fileContent: String): String {
-    if (fileContent.contains("\r\n") && !oldContent.contains("\r\n")) {
-        return "File uses Windows line endings (CRLF), but your content uses Unix (LF). Consider using \\r\\n instead of \\n."
-    } else if (!fileContent.contains("\r\n") && oldContent.contains("\r\n")) {
-        return "File uses Unix line endings (LF), but your content uses Windows (CRLF). Consider using \\n instead of \\r\\n."
-    }
-    return ""
-}
+import std.collection.{map, collectArray}
+import std.fs.{Path, File, Directory, remove, exists, FSException}
 
 //----------------------------------------------------------------------------------
 // Read only tools
@@ -74,7 +33,7 @@ func listDirectory(path: String): String {
         let (exitCode, stdout, stderr) = if (InfoUtils.os == "windows") {
             ShellUtils.execute(["dir"], workDir: Path(path))
         } else { //linux or ohos
-            ShellUtils.execute(["ls", "-la"], workDir: Path(path))
+            ShellUtils.execute(["ls", "-l"], workDir: Path(path))
         }
 
         if (exitCode == 0) {
@@ -124,7 +83,7 @@ func readFile(filePath: String, startLine: Option<Int64>, endLine: Option<Int64>
         fileType: "Optional: A glob pattern to filter which files are searched (e.g., '*.js', '*.{ts,tsx}', 'src/**'). If omitted, searches all files (respecting potential global ignores).",
     }
 ]
-public func grepSearch(pattern: String, path: Option<String>, include: Option<String>): String {
+func grepSearch(pattern: String, path: Option<String>, include: Option<String>): String {
     // Construct the info message
     let strBuilder = StringBuilder("pattern: ${pattern}")
     if (let Some(path) <- path) {
@@ -163,7 +122,7 @@ public func grepSearch(pattern: String, path: Option<String>, include: Option<St
         path: "Optional: absolute directory path to search in. Defaults to current working directory."
     }
 ]
-public func globSearch(pattern: String, path: Option<String>): String {
+func globSearch(pattern: String, path: Option<String>): String {
     let searchPath = path ?? CliConfig.cwd.toString()
     if (!Path(searchPath).isAbsolute()) {
         return "Path must be absolute"
@@ -195,157 +154,28 @@ public func globSearch(pattern: String, path: Option<String>): String {
 }
 
 /**
-  * 🚀 P0-1: 批量并行读取多个文件（真实实现）
-  *
-  * 自动使用并行执行读取多个文件，提升性能
-  *
-  * @param filePaths 文件路径数组
-  * @return 文件内容数组（与输入顺序对应）
-  *
-  * 性能：
-  * - 串行: n个文件 × 50ms = n×50ms
-  * - 并行: max(50ms) × (n/4) ≈ n×12.5ms
-  * - 加速比: 约4x（小文件）到2x（大文件）
-  */
+ * Read multiple files in parallel
+ */
 @tool[
-    description: """
-🚀 Batch read multiple files in parallel for maximum performance (2-4x faster than sequential reading).
-
-This tool uses parallel execution (MAX_CONCURRENCY=4) to read multiple files simultaneously.
-
-Use cases:
-- Read configuration files at startup
-- Load multiple source files for analysis
-- Batch data processing
-
-Performance:
-- Small files (< 100KB): 4x faster
-- Large files (> 1MB): 2x faster
-- Recommended for 3+ files
-
-Example usage:
-- "使用batchReadFiles批量读取以下6个文件：/path/to/file1.cj,/path/to/file2.cj,/path/to/file3.cj"
-- "Read all config files: /project/config.toml,/project/settings.toml"
-
-Returns: JSON object with file contents, status, and performance metrics.
-""",
+    description: "${BATCH_READ_FILE_DESCRIPTION}",
     parameters: {
-        filePaths: "Comma-separated absolute file paths (e.g., '/path/file1.txt,/path/file2.txt'). Spaces around commas are trimmed automatically."
+        filePaths: "Array of JSON objects, each containing the absolute path to the file to read, optional startLine, and optional endLine."
     }
 ]
-public func batchReadFiles(filePaths: String): String {
-    // 解析文件路径列表
-    let cleanPaths = filePaths.split(",") |>
-        map { path => path.trimAscii() } |>
-        filter { path => !path.isEmpty() } |>
-        collectArray
+protected func batchReadFiles(files: Array<ReadFileParam>): String {
+    // Construct the info message
+    let paths = files |> map { param =>
+            let start = param.startLine ?? 1
+            let end = param.endLine.map { n => n.toString() } ?? "EOF"
+            "${param.path} (${start}-${end})"
+        } |> collectArray
 
-    let message = String.join(cleanPaths, delimiter: "\n")
+    let message = String.join(paths, delimiter: "\n")
     PrintUtils.printTool("Batch Read Files", message)
 
-    // Validate input
-    if (cleanPaths.isEmpty()) {
-        let errorResult = HashMap<String, JsonValue>()
-        errorResult["error"] = JsonString("No file paths provided")
-        errorResult["files"] = JsonArray([])
-        return JsonObject(errorResult).toJsonString()
-    }
-
-    let totalFiles = cleanPaths.size
-
-    let startMs = DateTime.now().toUnixTimeStamp().toMilliseconds()
-    LogUtils.info("[FSToolset] Batch reading ${totalFiles} files in parallel...")
-
-    let results = ArrayList<Option<String>>(totalFiles, { i => None })
-
-    // 分批并发处理（最多4个并发）
-    let MAX_CONCURRENCY = 4
-    for (index in 0..totalFiles:MAX_CONCURRENCY) {
-        let batchEnd = if (index + MAX_CONCURRENCY < totalFiles) {
-            index + MAX_CONCURRENCY
-        } else {
-            totalFiles
-        }
-        let batchSize = batchEnd - index
-
-        // 当前批次的并发执行
-        let futures = ArrayList<Future<(Int64, String)>>()
-
-        for (fileIndex in index..batchEnd) {
-            let filePath = cleanPaths[fileIndex]
-            let fut = spawn {
-                try {
-                    let content = String.fromUtf8(File.readFrom(filePath))
-                    LogUtils.debug("[FSToolset] Parallel read: ${filePath} (${content.size} bytes)")
-                    return (fileIndex, content)
-                } catch (e: Exception) {
-                    LogUtils.error("[FSToolset] Failed to read ${filePath}: ${e.message}")
-                    return (fileIndex, "Error reading ${filePath}: ${e.message}")
-                }
-            }
-            futures.add(fut)
-        }
-        // 等待当前批次完成
-        for (fut in futures) {
-            let (fileIndex, content) = fut.get()
-            results[fileIndex] = content
-        }
-    }
-
-    //code compression
-    var totalChars = results.iterator().fold(0) { sum: Int, r: ?String => sum + (r?.size ?? 0) }
-    for (i in 0..totalFiles) {
-        if (totalChars <= getCompressionThreshold(true)) {
-            break
-        }
-        if (cleanPaths[i].endsWith(".cj") && results[i].isSome()) {
-            let old = results[i].getOrThrow().size
-            results[i] = compressCode(cleanPaths[i])
-            let new = results[i].getOrThrow().size
-            totalChars += (new - old)
-        }
-    }
-
-    // 转换结果为JSON格式
-    let fileResults = ArrayList<JsonValue>()
-    var successCount: Int64 = 0
-
-    for (i in 0..totalFiles) {
-        let filePath = cleanPaths[i]
-        let fileResult = HashMap<String, JsonValue>()
-        fileResult["path"] = JsonString(filePath)
-
-        if (let Some(content) <- results[i]) {
-            if (content.startsWith("Error reading")) {
-                fileResult["status"] = JsonString("error")
-                fileResult["error"] = JsonString(content)
-            } else {
-                fileResult["status"] = JsonString("success")
-                fileResult["content"] = JsonString(content)
-                fileResult["size"] = JsonInt(Int64(content.size))
-                successCount += 1
-            }
-        } else {
-            fileResult["status"] = JsonString("error")
-            fileResult["error"] = JsonString("Failed to read file")
-        }
-
-        fileResults.add(JsonObject(fileResult))
-    }
-
-    let endMs = DateTime.now().toUnixTimeStamp().toMilliseconds()
-    let durationMs = endMs - startMs
-    LogUtils.info("[FSToolset] ⚡ Batch read completed: ${successCount}/${totalFiles} files in ${durationMs}ms")
-
-    // 构建最终JSON结果
-    let result = HashMap<String, JsonValue>()
-    result["files"] = JsonArray(fileResults.toArray())
-    result["totalFiles"] = JsonInt(totalFiles)
-    result["successCount"] = JsonInt(successCount)
-    result["failedCount"] = JsonInt(totalFiles - successCount)
-    result["durationMs"] = JsonInt(durationMs)
-
-    return JsonObject(result).toJsonString()
+    let result = batchRead(files)
+    PrintUtils.printToolResult(result)
+    return result
 }
 
 //----------------------------------------------------------------------------------
@@ -367,39 +197,13 @@ public class ReadOnlyFSToolset {
 ]
 public class FSToolset {
     @tool[
-        description: "Creates a directory recursively and returns the creation result",
-        parameters: { path: "Directory path, must be an absolute path" }
-    ]
-    public func createDirectory(path: String): String {
-        if (!Path(path).isAbsolute()) {
-            return "Directory path must be absolute"
-        }
-
-        let message = path
-        if (InputUtils.confirm("Create Directory", message) == Confirmation.Deny) {
-            return "User denied the operation"
-        }
-
-        try {
-            Directory.create(path, recursive: true)
-            return "Directory ${path} created successfully!"
-        } catch (e: FSException) {
-            return "Directory already exists"
-        } catch (e: IllegalArgumentException) {
-            return "Directory is empty, current directory, root directory, or contains null characters"
-        } catch (e: Exception) {
-            return "Failed to create directory: ${e}"
-        }
-    }
-
-    @tool[
         description: "Creates a file with content and returns the creation result",
         parameters: {
-            content: "File content",
-            filePath: "File path, must be an absolute path"
+            filePath: "File path, must be an absolute path",
+            content: "File content"
         }
     ]
-    public func createFile(content: String, filePath: String): String {
+    func createFile(filePath: String, content: String): String {
         if (!Path(filePath).isAbsolute()) {
             return "File path must be absolute"
         }
@@ -419,34 +223,10 @@ public class FSToolset {
     }
 
     @tool[
-        description: "Deletes a file or directory recursively and returns the deletion result",
-        parameters: { path: "File or directory path, must be an absolute path" }
-    ]
-    public func deleteFileOrDirectory(path: String): String {
-        if (!Path(path).isAbsolute()) {
-            return "File or directory path must be absolute"
-        }
-
-        let message = path
-        if (InputUtils.confirm("Delete File or Directory", message) == Confirmation.Deny) {
-            return "User denied the operation"
-        }
-
-        try {
-            remove(path, recursive: true)
-            return "File or directory ${path} deleted successfully!"
-        } catch (e: FSException) {
-            return "Specified directory does not exist or deletion failed"
-        } catch (e: IllegalArgumentException) {
-            return "Path is empty or contains null terminator"
-        }
-    }
-
-    @tool[
         description: "Writes content to a single file and returns the write result",
         parameters: { filePath: "File path, must be an absolute path", content: "Content to write" }
     ]
-    public func writeFile(filePath: String, content: String): String {
+    func writeFile(filePath: String, content: String): String {
         if (!Path(filePath).isAbsolute()) {
             return "File path must be absolute"
         }
@@ -466,40 +246,63 @@ public class FSToolset {
             newContent: "The exact literal text to replace `oldContent` with, preferably unescaped. Provide the EXACT text. newContent MUST be different from oldContent; otherwise, the tool will fail."
         }
     ]
-    public func editFile(filePath: String, oldContent: String, newContent: String): String {
+    func editFile(filePath: String, oldContent: String, newContent: String): String {
+        return multiEditFileImpl(
+            "Edit File", filePath, [MultiEditParam(oldContent: oldContent, newContent: newContent)]
+        )
+    }
+
+    @tool[
+        description: "${MULTI_EDIT_FILE_DESCRIPTION}",
+        parameters: {
+            filePath: "File path, must be an absolute path",
+            edits: "Array of edit operations to perform sequentially on the file"
+        }
+    ]
+    func multiEditFile(filePath: String, edits: Array<MultiEditParam>): String {
+        return multiEditFileImpl("Multi-Edit File", filePath, edits)
+    }
+
+    private func multiEditFileImpl(toolName: String, filePath: String, edits: Array<MultiEditParam>): String {
         if (!Path(filePath).isAbsolute()) {
             return "File path must be absolute"
         }
 
         try {
+            // Load the original file content
             let oldFileContent = String.fromUtf8(File.readFrom(filePath))
 
-            if (!oldFileContent.contains(oldContent)) {
-                // 检查是否存在换行符不匹配问题
-                let hint = " " + checkLineEndingMismatch(oldContent, oldFileContent)
-                PrintUtils.printToolFailure(
-                    "Edit File (${filePath})",
-                    failureInfo: "File does not contain the specified content." + hint
-                )
-                return "Failed to edit. File ${filePath} does not contain the specified content '${oldContent}'." + hint
+            // Apply each edit sequentially
+            var currFileContent = oldFileContent
+            for (edit in edits) {
+                let oldContent = edit.oldContent
+                let newContent = edit.newContent
+                if (!currFileContent.contains(oldContent)) {
+                    let hint = checkLineEndingMismatch(oldContent, currFileContent)
+                    PrintUtils.printToolFailure(
+                        "${toolName} (${filePath})",
+                        failureInfo: "File does not contain the specified content. ${hint}"
+                    )
+                    return "Failed to edit. File ${filePath} does not contain the specified content '${oldContent}'. ${hint}"
+                }
+                currFileContent = currFileContent.replace(oldContent, newContent)
             }
 
-            // 使用原始内容进行替换
-            let newFileContent = oldFileContent.replace(oldContent, newContent)
+            // Check if the content has changed
+            let newFileContent = currFileContent
             if (oldFileContent == newFileContent) {
                 PrintUtils.printToolFailure(
-                    "Edit File (${filePath})",
+                    "${toolName} (${filePath})",
                     failureInfo: "File content is not modified"
                 )
                 return "No changes to apply. The oldContent and newContent are identical in file: ${filePath}"
             }
-
+            // Render the diff message
             let message = diff(oldFileContent, newFileContent) |> PrintUtils.renderDiff
-
-            if (InputUtils.confirm("Edit File (${filePath})", message) == Confirmation.Deny) {
+            if (InputUtils.confirm("${toolName} (${filePath})", message) == Confirmation.Deny) {
                 return "User denied the operation"
             }
-
+            // Write the modified content to the file
             File.writeTo(filePath, newFileContent.toArray())
             return "File ${filePath} content modified successfully"
         } catch (ex: FSException) {
@@ -507,5 +310,18 @@ public class FSToolset {
         } catch (ex: IllegalArgumentException) {
             return "File path is empty or contains illegal characters"
         }
+    }
+
+    /**
+    * Check if line ending mismatch exists between oldContent and fileContent
+    * Returns hint information without modifying content
+    */
+    private static func checkLineEndingMismatch(oldContent: String, fileContent: String): String {
+        if (fileContent.contains("\r\n") && !oldContent.contains("\r\n")) {
+            return "File uses Windows line endings (CRLF), but your content uses Unix (LF). Consider using \\r\\n instead of \\n."
+        } else if (!fileContent.contains("\r\n") && oldContent.contains("\r\n")) {
+            return "File uses Unix line endings (LF), but your content uses Windows (CRLF). Consider using \\n instead of \\r\\n."
+        }
+        return ""
     }
 }

@@ -66,6 +66,14 @@ This is the **DISTINCTIVE CORE** of Cangjie development - every code change MUST
   - **If compilation fails**: ALWAYS use `${fixCangjieProjectCompileError.name}` to fix compiler errors
 - **REPEAT** this compile-fix cycle until compilation passes.
 
+**Test Implementation** (Necessary for Complex Code):
+- After code implementation, use ${TestGeneratorAgent.typeName} to generate test cases and run them to test your code.
+
+**Cangjie test capabilities**:
+- Cangjie has a built-in test framework: std.unittest, you can use it to test your code.
+- use command `cjpm test --filter <test_name>` to run a specific test case.
+- use `cjpm build -i --coverage` and then `cjcov` to generate coverage report.
+
 ### Guidelines of `${fixCangjieProjectCompileError.name}`
 
 Always use the `${fixCangjieProjectCompileError.name}` tool whenever compilation errors need to be fixed.
@@ -79,6 +87,14 @@ This tool is designed to resolve compiler errors in Cangjie projects, which is C
 - **Performance**: Consider algorithmic efficiency; avoid unnecessary loops or redundant operations
 - **Type Safety**: Leverage Cangjie's type system; use Option types appropriately
 - **Best Practices**: Follow Cangjie idioms; use pattern matching, pipelines effectively
+
+## Respond to project non-related Questions
+
+If user's query is not related to the project, for example, user just asks about Cangjie's syntax or features, then you should:
+- first query ${CangjieToolset._cangjieRetrieveDocuments} to get the information
+- If you think you have got an answer, answer the question based on the information directly without reading file contents in the project. 
+- Write or modify some simple code examples in new files if necessary, but do not affect the existing files in the project.
+- If you think you have no answer, you should inform the user that you cannot answer the question based on the information you have got, and ask the user if the question is actually related to the project, or ask the user to provide more information.
 """
 
 @agent[

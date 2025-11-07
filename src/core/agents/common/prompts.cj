@@ -1,6 +1,46 @@
-package cli.core.agents
+package cli.core.agents.common
 
 import cli.core.config.CliConfig
+import cli.core.tools.batchReadFiles
+
+protected let READ_TOOL_GUIDELINE = """
+### Usage Guidelines of read tools
+
+**🚀 BATCH READING (HIGH PRIORITY - Use This First!)**
+
+When you need to read 3+ files, ALWAYS use `${batchReadFiles.name}` instead of multiple `readFile` calls for 2-4x performance boost:
+
+Decision Rule:
+- 1-2 files → Use `readFile`
+- 3+ files → Use `${batchReadFiles.name}` ✅ (2-4x faster)
+
+Example scenarios:
+1. "Analyze these 6 files: file1.cj, file2.cj, ..."
+   → Use: batchReadFiles
+
+2. "Read all configuration files"
+   → Use: batchReadFiles
+
+3. "Load source files for analysis"
+   → Use: batchReadFiles
+
+Benefits:
+- Parallel execution (up to 4 files simultaneously)
+- Automatic error handling
+- Performance metrics included
+- 3x faster for small files, 2x faster for large files
+
+**Single File Reading (Standard Cases)**
+
+Use `readFile` for:
+- Reading only 1-2 files
+- Interactive file exploration
+
+Guidelines:
+
+- Avoid Redundant Range Reads: Before issuing a readFile request, track all previously read ranges in the current workflow. If the requested range is fully contained within a range already read (e.g., requesting lines 50-60 when 10-100 was previously read), skip the read and reuse the earlier result.
+- Merge Overlapping or Adjacent Ranges: If a new read range partially overlaps or is adjacent to a previously read range (e.g., 10-100 and then 90-150), combine them into a single extended range (e.g., 10-150) and read it once.
+"""
 
 protected let SYSTEM_PROMPT_SUFFIX = """
 ## Communication Style
@@ -17,43 +57,7 @@ protected let SYSTEM_PROMPT_SUFFIX = """
 - **Interactive Commands:** Try to avoid shell commands that might require user interaction (e.g., `git rebase -i`). Use non-interactive versions of commands when available (e.g., `npm init -y` instead of `npm init`), otherwise remind users that interactive shell commands are not supported and may cause hanging until user cancellation.
 - **Execute Preference:** Open regular files (e.g., HTML, TXT, PDF, images) with the system's default application using OS-specific commands with absolute paths. Run language-specific programs (Python, Node.js, Java, etc.) using their respective runtime commands with absolute paths.
 
-### Usage Guidelines of read tools
-
-**🚀 BATCH READING (HIGH PRIORITY - Use This First!)**
-
-When you need to read 3+ files, ALWAYS use `batchReadFiles` instead of multiple `readFile` calls for 2-4x performance boost:
-
-Decision Rule:
-- 1-2 files → Use `readFile`
-- 3+ files → Use `batchReadFiles` ✅ (2-4x faster)
-
-Example scenarios:
-1. "Analyze these 6 files: file1.cj, file2.cj, ..."
-   → Use: batchReadFiles(file1.cj,file2.cj,file3.cj,file4.cj,file5.cj,file6.cj)
-
-2. "Read all configuration files"
-   → Use: batchReadFiles(config1.toml,config2.toml,config3.toml)
-
-3. "Load source files for analysis"
-   → Use: batchReadFiles(src/main.cj,src/utils.cj,src/config.cj)
-
-Benefits:
-- Parallel execution (up to 4 files simultaneously)
-- Automatic error handling
-- Performance metrics included
-- 3x faster for small files, 2x faster for large files
-
-**Single File Reading (Standard Cases)**
-
-Use `readFile` for:
-- Reading only 1-2 files
-- Partial file content (with startLine/endLine parameters)
-- Interactive file exploration
-
-Guidelines:
-
-- Avoid Redundant Range Reads: Before issuing a readFile request, track all previously read ranges in the current workflow. If the requested range is fully contained within a range already read (e.g., requesting lines 50-60 when 10-100 was previously read), skip the read and reuse the earlier result.
-- Merge Overlapping or Adjacent Ranges: If a new read range partially overlaps or is adjacent to a previously read range (e.g., 10-100 and then 90-150), combine them into a single extended range (e.g., 10-150) and read it once.
+${READ_TOOL_GUIDELINE}
 
 ## 🤝 SubAgent Collaboration System
 
