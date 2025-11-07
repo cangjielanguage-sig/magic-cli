@@ -10,7 +10,7 @@ protected func compressCode(filePath: String, startLine!: Int = 1, endLine!: Int
     let content = SkeletonAnalyzer.analyzeFile(filePath, startLine: startLine, endLine: endLine)
 
     """
-The returned code is too large to return in full. Instead, you will receive a compressed index of code entities (functions, classes, structs, enums, etc.). The index contains: the signature of each entity, its hierarchical structure (e.g., a method inside a class), and its location (start and end line numbers). The following are the compressed index of code entities:
+The returned code is too large to return in full. Instead, you will receive a compressed index of code entities (functions, classes, structs, enums, etc.). The index contains: the signature of each entity, its hierarchical structure (e.g., a method inside a class), and its location (start and end line numbers). The following are the compressed index of code entities, formatted in the following XML string:
 
 ```
 ${content}
