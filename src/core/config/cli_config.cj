@@ -6,14 +6,15 @@ import magic.log.LogUtils
 
 import std.fs.*
 import std.io.readToEnd
-import std.collection.{map, collectArray}
+import std.collection.{map, collectArray, ArrayList}
 import std.time.DateTime
+import std.sort.*
 
 protected class CliConfig {
     /**
-     * The version of Cangjie Magic
+     * The version of Magic Cli
      */
-    public static const version = "0.1.2"
+    public static const version = "0.1.3"
 
     private static const DOT_DIR_NAME = ".magic-cli"
 
@@ -45,12 +46,25 @@ protected class CliConfig {
     }
 
     /**
+     * The logs directory
+     */
+    public static prop logsDir: Path {
+        get() {
+            let path = CliConfig.dotDir.join("logs")
+            if (!exists(path)) {
+                Directory.create(path, recursive: true)
+            }
+            return path
+        }
+    }
+
+    /**
      * The log file of Cangjie Magic
      */
     public static prop logFile: Path {
         get() {
             let time = DateTime.now().format("yyyy_MM_dd-HH_mm_ss_SSS")
-            CliConfig.dotDir.join("${time}.log")
+            CliConfig.logsDir.join("${time}.log")
         }
     }
 
@@ -187,4 +201,78 @@ protected class CliConfig {
     // The reason we multiple by 4 is because 1 token has about 4 characters on average.
     public static var readFileThreshold: Float64 = 0.05
     public static var batchReadFilesThreshold: Float64 = 0.1
+
+    /**
+     * Clean up old log files based on retention policy
+     * - Removes files older than logRetentionDays
+     * - Keeps only the most recent logMaxFiles files
+     */
+    public static func cleanupLogs(): Unit {
+        try {
+            if (!exists(logsDir)) {
+                return
+            }
+
+            let retentionDays = CliSettingManager.setting.logRetentionDays
+            let maxFiles = CliSettingManager.setting.logMaxFiles
+
+            var logFiles = ArrayList<Path>()
+            for (entry in Directory.readFrom(logsDir)) {
+                if (entry.isRegular() && entry.name.endsWith(".log")) {
+                    logFiles.add(entry.path)
+                }
+            }
+
+            if (logFiles.isEmpty()) {
+                return
+            }
+
+            // Sort by file name (oldest first)
+            sort(logFiles, by: { a, b => a.fileName.compare(b.fileName) })
+
+            // Step 1: Delete files older than retention days
+            let now = DateTime.now()
+            var filesToKeep = ArrayList<Path>()
+
+            for (filePath in logFiles) {
+                try {
+                    // Extract date from filename
+                    let fileName = filePath.fileName
+                    let parts = fileName.split("-")
+                    if (parts.size >= 2) {
+                        let datePart = parts[0].replace("_", "-")
+                        let fileDate = DateTime.parse(datePart, "yyyy-MM-dd")
+                        let age = now - fileDate
+                        let ageDays = age.toDays()
+
+                        if (ageDays > retentionDays) {
+                            remove(filePath)
+                            LogUtils.info("Deleted old log file: ${filePath}")
+                            continue
+                        }
+                    }
+                    filesToKeep.add(filePath)
+                } catch (e: Exception) {
+                    LogUtils.error("Failed to parse date for ${filePath}: ${e}")
+                    filesToKeep.add(filePath) // Keep files we can't parse
+                }
+            }
+
+            // Step 2: If still too many files, delete oldest ones
+            if (filesToKeep.size > maxFiles) {
+                let toDelete = filesToKeep.size - maxFiles
+                for (i in 0..toDelete) {
+                    let filePath = filesToKeep[i]
+                    try {
+                        remove(filePath)
+                        LogUtils.info("Deleted excess log file: ${filePath}")
+                    } catch (e: Exception) {
+                        LogUtils.error("Failed to delete log file ${filePath}: ${e}")
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            LogUtils.error("Failed to cleanup logs: ${e}")
+        }
+    }
 }
