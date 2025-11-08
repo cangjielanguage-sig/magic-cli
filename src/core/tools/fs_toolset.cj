@@ -115,6 +115,11 @@ func grepSearch(pattern: String, path: Option<String>, include: Option<String>):
 //     return listTree(path)
 // }
 
+/**
+ * Maximum number of glob results to return (prevents context overflow)
+ */
+const MAX_GLOB_RESULTS: Int64 = 100
+
 @tool[
     description: "Efficiently finds files matching specific extensions patterns (e.g., `src/**/*.ts`, `**/*.md`), returning absolute paths. Ideal for quickly locating files based on their extension name, especially in large codebases.",
     parameters: {
@@ -142,12 +147,26 @@ func globSearch(pattern: String, path: Option<String>): String {
             return "No files matching pattern '${pattern}' found"
         }
 
+        let totalMatches = results.size
+        let shouldTruncate = totalMatches > MAX_GLOB_RESULTS
+        let resultsToShow = if (shouldTruncate) {
+            results[0..MAX_GLOB_RESULTS]
+        } else {
+            results
+        }
+
         let found = String.join(
-            results |> map { file => "- ${file}" } |> collectArray,
+            resultsToShow |> map { file => "- ${file}" } |> collectArray,
             delimiter: "\n"
         )
         PrintUtils.printToolResult(found)
-        return "Found ${results.size} matches:\n${found}"
+
+        if (shouldTruncate) {
+            let remaining = totalMatches - MAX_GLOB_RESULTS
+            return "Found ${totalMatches} matches (showing first ${MAX_GLOB_RESULTS}):\n${found}\n\n[Truncated: ${remaining} more files not shown. Use a more specific pattern to reduce results.]"
+        } else {
+            return "Found ${totalMatches} matches:\n${found}"
+        }
     } catch (e: Exception) {
         return "Error during glob search: ${e}"
     }

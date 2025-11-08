@@ -81,6 +81,9 @@ func parseArgsAndSetConfig(args: Array<String>): ParseArgsResult {
     // Log file must be set together with the log level
     Config.logFile = CliConfig.logFile.toString()
 
+    // Clean up old log files based on retention policy
+    CliConfig.cleanupLogs()
+
     // Set your API key in the .env file
     let envInfo = Config.env.load(Path("./.env"))
     LogUtils.info(envInfo)
