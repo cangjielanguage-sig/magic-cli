@@ -5,11 +5,14 @@
 #include <stdbool.h>
 #include <errno.h>
 #include <poll.h>
+#include <stdlib.h>
 
 // Static storage for original terminal settings
 static struct termios orig_termios;
 // Flag to track whether we are in raw mode
 static int raw_mode = 0;
+
+void exitRaw();
 
 /**
  * Enters raw input mode.
@@ -23,11 +26,19 @@ static int raw_mode = 0;
 int enterRaw()
 {
     struct termios raw;
+    static int atexit_registered = 0;
 
     // Get current terminal attributes
     if (tcgetattr(STDIN_FILENO, &orig_termios) == -1)
     {
         return -1;
+    }
+
+    // Register atexit handler on first call to ensure cleanup
+    if (!atexit_registered)
+    {
+        atexit(exitRaw);
+        atexit_registered = 1;
     }
 
     // Only modify terminal if not already in raw mode
@@ -201,12 +212,32 @@ static int parseEscapeSequence(unsigned char *bytes)
             bytes[2] = 0xA6;
             return 3;
 
-        case '1': // Modified keys like Ctrl+Arrow: ESC [ 1 ; 5 A/B/C/D
-            // Consume the remaining bytes: ; <modifier> <key>
-            read(STDIN_FILENO, &c, 1); // Read ';'
-            read(STDIN_FILENO, &c, 1); // Read modifier (e.g., '5' for Ctrl)
-            read(STDIN_FILENO, &c, 1); // Read key (A/B/C/D)
-            return 1;
+        case '1':                          // Modified keys like Ctrl+Arrow: ESC [ 1 ; 5 C/D
+            n = read(STDIN_FILENO, &c, 1); // Read ';'
+            if (n <= 0 || c != ';')
+                return -1;
+            n = read(STDIN_FILENO, &c, 1); // Read modifier '5' (Ctrl)
+            if (n <= 0 || c != '5')
+                return -1;
+            n = read(STDIN_FILENO, &c, 1); // Read key (C/D)
+            if (n <= 0)
+                return -1;
+
+            if (c == 'C')
+            { // Ctrl+Right → U+27A1 (➡️)
+                bytes[0] = 0xE2;
+                bytes[1] = 0x9E;
+                bytes[2] = 0xA1;
+                return 3;
+            }
+            else if (c == 'D')
+            { // Ctrl+Left → U+2B05 (⬅️)
+                bytes[0] = 0xE2;
+                bytes[1] = 0xAC;
+                bytes[2] = 0x85;
+                return 3;
+            }
+            return -1;
 
         default:
             return -1; // Unknown CSI

@@ -304,45 +304,58 @@ int find_vk_utf8(WORD vk_code, BYTE *out_buf)
  */
 int rawGetBytes(BYTE *out_bytes)
 {
-    // params check
-    if (out_bytes == NULL)
-    {
-        return -1;
-    }
+    if (out_bytes == NULL) return -1;
 
     WORD high_surrogate = 0;
     while (1)
     {
-        unsigned short wchar = 0;
-        BOOL is_virtual = FALSE;
-        if (!getConsoleChar(&wchar, &is_virtual))
+        INPUT_RECORD inputRecord;
+        DWORD eventsRead;
+
+        if (!ReadConsoleInputW(h_console, &inputRecord, 1, &eventsRead) || eventsRead != 1)
         {
             return -1;
         }
 
-        if (wchar == 0)
+        if (inputRecord.EventType != KEY_EVENT || !inputRecord.Event.KeyEvent.bKeyDown)
+        {
             continue;
-
-        if (is_virtual)
-        {
-            int size = find_vk_utf8(wchar, out_bytes);
-            if (size > 0)
-            {
-                return size;
-            }
         }
-        else
+
+        KEY_EVENT_RECORD keyEvent = inputRecord.Event.KeyEvent;
+        BOOL ctrlPressed = (keyEvent.dwControlKeyState & LEFT_CTRL_PRESSED) ||
+                           (keyEvent.dwControlKeyState & RIGHT_CTRL_PRESSED);
+        WORD vkCode = keyEvent.wVirtualKeyCode;
+
+        // Handle Ctrl+Arrow
+        if (ctrlPressed && vkCode == VK_RIGHT) {
+            out_bytes[0] = 0xE2; out_bytes[1] = 0x9E; out_bytes[2] = 0xA1;
+            return 3;
+        }
+        if (ctrlPressed && vkCode == VK_LEFT) {
+            out_bytes[0] = 0xE2; out_bytes[1] = 0xAC; out_bytes[2] = 0x85;
+            return 3;
+        }
+
+        // Normal virtual keys
+        if (isCommonVirtualKey(vkCode))
         {
-            DWORD codepoint;
-            int res = get_codepoint(wchar, &codepoint, &high_surrogate);
-            if (res == 2 || res == 0)
-            {
-                int size = codepoint_to_utf8(codepoint, out_bytes);
-                if (size > 0)
-                {
-                    return size;
-                }
-            }
+            int size = find_vk_utf8(vkCode, out_bytes);
+            if (size > 0) return size;
+            continue;
+        }
+
+        // Normal characters
+        WORD wchar = keyEvent.uChar.UnicodeChar;
+        if (wchar == 0) wchar = keyEvent.uChar.AsciiChar;
+        if (wchar == 0) continue;
+
+        DWORD codepoint;
+        int res = get_codepoint(wchar, &codepoint, &high_surrogate);
+        if (res == 2 || res == 0)
+        {
+            int size = codepoint_to_utf8(codepoint, out_bytes);
+            if (size > 0) return size;
         }
     }
     return -1;
@@ -485,7 +498,7 @@ int getByte(DWORD dwTimeoutMs, WORD *keyCode)
     {
         return -1;
     }
-    BOOL isVirtual = -1;
+    BOOL isVirtual = FALSE;
     if (!getConsoleChar(keyCode, &isVirtual))
     {
         return -1;
