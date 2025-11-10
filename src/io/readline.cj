@@ -91,6 +91,57 @@ class InputState {
         }
         this.cursor = this.buffer.size
     }
+
+    private func isWordChar(r: Rune): Bool {
+        return (r >= r'A' && r <= r'Z') || (r >= r'a' && r <= r'z') || (r >= r'0' && r <= r'9')
+    }
+
+    private func getCharAt(index: Int64): Option<Rune> {
+        if (let Some(node) <- this.buffer.nodeAt(index)) {
+            return Some(node.value)
+        }
+        return None
+    }
+
+    public func moveWordLeft() {
+        if (this.cursor == 0) { return }
+
+        // Check if current position is on a word char
+        if (let Some(ch) <- getCharAt(this.cursor - 1)) {
+            if (isWordChar(ch)) {
+                // Skip all word chars
+                while (this.cursor > 0) {
+                    if (let Some(c) <- getCharAt(this.cursor - 1)) {
+                        if (!isWordChar(c)) { break }
+                    }
+                    this.cursor -= 1
+                }
+            } else {
+                // Non-word char (e.g., Chinese): move one char
+                this.cursor -= 1
+            }
+        }
+    }
+
+    public func moveWordRight() {
+        if (this.cursor >= this.buffer.size) { return }
+
+        // Check if current position is on a word char
+        if (let Some(ch) <- getCharAt(this.cursor)) {
+            if (isWordChar(ch)) {
+                // Skip all word chars
+                while (this.cursor < this.buffer.size) {
+                    if (let Some(c) <- getCharAt(this.cursor)) {
+                        if (!isWordChar(c)) { break }
+                    }
+                    this.cursor += 1
+                }
+            } else {
+                // Non-word char (e.g., Chinese): move one char
+                this.cursor += 1
+            }
+        }
+    }
 }
 
 /**
@@ -473,6 +524,16 @@ public class Readline {
                 } else {
                     completionState.clear()
                 }
+                return None
+
+            case r'\u{2B05}' => // Ctrl+Left
+                inputState.moveWordLeft()
+                completionState.clear()
+                return None
+
+            case r'\u{27A1}' => // Ctrl+Right
+                inputState.moveWordRight()
+                completionState.clear()
                 return None
 
             case r'\u{1}' => // Home (Ctrl+A) / Home key
