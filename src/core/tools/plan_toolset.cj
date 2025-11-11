@@ -101,7 +101,7 @@ public class PlanToolset {
         description: "Creates a new task plan or overwrites an existing plan with a new one. This is the first step to start complex tasks.",
         parameters: { tasks: "An array of strings, each item is a clear subtask description" }
     ]
-    public func createOrUpdatePlan(tasks: Array<String>): String {
+    public func todoCreate(tasks: Array<String>): String {
         this.plan = Plan(tasks)
         let footer = "💡 Plan has been created. Please confirm if you need to modify the plan. ʘ‿ʘ".withColor(Theme.HIGHLIGHT)
         if (InputUtils.confirm("Plan", this.plan.toString(), footer: footer) == Confirmation.Deny) {
@@ -114,7 +114,7 @@ public class PlanToolset {
     @tool[
         description: "View the current plan and the completion status of each task (TODO/DONE)."
     ]
-    public func viewPlan(): String {
+    public func todoView(): String {
         if (this.plan.isEmpty()) {
             return "No current plan."
         }
@@ -125,7 +125,7 @@ public class PlanToolset {
         description: "Marks the task at the specified index as completed (DONE) and returns the current TODO List",
         parameters: { taskIndex: "Index of the task to mark as complete (starting from 1)" }
     ]
-    public func markTaskAsComplete(taskIndex: Int64): String {
+    public func todoMarkComplete(taskIndex: Int64): String {
         if (taskIndex < 1 || taskIndex > this.plan.tasks.size) {
             return "Error: Invalid task index ${taskIndex}."
         } else if (this.plan.tasks[taskIndex-1].completed) {
