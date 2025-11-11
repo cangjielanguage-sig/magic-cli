@@ -82,7 +82,7 @@ protected class CangjieDocAgent {
         let docs = client.callTool("get-library-docs", [
             ("context7CompatibleLibraryID", "/websites/cangjie-lang_cn-1.0.0"),
             ("topic", query),
-            ("tokens", 3000)
+            ("tokens", 2000)
         ])
         return docs.content
     }
@@ -98,7 +98,7 @@ protected class CangjieDocAgent {
         let docs = client.callTool("get-library-docs", [
             ("context7CompatibleLibraryID", "/dyingchinese/cangjie-stdx"),
             ("topic", query),
-            ("tokens", 3000)
+            ("tokens", 2000)
         ])
         return docs.content
     }
