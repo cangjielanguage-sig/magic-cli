@@ -4,8 +4,6 @@ import magic.dsl.{jsonable, field}
 import magic.jsonable.*
 import magic.log.LogUtils
 
-import cli.core.tools.code_compression.*
-
 import std.collection.{map, collectArray, ArrayList, HashMap}
 import std.fs.File
 import stdx.encoding.json.*
@@ -35,7 +33,7 @@ Returns: JSON object with file contents, status, and performance metrics.
 @jsonable
 protected class ReadFileParam {
     @field["The absolute path to the file to read"]
-    protected let path: String
+    protected let filePath: String
 
     @field["Optional: Starting line number (1-based, inclusive). If not provided, reads from start of file"]
     protected let startLine: Option<Int64>
@@ -44,15 +42,12 @@ protected class ReadFileParam {
     protected let endLine: Option<Int64>
 }
 
-protected func batchRead(files: Array<ReadFileParam>): String {
-    // Validate input
-    if (files.isEmpty()) {
-        let errorResult = HashMap<String, JsonValue>()
-        errorResult["error"] = JsonString("No file paths provided")
-        errorResult["files"] = JsonArray([])
-        return JsonObject(errorResult).toJsonString()
-    }
+@jsonable
+protected struct BatchReadFilesParam {
+    protected let files: Array<ReadFileParam>
+}
 
+protected func batchRead(files: Array<ReadFileParam>): Array<Option<String>> {
     let totalFiles = files.size
 
     LogUtils.info("[FSToolset] Batch reading ${files.size} files in parallel...")
@@ -75,14 +70,14 @@ protected func batchRead(files: Array<ReadFileParam>): String {
             let param = files[index]
             let fut = spawn {
                 try {
-                    let content = catRange(param.path, param.startLine ?? 1, endLine: param.endLine ?? Int64.Max)
+                    let content = catRange(param.filePath, param.startLine ?? 1, endLine: param.endLine ?? Int64.Max)
                     let end = param.endLine.map { n => n.toString() } ?? "EOF"
-                    let result = "<file-content path=${param.path} start=${param.startLine ?? 1} end=${end}>\n${content}\n</file-content>"
-                    LogUtils.debug("[FSToolset] Parallel read: ${param.path} (${content.size} bytes)")
+                    let result = "<file-content path=${param.filePath} start=${param.startLine ?? 1} end=${end}>\n${content}\n</file-content>"
+                    LogUtils.debug("[FSToolset] Parallel read: ${param.filePath} (${content.size} bytes)")
                     return (index, result)
                 } catch (e: Exception) {
-                    LogUtils.error("[FSToolset] Failed to read ${param.path}: ${e.message}")
-                    return (index, "Error reading ${param.path}: ${e.message}")
+                    LogUtils.error("[FSToolset] Failed to read ${param.filePath}: ${e.message}")
+                    return (index, "Error reading ${param.filePath}: ${e.message}")
                 }
             }
             futures.add(fut)
@@ -93,29 +88,13 @@ protected func batchRead(files: Array<ReadFileParam>): String {
             results[fileIndex] = content
         }
     }
-
-    //code compression
-    var totalChars = results.iterator().fold(0) { sum: Int, r: ?String => sum + (r?.size ?? 0) }
-    for (i in 0..totalFiles) {
-        if (totalChars <= getCompressionThreshold(true)) {
-            break
-        }
-        let filePath = files[i].path
-        if (filePath.endsWith(".cj") && results[i].isSome()) {
-            let old = results[i].getOrThrow().size
-            results[i] = compressCode(filePath)
-            let new = results[i].getOrThrow().size
-            totalChars += (new - old)
-        }
-    }
-
-    return mergeBatchResults(files, results)
+    return results.toArray()
 }
 
 /**
  * Merge batch results into a single string
  */
-private func mergeBatchResults(files: Array<ReadFileParam>, results: ArrayList<Option<String>>): String {
+protected func mergeBatchResults(files: Array<ReadFileParam>, results: Array<Option<String>>): String {
     // Collect successful and failed files
     let successFiles = ArrayList<String>()
     let failedFiles = ArrayList<String>()
