@@ -8,6 +8,13 @@ import std.collection.{map, collectArray, ArrayList, HashMap}
 import std.fs.File
 import stdx.encoding.json.*
 
+@jsonable
+protected struct EditFileParam {
+    public let filePath: String
+    public let oldContent: String
+    public let newContent: String
+}
+
 //==============================================================================
 // CLAIM
 // Some prompts in this file are copied from
@@ -34,6 +41,12 @@ protected class MultiEditParam {
 
     @field["The new content to replace oldContent with"]
     public let newContent: String
+}
+
+@jsonable
+protected struct MultiEditFileParam {
+    public let filePath: String
+    public let edits: Array<MultiEditParam>
 }
 
 protected const MULTI_EDIT_FILE_DESCRIPTION = """

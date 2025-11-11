@@ -10,7 +10,7 @@ import cli.core.tools.fs_utils.*
 import cli.core.tools.code_compression.*
 import cli.core.config.CliConfig
 
-import std.collection.{map, collectArray}
+import std.collection.{map, collectArray, fold}
 import std.fs.{Path, File, Directory, remove, exists, FSException}
 
 //----------------------------------------------------------------------------------
@@ -183,16 +183,43 @@ func globSearch(pattern: String, path: Option<String>): String {
 ]
 protected func batchReadFiles(files: Array<ReadFileParam>): String {
     // Construct the info message
-    let paths = files |> map { param =>
+    let paths = files |> map { param: ReadFileParam =>
             let start = param.startLine ?? 1
             let end = param.endLine.map { n => n.toString() } ?? "EOF"
-            "${param.path} (${start}-${end})"
+            "${param.filePath} (${start}-${end})"
         } |> collectArray
 
     let message = String.join(paths, delimiter: "\n")
     PrintUtils.printTool("Batch Read Files", message)
 
-    let result = batchRead(files)
+    // Validate input
+    if (files.isEmpty()) {
+        let errorResult = HashMap<String, JsonValue>()
+        errorResult["error"] = JsonString("No file paths provided")
+        errorResult["files"] = JsonArray([])
+        return JsonObject(errorResult).toJsonString()
+    }
+
+    let results = batchRead(files)
+
+    //code compression
+    var totalChars = results |> fold(0) { sum: Int, r: ?String => sum + (r?.size ?? 0) }
+    for (i in 0..files.size) {
+        if (totalChars <= getCompressionThreshold(true)) {
+            break
+        }
+        let filePath = files[i].filePath
+        if (let Some(fileContent) <- results[i] && filePath.endsWith(".cj")) {
+            let old = fileContent.size
+            results[i] = compressCode(filePath)
+            let new = fileContent.size
+            totalChars += (new - old)
+        }
+    }
+
+    // Merge all file content
+    let result = mergeBatchResults(files, results)
+
     PrintUtils.printToolResult(result)
     return result
 }
