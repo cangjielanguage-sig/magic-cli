@@ -80,7 +80,7 @@ protected class CangjieDocAgent {
     ]
     func queryCangjie(query: String): String {
         let docs = client.callTool("get-library-docs", [
-            ("context7CompatibleLibraryID", "/websites/cangjie-lang_cn-1.0.0"),
+            ("context7CompatibleLibraryID", "/websites/cangjie-lang_cn_1_0_0"),
             ("topic", query),
             ("tokens", 3000)
         ])
