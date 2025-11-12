@@ -101,9 +101,9 @@ protected func batchRead(files: Array<ReadFileParam>): String {
             break
         }
         let filePath = files[i].path
-        if (filePath.endsWith(".cj") && results[i].isSome()) {
+        if (results[i].isSome()) {
             let old = results[i].getOrThrow().size
-            results[i] = compressCode(filePath)
+            results[i] = compressCode(filePath, originalContent: results[i].getOrThrow())
             let new = results[i].getOrThrow().size
             totalChars += (new - old)
         }
