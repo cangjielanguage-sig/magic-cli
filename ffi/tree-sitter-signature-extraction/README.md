@@ -24,8 +24,6 @@ A C library that uses Tree-sitter to extract code signatures and build code skel
 
 ## API
 
-### Main Functions
-
 ```c
 signature_node_t* extract_signatures(TSTree* tree, const char* source_code, const char* language);
 ```
