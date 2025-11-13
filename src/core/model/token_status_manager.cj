@@ -26,7 +26,7 @@ protected class TokenStatusManager {
             try {
                 let model = CliModelManager.lastAvailableModel ?? CliModelManager.model
                 // Get the context limit for the model
-                let tokenLimit = ModelTokenLimits.getContextLimit(model.fullName)
+                let tokenLimit = ModelTokenLimits.getInputLimit(model.fullName)
                 // The last prompt length is the current context size
                 let currentTokens = this.lastPromptTokens
                 // Now, compute the percentage of used context

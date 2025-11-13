@@ -9,6 +9,7 @@ import magic.utils.readFile
 
 import cli.core.config.CliConfig
 import cli.io.{PrintUtils, CompletionListUtils, wrapBox, WithColor, Theme, AnsiColor, Align}
+import cli.utils.loadMarkdown
 
 import std.fs.{exists, Directory, Path, File}
 import std.collection.{HashMap, ArrayList, enumerate, filter, map, collectArray}
@@ -108,26 +109,8 @@ protected class CustomCommandManager {
      * Load a single command from Markdown file
      */
     private func loadCommandFromMd(filePath: Path): Option<CustomCommand> {
-        let content = readFile(filePath)
-        let lines = content.split("\n")
-        var pivot = -1
-        for ((idx, line) in enumerate(lines)) {
-            if (line.startsWith("---")) {
-                pivot = idx
-                break
-            }
-        }
-        if (pivot == -1) {
-            return CustomCommand(description: "", prompt: content)
-        }
-        let prompt = String.join(lines[pivot+1..], delimiter: "\n")
-        for (line in lines[0..pivot]) {
-            let items = line.split(":")
-            if (items.size == 2 && items[0].trimAscii() == "description") {
-                return CustomCommand(description: items[1].trimAscii(), prompt: prompt)
-            }
-        }
-        return CustomCommand(description: "", prompt: prompt)
+        let (metadata, content) = loadMarkdown(filePath)
+        return CustomCommand(description: metadata.get("description") ?? "", prompt: content)
     }
 
     /**

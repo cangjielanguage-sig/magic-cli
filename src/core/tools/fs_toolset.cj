@@ -21,7 +21,7 @@ import std.fs.{Path, File, Directory, remove, exists, FSException}
     description: "Lists all files and subdirectories in a directory and returns the list",
     parameters: { path: "Directory path, must be an absolute path" }
 ]
-func listDirectory(path: String): String {
+protected func listDirectory(path: String): String {
     if (!Path(path).isAbsolute()) {
         return "Directory path must be absolute"
     }
@@ -60,7 +60,7 @@ func listDirectory(path: String): String {
         endLine: "Optional: Ending line number (1-based, inclusive). If not provided, reads to end of file"
     }
 ]
-func readFile(filePath: String, startLine: Option<Int64>, endLine: Option<Int64>): String {
+protected func readFile(filePath: String, startLine: Option<Int64>, endLine: Option<Int64>): String {
     let start = startLine ?? 1
     let end = endLine.map { n => n.toString() } ?? "EOF"
     let message = "${filePath} (${start}-${end})"
@@ -72,7 +72,9 @@ func readFile(filePath: String, startLine: Option<Int64>, endLine: Option<Int64>
     }
 
     PrintUtils.printToolResult(content)
-    return "<file-content path=${filePath} start=${start} end=${end}>\n${content}\n</file-content>"
+    let startInfo = startLine.map { n => " start=${n}" } ?? ""
+    let endInfo = endLine.map { n => " end=${n}" } ?? ""
+    return "<file-content path=${filePath}${startInfo}${endInfo}>\n${content}\n</file-content>"
 }
 
 @tool[
