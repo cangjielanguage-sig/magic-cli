@@ -38,7 +38,7 @@ protected class CliModelManager {
 
     private static func buildModel(model: String): ChatModel {
         let m = ModelManager.createChatModel(model)
-        m.maxTokens = ModelTokenLimits.getMaxOutputTokensLimit(model)
+        m.maxTokens = ModelTokenLimits.getOutputLimit(model)
         return m
     }
 
