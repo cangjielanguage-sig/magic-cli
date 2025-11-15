@@ -47,7 +47,6 @@ protected class ModelTokenLimits {
         // Google Gemini models
         ("google:gemini-1.5-flash", 1024 * 1024),
         ("google:gemini-2.5-pro-preview", 1024 * 1024),
-        ("google:gemini-2.5-pro-preview", 1024 * 1024),
         ("google:gemini-2.5-pro", 1024 * 1024),
         ("google:gemini-2.5-flash-preview", 1024 * 1024),
         ("google:gemini-2.5-flash", 1024 * 1024),
