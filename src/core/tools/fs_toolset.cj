@@ -211,10 +211,11 @@ protected func batchReadFiles(files: Array<ReadFileParam>): String {
             break
         }
         let filePath = files[i].filePath
-        if (let Some(fileContent) <- results[i] && filePath.endsWith(".cj")) {
+        if (let Some(fileContent) <- results[i]) {
             let old = fileContent.size
-            results[i] = compressCode(filePath)
-            let new = fileContent.size
+            let newContent = compressCode(filePath, originalContent: fileContent)
+            results[i] = newContent
+            let new = newContent.size
             totalChars += (new - old)
         }
     }
