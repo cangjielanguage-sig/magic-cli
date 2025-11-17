@@ -107,7 +107,7 @@ public class Compactor <: ConversationCompactor {
 
     public func calculateCompactIndex(conversation: Conversation): Option<Int64> {
         let (totalTokens, roundTokens) = this.calculateToken(conversation)
-        let modelContextLimit = ModelTokenLimits.getContextLimit(
+        let modelContextLimit = ModelTokenLimits.getInputLimit(
             (CliModelManager.lastAvailableModel ?? CliModelManager.model).fullName
         )
         // If the total token of conversation is less than 70% of the model context token limit, then no need to compact

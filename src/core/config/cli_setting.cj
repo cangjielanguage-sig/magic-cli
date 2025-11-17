@@ -46,6 +46,16 @@ protected class CliSetting {
      * Whether to enable data collection for telemetry and analytics
      */
     protected var collectData: Bool = false
+
+    /**
+     * Number of days to retain log files (default: 7 days)
+     */
+    protected var logRetentionDays: Int64 = 7
+
+    /**
+     * Maximum number of log files to keep (default: 100 files)
+     */
+    protected var logMaxFiles: Int64 = 100
 }
 
 protected class CliSettingManager {

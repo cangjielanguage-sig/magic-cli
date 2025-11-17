@@ -5,11 +5,14 @@
 #include <stdbool.h>
 #include <errno.h>
 #include <poll.h>
+#include <stdlib.h>
 
 // Static storage for original terminal settings
 static struct termios orig_termios;
 // Flag to track whether we are in raw mode
 static int raw_mode = 0;
+
+void exitRaw();
 
 /**
  * Enters raw input mode.
@@ -23,11 +26,19 @@ static int raw_mode = 0;
 int enterRaw()
 {
     struct termios raw;
+    static int atexit_registered = 0;
 
     // Get current terminal attributes
     if (tcgetattr(STDIN_FILENO, &orig_termios) == -1)
     {
         return -1;
+    }
+
+    // Register atexit handler on first call to ensure cleanup
+    if (!atexit_registered)
+    {
+        atexit(exitRaw);
+        atexit_registered = 1;
     }
 
     // Only modify terminal if not already in raw mode
@@ -193,23 +204,59 @@ static int parseEscapeSequence(unsigned char *bytes)
         case '3': // DELETE → U+2326 (⌦ ERASE TO THE RIGHT)
             n = read(STDIN_FILENO, &c, 1);
             if (n <= 0)
-                return -1;
+                return 1;
             if (c != '~')
-                return -1;
+                return 1;
             bytes[0] = 0xE2; // UTF-8 encoding of U+2326
             bytes[1] = 0x8C;
             bytes[2] = 0xA6;
             return 3;
 
-        case '1': // Modified keys like Ctrl+Arrow: ESC [ 1 ; 5 A/B/C/D
-            // Consume the remaining bytes: ; <modifier> <key>
-            read(STDIN_FILENO, &c, 1); // Read ';'
-            read(STDIN_FILENO, &c, 1); // Read modifier (e.g., '5' for Ctrl)
-            read(STDIN_FILENO, &c, 1); // Read key (A/B/C/D)
+        case '1':                          // Modified keys: ESC [ 1 ; <modifier> <key>
+            n = read(STDIN_FILENO, &c, 1); // Read ';'
+            if (n <= 0 || c != ';')
+                return 1;
+            n = read(STDIN_FILENO, &c, 1); // Read modifier (2=Shift, 3=Alt, 5=Ctrl, etc.)
+            if (n <= 0)
+                return 1;
+            unsigned char modifier = c;
+            n = read(STDIN_FILENO, &c, 1); // Read key (A/B/C/D)
+            if (n <= 0)
+                return 1;
+
+            // Only handle Ctrl (5) + Left/Right for now
+            if (modifier == '5')
+            {
+                if (c == 'C')
+                { // Ctrl+Right → U+27A1
+                    bytes[0] = 0xE2;
+                    bytes[1] = 0x9E;
+                    bytes[2] = 0xA1;
+                    return 3;
+                }
+                else if (c == 'D')
+                { // Ctrl+Left → U+2B05
+                    bytes[0] = 0xE2;
+                    bytes[1] = 0xAC;
+                    bytes[2] = 0x85;
+                    return 3;
+                }
+            }
+            // For all other modifier combinations (Shift, Alt, Ctrl+Up/Down, etc.)
+            // just return ESC to avoid crashes
+            return 1;
+
+        case '2': // Insert: ESC [ 2 ~
+        case '5': // PageUp: ESC [ 5 ~
+        case '6': // PageDown: ESC [ 6 ~
+            n = read(STDIN_FILENO, &c, 1); // Read '~'
+            if (n <= 0 || c != '~')
+                return 1;
+            // Currently not handled, just return ESC
             return 1;
 
         default:
-            return -1; // Unknown CSI
+            return 1; // Unknown CSI
         }
     }
     else

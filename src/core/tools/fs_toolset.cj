@@ -10,7 +10,7 @@ import cli.core.tools.fs_utils.*
 import cli.core.tools.code_compression.*
 import cli.core.config.CliConfig
 
-import std.collection.{map, collectArray}
+import std.collection.{map, collectArray, fold}
 import std.fs.{Path, File, Directory, remove, exists, FSException}
 
 //----------------------------------------------------------------------------------
@@ -21,7 +21,7 @@ import std.fs.{Path, File, Directory, remove, exists, FSException}
     description: "Lists all files and subdirectories in a directory and returns the list",
     parameters: { path: "Directory path, must be an absolute path" }
 ]
-func listDirectory(path: String): String {
+protected func listDirectory(path: String): String {
     if (!Path(path).isAbsolute()) {
         return "Directory path must be absolute"
     }
@@ -60,7 +60,7 @@ func listDirectory(path: String): String {
         endLine: "Optional: Ending line number (1-based, inclusive). If not provided, reads to end of file"
     }
 ]
-func readFile(filePath: String, startLine: Option<Int64>, endLine: Option<Int64>): String {
+protected func readFile(filePath: String, startLine: Option<Int64>, endLine: Option<Int64>): String {
     let start = startLine ?? 1
     let end = endLine.map { n => n.toString() } ?? "EOF"
     let message = "${filePath} (${start}-${end})"
@@ -72,7 +72,9 @@ func readFile(filePath: String, startLine: Option<Int64>, endLine: Option<Int64>
     }
 
     PrintUtils.printToolResult(content)
-    return "<file-content path=${filePath} start=${start} end=${end}>\n${content}\n</file-content>"
+    let startInfo = startLine.map { n => " start=${n}" } ?? ""
+    let endInfo = endLine.map { n => " end=${n}" } ?? ""
+    return "<file-content path=${filePath}${startInfo}${endInfo}>\n${content}\n</file-content>"
 }
 
 @tool[
@@ -115,6 +117,11 @@ func grepSearch(pattern: String, path: Option<String>, include: Option<String>):
 //     return listTree(path)
 // }
 
+/**
+ * Maximum number of glob results to return (prevents context overflow)
+ */
+const MAX_GLOB_RESULTS: Int64 = 100
+
 @tool[
     description: "Efficiently finds files matching specific extensions patterns (e.g., `src/**/*.ts`, `**/*.md`), returning absolute paths. Ideal for quickly locating files based on their extension name, especially in large codebases.",
     parameters: {
@@ -142,12 +149,26 @@ func globSearch(pattern: String, path: Option<String>): String {
             return "No files matching pattern '${pattern}' found"
         }
 
+        let totalMatches = results.size
+        let shouldTruncate = totalMatches > MAX_GLOB_RESULTS
+        let resultsToShow = if (shouldTruncate) {
+            results[0..MAX_GLOB_RESULTS]
+        } else {
+            results
+        }
+
         let found = String.join(
-            results |> map { file => "- ${file}" } |> collectArray,
+            resultsToShow |> map { file => "- ${file}" } |> collectArray,
             delimiter: "\n"
         )
         PrintUtils.printToolResult(found)
-        return "Found ${results.size} matches:\n${found}"
+
+        if (shouldTruncate) {
+            let remaining = totalMatches - MAX_GLOB_RESULTS
+            return "Found ${totalMatches} matches (showing first ${MAX_GLOB_RESULTS}):\n${found}\n\n[Truncated: ${remaining} more files not shown. Use a more specific pattern to reduce results.]"
+        } else {
+            return "Found ${totalMatches} matches:\n${found}"
+        }
     } catch (e: Exception) {
         return "Error during glob search: ${e}"
     }
@@ -164,16 +185,43 @@ func globSearch(pattern: String, path: Option<String>): String {
 ]
 protected func batchReadFiles(files: Array<ReadFileParam>): String {
     // Construct the info message
-    let paths = files |> map { param =>
+    let paths = files |> map { param: ReadFileParam =>
             let start = param.startLine ?? 1
             let end = param.endLine.map { n => n.toString() } ?? "EOF"
-            "${param.path} (${start}-${end})"
+            "${param.filePath} (${start}-${end})"
         } |> collectArray
 
     let message = String.join(paths, delimiter: "\n")
     PrintUtils.printTool("Batch Read Files", message)
 
-    let result = batchRead(files)
+    // Validate input
+    if (files.isEmpty()) {
+        let errorResult = HashMap<String, JsonValue>()
+        errorResult["error"] = JsonString("No file paths provided")
+        errorResult["files"] = JsonArray([])
+        return JsonObject(errorResult).toJsonString()
+    }
+
+    let results = batchRead(files)
+
+    //code compression
+    var totalChars = results |> fold(0) { sum: Int, r: ?String => sum + (r?.size ?? 0) }
+    for (i in 0..files.size) {
+        if (totalChars <= getCompressionThreshold(true)) {
+            break
+        }
+        let filePath = files[i].filePath
+        if (let Some(fileContent) <- results[i] && filePath.endsWith(".cj")) {
+            let old = fileContent.size
+            results[i] = compressCode(filePath)
+            let new = fileContent.size
+            totalChars += (new - old)
+        }
+    }
+
+    // Merge all file content
+    let result = mergeBatchResults(files, results)
+
     PrintUtils.printToolResult(result)
     return result
 }

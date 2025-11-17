@@ -243,4 +243,10 @@ with functions such as `all`, `any`, `filter`, `map`, etc. For example,
 ```
 println(0..10 |> map({x: Int64 => 2 * x}) |> all({x: Int64 => x % 2 == 0}))  //true
 ```
+
+## Cangjie Unit Test
+
+- Cangjie has a built-in test framework: std.unittest, you can use it to test your code.
+- use command `cjpm test --filter <test_name>` to run a specific test case.
+- use `cjpm build -i --coverage` and then `cjcov` to generate coverage report.
 """

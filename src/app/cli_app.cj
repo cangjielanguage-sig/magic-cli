@@ -13,7 +13,7 @@ import cli.core.agents.*
 import cli.io.*
 
 import std.collection.ArrayList
-import std.fs.{Path, exists, Directory}
+import std.fs.{Path, exists, Directory, canonicalize}
 import std.collection.HashMap
 import std.sync.{Mutex, AtomicOptionReference}
 
@@ -27,8 +27,14 @@ protected class CliApp {
     protected let tokenStatusManager: TokenStatusManager
 
     protected init() {
-        this.agent = if (CliConfig.language.toAsciiLower() == 'cangjie') {
+        let lang = CliConfig.language.toAsciiLower()
+        this.agent = if (lang == 'cangjie') {
             CangjieCodeAgent()
+        } else if (lang.startsWith("agent:")) {
+            // Currently, this is an internal experimental feature
+            // Customized agent: --language agent:<agent_dir>
+            let agentDir = lang["agent:".size..]
+            CustomizedAgent(canonicalize(agentDir))
         } else {
             GeneralCodeAgent()
         }

@@ -13,6 +13,7 @@ import cli.io.{InputUtils, PrintUtils, WithColor, Theme}
 import cli.utils.StringUtils
 import cli.core.agents.subagents.*
 import cli.core.config.CliConfig
+import cli.core.tools.code_compression.compactRedundantFileReads
 
 import std.collection.{ArrayList, HashSet}
 import std.env.atExit
@@ -88,6 +89,10 @@ func registerHooks(app: CliApp) {
             PrintUtils.printToolResult(evt.agentResponse.content)
         }
         PrintUtils.endSubAgent()
+    }
+    //------------------------------------------------------------------------------
+    EventHandlerManager.global.addHandler { evt: AgentStepEvent =>
+        compactRedundantFileReads(evt.steps)
     }
 
     // Register the callback to auto-save conversation when exiting the program

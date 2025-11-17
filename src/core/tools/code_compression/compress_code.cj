@@ -36,7 +36,7 @@ To get the full code for an entity, you can read the source file from the provid
 }
 
 protected func getCompressionThreshold(batchRead: Bool): Int {
-    let modelTokenLimit = ModelTokenLimits.getContextLimit(
+    let modelTokenLimit = ModelTokenLimits.getInputLimit(
         (CliModelManager.lastAvailableModel ?? CliModelManager.model).fullName
     )
     let compressionThreshold = if (batchRead) {
@@ -46,5 +46,5 @@ protected func getCompressionThreshold(batchRead: Bool): Int {
     }
 
     // each token has about 4 characters on average
-    Int64(compressionThreshold * Float64(modelTokenLimit) * 4.0) 
+    Int64(compressionThreshold * Float64(modelTokenLimit) * 4.0)
 }
