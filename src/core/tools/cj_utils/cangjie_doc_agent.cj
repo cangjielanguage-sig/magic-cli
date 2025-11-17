@@ -83,7 +83,7 @@ protected class CangjieDocAgent {
             ("context7CompatibleLibraryID", "/websites/cangjie-lang_cn_1_0_0"),
             ("topic", query),
             ("tokens", 2000),
-            ("page", 1)  // first page is enough
+            ("page", 1)  // one page contains 10 results
         ])
         return docs.content
     }
@@ -100,7 +100,7 @@ protected class CangjieDocAgent {
             ("context7CompatibleLibraryID", "/dyingchinese/cangjie-stdx"),
             ("topic", query),
             ("tokens", 2000),
-            ("page", 1)  // first page is enough
+            ("page", 1)  // one page contains 10 results
         ])
         return docs.content
     }
