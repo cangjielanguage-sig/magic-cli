@@ -67,8 +67,8 @@ protected func readFile(filePath: String, startLine: Option<Int64>, endLine: Opt
     PrintUtils.printTool("Read File", message)
     var content = catRange(filePath, startLine ?? 1, endLine: endLine ?? Int64.Max)
 
-    if (filePath.endsWith(".cj") && content.size > getCompressionThreshold(false)) {
-        content = compressCode(filePath, startLine: startLine ?? 1, endLine: endLine ?? Int64.Max)
+    if (content.size > getCompressionThreshold(false)) {
+        content = compressCode(filePath, startLine: startLine ?? 1, endLine: endLine ?? Int64.Max, originalContent: content)
     }
 
     PrintUtils.printToolResult(content)

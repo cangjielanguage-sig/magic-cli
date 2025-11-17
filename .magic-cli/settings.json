@@ -1,3 +1,9 @@
 {
-  "mcpServers": {}
+  "language": "general",
+  "mcpServers": {},
+  "model": "ark:kimi-k2-250905",
+  "fastModel": "ark:doubao-1-5-pro-32k-250115",
+  "fallbackModels": [],
+  "temperature": 1,
+  "collectData": false
 }

@@ -1,4 +1,4 @@
-package cli.core.tools.code_compression
+package cli.core.tools.code_compression.cangjie_analyzer
 
 import std.collection.*
 import std.ast.*
