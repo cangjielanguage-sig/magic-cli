@@ -82,7 +82,8 @@ protected class CangjieDocAgent {
         let docs = client.callTool("get-library-docs", [
             ("context7CompatibleLibraryID", "/websites/cangjie-lang_cn_1_0_0"),
             ("topic", query),
-            ("tokens", 2000)
+            ("tokens", 2000),
+            ("page", 1)  // one page contains 10 results
         ])
         return docs.content
     }
@@ -98,7 +99,8 @@ protected class CangjieDocAgent {
         let docs = client.callTool("get-library-docs", [
             ("context7CompatibleLibraryID", "/dyingchinese/cangjie-stdx"),
             ("topic", query),
-            ("tokens", 2000)
+            ("tokens", 2000),
+            ("page", 1)  // one page contains 10 results
         ])
         return docs.content
     }
@@ -114,7 +116,8 @@ protected class CangjieDocAgent {
     //     let docs = client.callTool("get-library-docs", [
     //         ("context7CompatibleLibraryID", "/openharmony/docs"),
     //         ("topic", query),
-    //         ("tokens", 3000)
+    //         ("tokens", 3000),
+    //         ("page", 1)
     //     ])
     //     return docs.content
     // }
