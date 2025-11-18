@@ -106,12 +106,13 @@ func buildFFI(staticLib: Bool): Int64 {
     return 0
 }
 
-func downloadTreeSitter(staticLib: Bool): Int64 {
+func downloadTreeSitter(): Int64 {
     let targetDir = "./ffi/tree-sitter-signature-extraction"
     
     // Check if tree-sitter already exists
     if (!exists("${targetDir}/tree-sitter")) {
         // Download tree-sitter
+        println("Starting download of tree-sitter...")
         let tsProc = launch("git", ["clone", "https://github.com/tree-sitter/tree-sitter.git", "${targetDir}/tree-sitter"])
         if (tsProc.wait() != 0) {
             println("Failed to download tree-sitter")
@@ -121,6 +122,7 @@ func downloadTreeSitter(staticLib: Bool): Int64 {
     
     // Check if tree-sitter-python already exists
     if (!exists("${targetDir}/tree-sitter-python")) {
+        println("Starting download of tree-sitter-python...")
         // Download tree-sitter-python
         let tspProc = launch("git", ["clone", "https://github.com/tree-sitter/tree-sitter-python.git", "${targetDir}/tree-sitter-python"])
         if (tspProc.wait() != 0) {
@@ -131,6 +133,7 @@ func downloadTreeSitter(staticLib: Bool): Int64 {
     
     // Check if tree-sitter-java already exists
     if (!exists("${targetDir}/tree-sitter-java")) {
+        println("Starting download of tree-sitter-java...")
         // Download tree-sitter-java
         let tsjProc = launch("git", ["clone", "https://github.com/tree-sitter/tree-sitter-java.git", "${targetDir}/tree-sitter-java"])
         if (tsjProc.wait() != 0) {
@@ -162,6 +165,10 @@ func buildSignatureExtractorFFI(staticLib: Bool): Int64 {
     if (exists(targetLibPath)) {
         return 0
     }
+    let downloadStatus = downloadTreeSitter()
+    if (downloadStatus != 0) {
+        return downloadStatus
+    }
     
     // Run make in the source directory
     let makeProc = launch("make", ["clean"], workingDirectory: Path(sourceDir))
@@ -180,7 +187,7 @@ func buildSignatureExtractorFFI(staticLib: Bool): Int64 {
     let sourceLibPath = "${sourceDir}/${libName}"
     
     try {
-        move(sourceLibPath, targetLibPath)
+        rename(sourceLibPath, to: targetLibPath)
     } catch (e: FSException) {
         println("Failed to move library to ffi directory: ${e.message}")
         return 1
@@ -229,7 +236,7 @@ func stagePreBuild(): Int64 {
 
     let staticLib = checkStaticLinking()
     println("OS: ${OS}, ARCH: ${ARCH}, Static Link: ${staticLib}")
-    return buildFFI(staticLib) & buildSignatureExtractorFFI(staticLib)
+    return buildFFI(staticLib) | buildSignatureExtractorFFI(staticLib)
 }
 
 main(): Int64 {
