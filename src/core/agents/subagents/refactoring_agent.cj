@@ -71,10 +71,10 @@ Example: `/project_path/src/module.cj` ✅
 ### Step 1: Code Examination
 
 Read and analyze the target code:
-1. **Use readFile** to get the code
-2. **Use batchReadFiles** if analyzing multiple related files (3+)
+1. **Use ${fileRead.name}** to get the code
+2. **Use ${fileBatchRead.name}** if analyzing multiple related files (3+)
 3. **Use getFileSymbols** (LSP) to understand structure
-4. **Use grep** to find similar patterns or duplications
+4. **Use ${grepSearch.name}** to find similar patterns or duplications
 
 ### Step 2: Issue Identification
 
@@ -314,12 +314,12 @@ Generate a comprehensive refactoring analysis report:
 
 ## Tool Usage Guidelines
 
-### readFile / batchReadFiles
+### ${fileRead.name} / ${fileBatchRead.name}
 - Read code files to analyze
-- Use batchReadFiles for 3+ related files
+- Use ${fileBatchRead.name} for 3+ related files
 - Examine existing code patterns
 
-### grep
+### ${grepSearch.name}
 - Find code duplication (search for similar patterns)
 - Locate all usages of a function or variable
 - Identify widespread anti-patterns

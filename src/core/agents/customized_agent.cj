@@ -35,8 +35,8 @@ private let SYSTEM_PROMPT_TEMPLATE = """
     tools: [
         // ReadOnlyFSToolset(),
         // ShellTool()
-        // listDirectory,
-        readFile
+        listDirectory,
+        fileRead
     ]
 ]
 public class CustomizedAgent {
@@ -51,6 +51,18 @@ public class CustomizedAgent {
             ("AGENT_DIR", agentDir.toString())
         ])
         this.name = metadata.get("name") ?? "Customized Agent"
+
+        for (tool in (metadata.get("tools") ?? "").split(",")) {
+            match (tool.trimAscii()) {
+                case "listDirectory" => () // builtin
+                case "fileRead" => () // builtin
+                case "fileCreate" => this.toolManager.addTool(fileCreate)
+                case "fileWrite" => this.toolManager.addTool(fileWrite)
+                case "fileEdit" => this.toolManager.addTool(fileEdit)
+                case "shellExecute" => this.toolManager.addTool(shellExecute)
+                case _ => ()
+            }
+        }
     }
 
     @tool[
@@ -65,6 +77,6 @@ public class CustomizedAgent {
         if (!exists(referencePath)) {
             return "Error: Reference file not found at ${referencePath.toString()}"
         }
-        return readFile(canonicalize(referencePath).toString(), None, None)
+        return fileRead(canonicalize(referencePath).toString(), None, None)
     }
 }

@@ -10,7 +10,7 @@ import std.fs.*
 import std.io.*
 import std.env.*
 
-private const GIT_GUIDELINE = """
+private let GIT_GUIDELINE = """
 # Committing changes with git
 
 When the user asks you to create a new git commit, follow these steps carefully:
@@ -89,7 +89,7 @@ Important:
 - View comments on a Github PR: gh api repos/foo/bar/pulls/123/comments
 """
 
-private const TOOL_DESCRIPTION = """
+private let TOOL_DESCRIPTION = """
 Executes a given bash command in a persistent shell session with optional timeout, ensuring proper handling and security measures.
 
 Before executing the command, please follow these steps:
@@ -112,7 +112,7 @@ Usage notes:
   - The command argument is required.
   - It is very helpful if you write a clear, concise description of what this command does in 5-10 words.
   - If the output exceeds 30000 characters, output will be truncated before being returned to you.
-  - VERY IMPORTANT: You MUST avoid using search commands like `find` and `grep`. Instead use grepSearch, globSearch to search. You MUST avoid read tools like `cat`, `head`, `tail`, and `ls`, and use readFile, batchReadFiles, listDirectory to read files.
+  - VERY IMPORTANT: You MUST avoid using search commands like `find` and `grep`. Instead use ${globSearch.name}, ${grepSearch.name} to search. You MUST avoid read tools like `cat`, `head`, `tail`, and `ls`, and use ${fileRead.name}, ${fileBatchRead.name}, ${listDirectory.name} to read files.
   - When issuing multiple commands, use the ';' or '&&' operator to separate them. DO NOT use newlines (newlines are ok in quoted strings).
   - Try to maintain your current working directory throughout the session by using absolute paths and avoiding usage of `cd`. You may use `cd` if the User explicitly requests it.
     <good-example>
@@ -121,52 +121,56 @@ Usage notes:
     <bad-example>
     cd /foo/bar && pytest tests
     </bad-example>
-
 """
 
-@toolset
-public class ShellTool {
-    @tool[
-        description: "${TOOL_DESCRIPTION}",
-        parameters: {
-            path: "Directory path for command execution, must be an absolute path",
-            command: "The command to execute",
-            description: "Optional. Clear, concise description of what this command does in 5-10 words. Examples:\nInput: ls\nOutput: Lists files in current directory\n\nInput: git status\nOutput: Shows working tree status\n\nInput: npm install\nOutput: Installs package dependencies\n\nInput: mkdir foo\nOutput: Creates directory 'foo'"
-        }
-    ]
-    public func shellExecute(path: String, command: String, description: Option<String>): String {
-        let title = if (let Some(_description) <- description) {
-            "Execute Command (${_description})"
-        } else {
-            "Execute Command"
-        }
-        if (InputUtils.confirm(title, command) == Confirmation.Deny) {
-            return "User denied the operation"
-        }
-
-        try {
-            // Use executeWithTimeout with 3-minute default timeout to prevent hanging on daemon processes
-            let (exitCode, stdout, stderr) = ShellUtils.execute(
-                [command],
-                workDir: Path(path),
-                timeout: Duration.second * 180
-            )
-
-            if (exitCode == 0) {
-                let outString = stdout.trimAscii()
-                PrintUtils.printToolResult(outString)
-                return "Command executed successfully, output:\n${outString}"
-            } else {
-                let errString = stderr.trimAscii()
-                PrintUtils.printToolResult(errString)
-                return "Command execution failed, error output:\n${errString}"
-            }
-        } catch (e: ShellTimeoutException) {
-            PrintUtils.printToolResult("Timeout")
-            return "Command execution timeout after 3 minutes: ${e.message}\n\nThe command appears to be a daemon/server process or is taking too long to execute.\n\nSuggestions:\n1. If this is a server/daemon (like 'python3 -m http.server'), it should be run in the background manually\n2. If the command legitimately needs more time, consider breaking it into smaller steps\n3. Check if the command is stuck waiting for input or has encountered an error"
-        } catch (e: Exception) {
-            PrintUtils.printToolResult("Exception")
-            return "Exception occurred while executing command: ${e}\nCommand: ${command}"
-        }
+@tool[
+    description: "${TOOL_DESCRIPTION}",
+    parameters: {
+        path: "Directory path for command execution, must be an absolute path",
+        command: "The command to execute",
+        description: "Optional. Clear, concise description of what this command does in 5-10 words. Examples:\nInput: ls\nOutput: Lists files in current directory\n\nInput: git status\nOutput: Shows working tree status\n\nInput: npm install\nOutput: Installs package dependencies\n\nInput: mkdir foo\nOutput: Creates directory 'foo'"
     }
+]
+protected func shellExecute(path: String, command: String, description: Option<String>): String {
+    let title = if (let Some(_description) <- description) {
+        "Execute Command (${_description})"
+    } else {
+        "Execute Command"
+    }
+    if (InputUtils.confirm(title, command) == Confirmation.Deny) {
+        return "User denied the operation"
+    }
+
+    try {
+        // Use executeWithTimeout with 3-minute default timeout to prevent hanging on daemon processes
+        let (exitCode, stdout, stderr) = ShellUtils.execute(
+            [command],
+            workDir: Path(path),
+            timeout: Duration.second * 180
+        )
+
+        if (exitCode == 0) {
+            let outString = stdout.trimAscii()
+            PrintUtils.printToolResult(outString)
+            return "Command executed successfully, output:\n${outString}"
+        } else {
+            let errString = stderr.trimAscii()
+            PrintUtils.printToolResult(errString)
+            return "Command execution failed, error output:\n${errString}"
+        }
+    } catch (e: ShellTimeoutException) {
+        PrintUtils.printToolResult("Timeout")
+        return "Command execution timeout after 3 minutes: ${e.message}\n\nThe command appears to be a daemon/server process or is taking too long to execute.\n\nSuggestions:\n1. If this is a server/daemon (like 'python3 -m http.server'), it should be run in the background manually\n2. If the command legitimately needs more time, consider breaking it into smaller steps\n3. Check if the command is stuck waiting for input or has encountered an error"
+    } catch (e: Exception) {
+        PrintUtils.printToolResult("Exception")
+        return "Exception occurred while executing command: ${e}\nCommand: ${command}"
+    }
+}
+
+@toolset[
+    tools: [
+        shellExecute
+    ]
+]
+public class ShellTool {
 }
