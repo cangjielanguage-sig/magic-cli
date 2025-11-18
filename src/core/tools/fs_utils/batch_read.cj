@@ -8,7 +8,7 @@ import std.collection.{map, collectArray, ArrayList, HashMap}
 import std.fs.File
 import stdx.encoding.json.*
 
-protected const BATCH_READ_FILE_DESCRIPTION = """
+protected const FILE_BATCH_READ_DESCRIPTION = """
 🚀 Batch read multiple files in parallel for maximum performance (2-4x faster than sequential reading).
 
 This tool uses parallel execution to read multiple files simultaneously.
@@ -24,7 +24,7 @@ Performance:
 - Recommended for 3+ files
 
 Example usage:
-- "Use batchReadFiles to read 6 files: /path/to/file1.cj, /path/to/file2.cj, /path/to/file3.cj"
+- "Use fileBatchRead to read 6 files: /path/to/file1.cj, /path/to/file2.cj, /path/to/file3.cj"
 - "Read all config files: /project/config.toml, /project/settings.toml"
 
 Returns: JSON object with file contents, status, and performance metrics.

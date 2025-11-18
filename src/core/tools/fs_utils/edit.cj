@@ -22,7 +22,7 @@ protected struct EditFileParam {
 // https://github.com/Yuyz0112/claude-code-reverse/blob/main/results/tools/MultiEdit.tool.yaml
 //==============================================================================
 
-protected let EDIT_FILE_DESCRIPTION = """
+protected let FILE_EDIT_DESCRIPTION = """
 Replaces text within a file. By default, replaces a single occurrence.
 This tool requires providing significant context around the change to ensure precise targeting. Always use the readFile tool to examine the file's current content before attempting a text replacement.
 
@@ -49,8 +49,8 @@ protected struct MultiEditFileParam {
     public let edits: Array<MultiEditParam>
 }
 
-protected const MULTI_EDIT_FILE_DESCRIPTION = """
-This is a tool for making multiple edits to a single file in one operation. It is built on top of the editFile tool and allows you to perform multiple find-and-replace operations efficiently. Prefer this tool over the Edit tool when you need to make multiple edits to the same file.
+protected const FILE_MULTI_EDIT_DESCRIPTION = """
+This is a tool for making multiple edits to a single file in one operation. It is built on top of the fileEdit tool and allows you to perform multiple find-and-replace operations efficiently. Prefer this tool over the Edit tool when you need to make multiple edits to the same file.
 
 Before using this tool:
 
@@ -72,7 +72,7 @@ IMPORTANT:
 
 CRITICAL REQUIREMENTS:
 
-1. All edits follow the same requirements as the single editFile tool
+1. All edits follow the same requirements as the single fileEdit tool
 2. The edits are atomic - either all succeed or none are applied
 3. Plan your edits carefully to avoid conflicts between sequential operations
 
