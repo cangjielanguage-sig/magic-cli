@@ -1,4 +1,4 @@
-package cli.core.tools.code_compression
+package cli.core.tools
 
 import magic.dsl.jsonable
 import magic.jsonable.*
@@ -25,28 +25,28 @@ import stdx.encoding.json.*
  *
  * Marks redundant steps in a time series of operations.
  */
-protected func compactRedundantFileReads(steps: ArrayList<StepMessage>): Unit {
+protected func removeRedundantFileReads(steps: ArrayList<StepMessage>): Unit {
     // Track the latest editFile index for each file path
     let fileEditIndexes = HashMap<String, Int64>()
 
     // Track readFile operations for each file: (stepIndex, ReadFileParam)
     let fileReadInfos = HashMap<String, ArrayList<(Int64, ReadFileParam)>>()
 
-    // Phase 1: Collect all editFile and readFile operations
+    // Phase 1: Collect all file edit and file read operations
     for ((i, step) in enumerate(steps)) {
         // Check for editFile operations
-        if (let Some(tr) <- step.toolRequest && tr.name == "editFile") {
+        if (let Some(tr) <- step.toolRequest && tr.name == fileEdit.name) {
             let param = EditFileParam.fromJsonValue(JsonObject(tr.args))
             fileEditIndexes[param.filePath] = i
         }
-        // Check for multiEditFile operations
-        if (let Some(tr) <- step.toolRequest && tr.name == "multiEditFile") {
+        // Check for fileMultiEdit operations
+        if (let Some(tr) <- step.toolRequest && tr.name == FSToolset._fileMultiEdit) {
             let param = MultiEditFileParam.fromJsonValue(JsonObject(tr.args))
             fileEditIndexes[param.filePath] = i
         }
 
         // Check for readFile operations
-        if (let Some(tr) <- step.toolRequest && tr.name == "readFile") {
+        if (let Some(tr) <- step.toolRequest && tr.name == fileRead.name) {
             let param = ReadFileParam.fromJsonValue(JsonObject(tr.args))
 
             // Initialize list for this file if not exists
@@ -79,14 +79,14 @@ protected func compactRedundantFileReads(steps: ArrayList<StepMessage>): Unit {
             let start1 = info1.startLine
             let end1 = info1.endLine
 
-            // Check Type 1: Read invalidated by subsequent editFile
+            // Check Type 1: Read invalidated by subsequent file edit
             if (let Some(editIndex) <- fileEditIndexes.get(filePath)) {
                 // This read is invalidated by a later edit
                 if (index1 < editIndex) {
                     // Set the current read obsolete.
                     // NOTE that if this is a batch read, all reads are obsolete
                     markObsolete(steps, index1)
-                    LogUtils.debug("Marked read as obsolete (invalidated by editFile). ${info1.toJsonValue().toString()}")
+                    LogUtils.debug("Marked read as obsolete (invalidated by file edit). ${info1.toJsonValue().toString()}")
                     continue  // Skip further checks, already marked as redundant
                 }
             }

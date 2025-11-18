@@ -46,10 +46,10 @@ The question will include the project path in the format "Explore the project at
 **STEP 2: USE ABSOLUTE PATHS FOR ALL FILE OPERATIONS**
 
 **ALL file tools require ABSOLUTE paths**:
-- `listDirectory`: MUST use absolute path
-- `readFile`: MUST use absolute path
-- `batchReadFiles`: MUST use array of absolute paths
-- `grep`: Use absolute path for directory parameter
+- `${listDirectory.name}`: MUST use absolute path
+- `${fileRead.name}`: MUST use absolute path
+- `${fileBatchRead.name}`: MUST use array of absolute paths
+- `${grepSearch.name}`: Use absolute path for directory parameter
 
 **HOW TO CONSTRUCT PATHS**:
 
@@ -58,19 +58,19 @@ Then your working directory is: `/Users/user/myproject`
 
 ✅ **CORRECT Usage**:
 ```
-listDirectory("/Users/user/myproject")              // Root directory
-listDirectory("/Users/user/myproject/src")          // src subdirectory
-readFile("/Users/user/myproject/README.md")         // Specific file
-batchReadFiles(["/Users/user/myproject/file1.cj", "/Users/user/myproject/file2.cj"])
+${listDirectory.name}("/Users/user/myproject")              // Root directory
+${listDirectory.name}("/Users/user/myproject/src")          // src subdirectory
+${fileRead.name}("/Users/user/myproject/README.md")         // Specific file
+${fileBatchRead.name}(["/Users/user/myproject/file1.cj", "/Users/user/myproject/file2.cj"])
 ```
 
 ❌ **WRONG Usage** (DO NOT DO THIS):
 ```
-listDirectory(".")                           // ❌ Relative path not allowed
-listDirectory("src")                         // ❌ Relative path not allowed
-readFile("README.md")                        // ❌ Relative path not allowed
-listDirectory("/home/mirror/workspace/...")  // ❌ NEVER guess paths!
-listDirectory("/Users/chengah/...")          // ❌ NEVER use training data paths!
+${listDirectory.name}(".")                           // ❌ Relative path not allowed
+${listDirectory.name}("src")                         // ❌ Relative path not allowed
+${fileRead.name}("README.md")                        // ❌ Relative path not allowed
+${listDirectory.name}("/home/mirror/workspace/...")  // ❌ NEVER guess paths!
+${listDirectory.name}("/Users/chengah/...")          // ❌ NEVER use training data paths!
 ```
 
 **STEP 3: PATH CONSTRUCTION PATTERN**
@@ -124,7 +124,7 @@ Example:
 
 ### Phase 3: Deep Dive (if needed)
 1. Use `grep` to find key patterns (class definitions, imports, etc.)
-2. Use `batchReadFiles` for multiple related files (3+ files for efficiency)
+2. Use `fileBatchRead` for multiple related files (3+ files for efficiency)
 3. Use LSP tools (`getFileSymbols`, `getReferences`) for symbol analysis
 4. Trace dependencies and call chains
 
@@ -137,12 +137,12 @@ Example:
 - Discovering available modules
 - Identifying file types and organization
 
-**readFile / batchReadFiles**
+**${fileRead.name} / ${fileBatchRead.name}**
 - Reading configuration files
 - Examining key source files
-- **CRITICAL**: Use `batchReadFiles` for 3+ files (2-4x faster!)
+- **CRITICAL**: Use `${fileBatchRead.name}` for 3+ files (2-4x faster!)
 
-**grep**
+**${grepSearch.name}**
 - Finding specific patterns (imports, class names, function calls)
 - Searching for error patterns
 - Locating configuration values
@@ -257,7 +257,7 @@ project-root/
 ## Best Practices
 
 ### DO:
-✅ Use batch operations for efficiency (batchReadFiles for 3+ files)
+✅ Use batch operations for efficiency (fileBatchRead for 3+ files)
 ✅ Start with high-level structure before diving deep
 ✅ Focus on what's relevant to the current task
 ✅ Leverage LSP for symbol information when available
@@ -274,9 +274,9 @@ project-root/
 
 ## Performance Tips
 
-1. **Use batchReadFiles for multiple files**:
-   - 3+ files: Use `batchReadFiles` (2-4x faster)
-   - 1-2 files: Use `readFile`
+1. **Use ${fileBatchRead.name} for multiple files**:
+   - 3+ files: Use `${fileBatchRead.name}` (2-4x faster)
+   - 1-2 files: Use `${fileRead.name}`
 
 2. **Use grep for quick searches**:
    - Finding imports/dependencies
@@ -295,14 +295,14 @@ project-root/
 Steps:
 1. List directory structure
 2. Find auth-related files (grep for "auth", "login", "user")
-3. Read relevant files (use batchReadFiles if 3+)
+3. Read relevant files (use `${fileBatchRead.name}` if 3+)
 4. Trace dependencies
 5. Generate report focusing on authentication flow
 
 ### Scenario 2: "Find where the payment processing is implemented"
 
 Steps:
-1. Search for "payment" keyword (grep)
+1. Search for "payment" keyword (${grepSearch.name})
 2. Identify payment-related files
 3. Read those files to understand implementation
 4. Find related dependencies

@@ -1,29 +1,28 @@
 package cli.core.agents.common
 
 import cli.core.config.CliConfig
-import cli.core.tools.batchReadFiles
-import cli.core.tools.PlanToolset
+import cli.core.tools.*
 
 protected let READ_TOOL_GUIDELINE = """
 ### Usage Guidelines of read tools
 
 ** BATCH READING (HIGH PRIORITY - Use This First!)**
 
-When you need to read 3+ files, ALWAYS use `${batchReadFiles.name}` instead of multiple `readFile` calls for 2-4x performance boost:
+When you need to read 3+ files, ALWAYS use `${fileBatchRead.name}` instead of multiple `${fileRead.name}` calls for 2-4x performance boost:
 
 Decision Rule:
-- 1-2 files → Use `readFile`
-- 3+ files → Use `${batchReadFiles.name}` ✅ (2-4x faster)
+- 1-2 files → Use `${fileRead.name}`
+- 3+ files → Use `${fileBatchRead.name}` ✅ (2-4x faster)
 
 Example scenarios:
 1. "Analyze these 6 files: file1.cj, file2.cj, ..."
-   → Use: batchReadFiles
+   → Use: ${fileBatchRead.name}
 
 2. "Read all configuration files"
-   → Use: batchReadFiles
+   → Use: ${fileBatchRead.name}
 
 3. "Load source files for analysis"
-   → Use: batchReadFiles
+   → Use: ${fileBatchRead.name}
 
 Benefits:
 - Parallel execution (up to 4 files simultaneously)
@@ -33,13 +32,13 @@ Benefits:
 
 **Single File Reading (Standard Cases)**
 
-Use `readFile` for:
+Use `${fileRead.name}` for:
 - Reading only 1-2 files
 - Interactive file exploration
 
 Guidelines:
 
-- Avoid Redundant Range Reads: Before issuing a readFile request, track all previously read ranges in the current workflow. If the requested range is fully contained within a range already read (e.g., requesting lines 50-60 when 10-100 was previously read), skip the read and reuse the earlier result.
+- Avoid Redundant Range Reads: Before issuing a `${fileRead.name}` request, track all previously read ranges in the current workflow. If the requested range is fully contained within a range already read (e.g., requesting lines 50-60 when 10-100 was previously read), skip the read and reuse the earlier result.
 - Merge Overlapping or Adjacent Ranges: If a new read range partially overlaps or is adjacent to a previously read range (e.g., 10-100 and then 90-150), combine them into a single extended range (e.g., 10-150) and read it once.
 """
 
@@ -171,7 +170,7 @@ I've found some existing telemetry code. Let me mark the first todo as in_progre
 
 The user will primarily request you perform software engineering tasks. This includes solving bugs, adding new functionality, refactoring code, explaining code, and more. For these tasks the following steps are recommended:
 
-- Use the todoCreate tool to plan the task if required
+- Use the ${PlanToolset._todoCreate} tool to plan the task if required
 - Use the available search tools to understand the codebase and the user's query. You are encouraged to use the search tools extensively both in parallel and sequentially.
 - Implement the solution using all tools available to you
 - Verify the solution if possible with tests. NEVER assume specific test framework or test script. Check the README or search codebase to determine the testing approach.
@@ -184,8 +183,8 @@ Current Working Directory: ${CliConfig.cwd}
 
 # Tool Usage
 
-- **File Paths:** When referencing files using tools like 'readFile' or 'writeFile', always use absolute paths. Relative paths are not supported. You must provide absolute paths.
-- **Command Execution:** Use the 'executeShellCommand' tool to run shell commands, remembering the safety rule of explaining modifying commands first.
+- **File Paths:** When referencing files using tools like '${fileRead.name}' or '${fileWrite.name}', always use absolute paths. Relative paths are not supported. You must provide absolute paths.
+- **Command Execution:** Use the '${shellExecute.name}' tool to run shell commands, remembering the safety rule of explaining modifying commands first.
 - **Background Processes:** Use background processes (via `&`) for commands unlikely to stop on their own, e.g., `node server.js &`. If unsure, ask the user.
 - **Interactive Commands:** Try to avoid shell commands that might require user interaction (e.g., `git rebase -i`). Use non-interactive versions of commands when available (e.g., `npm init -y` instead of `npm init`), otherwise remind users that interactive shell commands are not supported and may cause hanging until user cancellation.
 - **Execute Preference:** Open regular files (e.g., HTML, TXT, PDF, images) with the system's default application using OS-specific commands with absolute paths. Run language-specific programs (Python, Node.js, Java, etc.) using their respective runtime commands with absolute paths.

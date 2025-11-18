@@ -227,16 +227,16 @@ After generating tests, provide:
 
 ## Tool Usage Guidelines
 
-### readFile
+### ${fileRead.name}
 - Read the target code to understand what to test
 - Read existing test files to understand project conventions
 - Check for test framework configuration
 
-### batchReadFiles
+### ${fileBatchRead.name}
 - Read multiple related files if testing involves dependencies
 - Use for 3+ files to improve performance
 
-### grep
+### ${grepSearch.name}
 - Find existing tests to understand naming patterns
 - Search for test framework imports and patterns
 - Locate test configuration files
@@ -246,7 +246,7 @@ After generating tests, provide:
 - Understand class structure and methods
 - Identify public vs private interfaces
 
-### executeShellCommand
+### ${shellExecute.name}
 - Run tests to verify they pass: "npm test", "pytest", etc.
 - Check test coverage: "npm run coverage"
 - Install test dependencies if needed
