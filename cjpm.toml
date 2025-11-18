@@ -6,7 +6,7 @@
   target-dir = ""
   src-dir = ""
   output-type = "executable"
-  compile-option = "-Woff unused --cfg \"ohos=false\""
+  compile-option = "-Woff unused --cfg \"ohos=false,enable_tree_sitter=false\" "
   override-compile-option = ""
   link-option = ""
 
@@ -15,7 +15,7 @@
 
 [ffi.c]
   rawinput = { path="./ffi/" }
-  signature_extractor = { path = "./ffi/tree-sitter-signature-extraction/" }
+  # signature_extractor = { path = "./ffi/tree-sitter-signature-extraction/" }
 
 
 [target.x86_64-unknown-linux-gnu.bin-dependencies]
