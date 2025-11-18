@@ -106,6 +106,89 @@ func buildFFI(staticLib: Bool): Int64 {
     return 0
 }
 
+func downloadTreeSitter(staticLib: Bool): Int64 {
+    let targetDir = "./ffi/tree-sitter-signature-extraction"
+    
+    // Check if tree-sitter already exists
+    if (!exists("${targetDir}/tree-sitter")) {
+        // Download tree-sitter
+        let tsProc = launch("git", ["clone", "https://github.com/tree-sitter/tree-sitter.git", "${targetDir}/tree-sitter"])
+        if (tsProc.wait() != 0) {
+            println("Failed to download tree-sitter")
+            return 1
+        }
+    }
+    
+    // Check if tree-sitter-python already exists
+    if (!exists("${targetDir}/tree-sitter-python")) {
+        // Download tree-sitter-python
+        let tspProc = launch("git", ["clone", "https://github.com/tree-sitter/tree-sitter-python.git", "${targetDir}/tree-sitter-python"])
+        if (tspProc.wait() != 0) {
+            println("Failed to download tree-sitter-python")
+            return 1
+        }
+    }
+    
+    // Check if tree-sitter-java already exists
+    if (!exists("${targetDir}/tree-sitter-java")) {
+        // Download tree-sitter-java
+        let tsjProc = launch("git", ["clone", "https://github.com/tree-sitter/tree-sitter-java.git", "${targetDir}/tree-sitter-java"])
+        if (tsjProc.wait() != 0) {
+            println("Failed to download tree-sitter-java")
+            return 1
+        }
+    }
+    
+    return 0
+}
+
+func buildSignatureExtractorFFI(staticLib: Bool): Int64 {
+    let sourceDir = "./ffi/tree-sitter-signature-extraction"
+    let targetDir = "./ffi"
+    
+    // Determine the built library name based on OS and library type
+    let libName = match (OS) {
+        case "windows" =>
+            if (staticLib) { "libsignature_extractor.lib" } else { "libsignature_extractor.dll" }
+        case "linux" =>
+            if (staticLib) { "libsignature_extractor.a" } else { "libsignature_extractor.so" }
+        case "mac" =>
+            if (staticLib) { "libsignature_extractor.a" } else { "libsignature_extractor.dylib" }
+        case _ => throw UnsupportedException("Unsupported OS")
+    }
+    
+    // Check if library already exists in target directory
+    let targetLibPath = "${targetDir}/${libName}"
+    if (exists(targetLibPath)) {
+        return 0
+    }
+    
+    // Run make in the source directory
+    let makeProc = launch("make", ["clean"], workingDirectory: Path(sourceDir))
+    if (makeProc.wait() != 0) {
+        println("Failed to clean previous build")
+        return 1
+    }
+    
+    let buildProc = launch("make", if (staticLib) { ["static"] } else { ["dynamic"] }, workingDirectory: Path(sourceDir))
+    if (buildProc.wait() != 0) {
+        println("Failed to build signature extractor library")
+        return 1
+    }
+    
+    // Move the built library to the ffi directory
+    let sourceLibPath = "${sourceDir}/${libName}"
+    
+    try {
+        move(sourceLibPath, targetLibPath)
+    } catch (e: FSException) {
+        println("Failed to move library to ffi directory: ${e.message}")
+        return 1
+    }
+    
+    return 0
+}
+
 func getEnvOrExit(key: String): String {
     match (Process.current.getEnv(key)) {
         case Some(value) => value
@@ -146,7 +229,7 @@ func stagePreBuild(): Int64 {
 
     let staticLib = checkStaticLinking()
     println("OS: ${OS}, ARCH: ${ARCH}, Static Link: ${staticLib}")
-    return buildFFI(staticLib)
+    return buildFFI(staticLib) & buildSignatureExtractorFFI(staticLib)
 }
 
 main(): Int64 {
