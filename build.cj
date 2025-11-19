@@ -113,7 +113,7 @@ func downloadTreeSitter(): Int64 {
     if (!exists("${targetDir}/tree-sitter")) {
         // Download tree-sitter
         println("Starting download of tree-sitter...")
-        let tsProc = launch("git", ["clone", "https://gitcode.com/gh_mirrors/tr/tree-sitter.git", "${targetDir}/tree-sitter"])
+        let tsProc = launch("git", ["clone", "--depth", "1", "--branch", "master", "https://gitcode.com/gh_mirrors/tr/tree-sitter.git", "${targetDir}/tree-sitter"])
         if (tsProc.wait() != 0) {
             println("Failed to download tree-sitter")
             return 1
@@ -124,7 +124,7 @@ func downloadTreeSitter(): Int64 {
     if (!exists("${targetDir}/tree-sitter-python")) {
         println("Starting download of tree-sitter-python...")
         // Download tree-sitter-python
-        let tspProc = launch("git", ["clone", "https://gitcode.com/ohohei/tree-sitter.git", "${targetDir}/tree-sitter-python"])
+        let tspProc = launch("git", ["clone", "--depth", "1", "--branch", "master", "https://gitcode.com/ohohei/tree-sitter.git", "${targetDir}/tree-sitter-python"])
         if (tspProc.wait() != 0) {
             println("Failed to download tree-sitter-python")
             return 1
@@ -135,7 +135,7 @@ func downloadTreeSitter(): Int64 {
     if (!exists("${targetDir}/tree-sitter-java")) {
         println("Starting download of tree-sitter-java...")
         // Download tree-sitter-java
-        let tsjProc = launch("git", ["clone", "https://gitcode.com/ohohei/tree-sitter-java.git", "${targetDir}/tree-sitter-java"])
+        let tsjProc = launch("git", ["clone", "--depth", "1", "--branch", "master", "https://gitcode.com/ohohei/tree-sitter-java.git", "${targetDir}/tree-sitter-java"])
         if (tsjProc.wait() != 0) {
             println("Failed to download tree-sitter-java")
             return 1
