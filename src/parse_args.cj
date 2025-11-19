@@ -35,6 +35,8 @@ func printHelp(): Unit {
     PrintUtils.printLine("  --prompt-file <file>            Set the prompt from a file and run magic-cli in the non-interactive mode")
     PrintUtils.printLine("  --log-level <level>  Set the log level (default: DEBUG)")
     PrintUtils.printLine("  --help, -h           Print this help message")
+    PrintUtils.printLine("  --subagent-dir <dir>  Add the subagent search directories (comma-separated)")
+    PrintUtils.printLine("  --command-dir <dir>   Add the command search directories (comma-separated)")
     PrintUtils.printLine("  --version, -v        Print the version of magic-cli")
 }
 
@@ -50,6 +52,8 @@ func parseArgsAndSetConfig(args: Array<String>): ParseArgsResult {
         Long("collect-data", NoValue),
         Long("sandbox", NoValue),
         Full("language", r"l", RequiredValue),
+        Long("subagent-dir", RequiredValue),
+        Long("command-dir",  RequiredValue),
         Full("help", r"h", NoValue),
         Full("version", r"v", NoValue),
         Full("prompt", r"p", RequiredValue),
@@ -98,6 +102,24 @@ func parseArgsAndSetConfig(args: Array<String>): ParseArgsResult {
     Config.enableModelToolCall = true
     Config.enableParallelToolCall = false
     Config.httpReadWriteTimeout = 600000 // ms
+
+    if (result.options.contains("subagent-dir")) {
+        let option = result.options.get("subagent-dir").getOrThrow()
+        for (dir in option.trimAscii().split(",")) {
+            if (exists(dir)) {
+                CliConfig.subagentDirs.add(Path(dir))
+            }
+        }
+    }
+
+    if (result.options.contains("command-dir")) {
+        let option = result.options.get("command-dir").getOrThrow()
+        for (dir in option.trimAscii().split(",")) {
+            if (exists(dir)) {
+                CliConfig.commandDirs.add(Path(dir))
+            }
+        }
+    }
 
     // Set Magic-Cli settings
     if (result.options.contains("auto")) {

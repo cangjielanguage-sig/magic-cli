@@ -23,6 +23,7 @@ protected class CliApp {
     protected let thinkIndicator = AtomicOptionReference<StatusIndicator>()
     protected let conversationManager: ConversationManager
     protected let customCommandManager: CustomCommandManager
+    protected let customAgentManager: CustomAgentManager
     protected let mcpManager: MCPConfigManager
     protected let tokenStatusManager: TokenStatusManager
 
@@ -34,7 +35,7 @@ protected class CliApp {
             // Currently, this is an internal experimental feature
             // Customized agent: --language agent:<agent_dir>
             let agentDir = lang["agent:".size..]
-            CustomizedAgent(canonicalize(agentDir))
+            CustomAgent(canonicalize(agentDir))
         } else {
             GeneralCodeAgent()
         }
@@ -49,6 +50,7 @@ protected class CliApp {
 
         this.conversationManager = ConversationManager(Compactor())
         this.customCommandManager = CustomCommandManager()
+        this.customAgentManager = CustomAgentManager()
         this.tokenStatusManager = TokenStatusManager()
 
         // Initialize event handlers and callbacks
@@ -68,13 +70,6 @@ protected class CliApp {
                 i.stop()
             }
         }
-    }
-
-    /**
-     * Switch agent to fallback model
-     */
-    public func switchToFallbackModel(fallbackModel: ChatModel): Unit {
-        this.agent.model = fallbackModel
     }
 
     protected func startNonInteractive(input: String): Unit {
