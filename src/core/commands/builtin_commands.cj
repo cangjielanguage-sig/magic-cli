@@ -18,7 +18,8 @@ protected let BUILTIN_COMMANDS: ArrayList<(String, String, Array<String>)> = Arr
     ("status", "Show token status", []),
     ("mcp", "Manage MCP tools", ["add", "add-sse", "remove", "list"]),
     ("conversation", "Manage conversations", ["list", "save", "resume", "remove", "help"]),
-    ("cmd", "Manage customized commands", ["list", "reload", "help"])
+    ("cmd", "Manage customized commands", ["list", "reload", "help"]),
+    ("agents", "List all customized agents", [])
 ])
 
 func registerBuiltinCommands(): Unit {
