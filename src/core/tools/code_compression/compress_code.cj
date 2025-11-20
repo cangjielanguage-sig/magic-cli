@@ -1,11 +1,32 @@
 package cli.core.tools.code_compression
 
+import magic.log.LogUtils
+
 import cli.core.config.CliConfig
 import cli.core.model.ModelTokenLimits
 import cli.core.model.CliModelManager
 
-protected func compressCode(filePath: String, startLine!: Int = 1, endLine!: Int = Int.Max): String {
-    let content = SkeletonAnalyzer.analyzeFile(filePath, startLine: startLine, endLine: endLine)
+import std.fs.Path
+
+protected func compressCode(
+    filePath: String, 
+    startLine!: Int = 1, 
+    endLine!: Int = Int.Max,
+    originalContent!: String = ""): String {
+    let language: String = match {
+        case filePath.endsWith(".cj") => "cangjie"
+        case filePath.endsWith(".py") => "python"
+        case filePath.endsWith(".java") => "java"
+        case _ => 
+            LogUtils.debug("Code compression not supported for this file type `${Path(filePath).extensionName}`.")
+            return originalContent
+    }
+
+    let content = SkeletonAnalyzer.analyzeFile(filePath, language, startLine: startLine, endLine: endLine)
+    // If there is something wrong when compressing the code (e.g, code with parsing error cannot be parsed), return the original content.
+    if (content.isEmpty()) {
+        return originalContent
+    }
 
     """
 The returned code is too large to return in full. Instead, you will receive a compressed index of code entities (functions, classes, structs, enums, etc.). The index contains: the signature of each entity, its hierarchical structure (e.g., a method inside a class), and its location (start and end line numbers). The following are the compressed index of code entities, formatted in the following XML string:
@@ -19,7 +40,7 @@ To get the full code for an entity, you can read the source file from the provid
 }
 
 protected func getCompressionThreshold(batchRead: Bool): Int {
-    let modelTokenLimit = ModelTokenLimits.getContextLimit(
+    let modelTokenLimit = ModelTokenLimits.getInputLimit(
         (CliModelManager.lastAvailableModel ?? CliModelManager.model).fullName
     )
     let compressionThreshold = if (batchRead) {
@@ -29,5 +50,5 @@ protected func getCompressionThreshold(batchRead: Bool): Int {
     }
 
     // each token has about 4 characters on average
-    Int64(compressionThreshold * Float64(modelTokenLimit) * 4.0) 
+    Int64(compressionThreshold * Float64(modelTokenLimit) * 4.0)
 }

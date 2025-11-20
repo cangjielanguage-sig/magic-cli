@@ -146,7 +146,7 @@ try {
 
   # Step 3.3: Build project
   Write-Step "Step 3.3: Building project with static configuration..."
-  Run-External -FilePath 'cjpm' -ArgumentList @('build') -Quiet
+  Run-External -FilePath 'cjpm' -ArgumentList @('build')
   Write-Host ""
 
   # Step 4: Copy binary to target location

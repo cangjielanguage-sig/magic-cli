@@ -3,23 +3,24 @@ package cli.core.model
 import std.collection.HashMap
 
 protected class ModelTokenLimits {
-    public static let DEFAULT_LIMIT: Int64 = 131072
+    static const DEFAULT_INPUT_LIMIT: Int64 = 128 * 1024
 
     /**
-     * The maximum number of total tokens that can be used in a single request.
+     * The maximum number of input tokens that can be used in a single request.
      */
-    private static let CONTEXT_LIMITS = HashMap<String, Int64>([
+    private static let INPUT_LIMITS = HashMap<String, Int64>([
         // Ark (ByteDance) models
         ("ark:kimi-k2-250711", 128 * 1024),
         ("ark:kimi-k2-250905", 256 * 1024),
-        ("ark:doubao-seed-1-6-flash-250828", 256 * 1024),
-        ("ark:doubao-1-5-pro-32k-250115", 32 * 1024),
-        ("ark:deepseek-v3-1-250821", 128 * 1024),
-        ("ark:deepseek-v3-250324", 128 * 1024),
-        ("ark:deepseek-r1-250528", 128 * 1024),
+        ("ark:doubao-seed-1-6-flash", 256 * 1024),
+        ("ark:doubao-1-5-pro-32k", 32 * 1024),
+        ("ark:deepseek-v3-1", 128 * 1024),
+        ("ark:deepseek-v3", 128 * 1024),
+        ("ark:deepseek-r1", 128 * 1024),
+        ("ark:doubao-seed-code", 224 * 1024),
 
         // Moonshot models
-        ("moonshot:kimi-k2-0905-preview", 256 * 1024),
+        ("moonshot:kimi-k2", 256 * 1024),
 
         // Zhipu AI models
         ("zhipuai:glm-4.5", 128 * 1024),
@@ -27,7 +28,7 @@ protected class ModelTokenLimits {
         ("zhipuai:glm-4-plus", 128 * 1024),
 
         // Qwen models
-        ("dashscope:qwen3-max-preview", 256 * 1024),
+        ("dashscope:qwen3-max", 256 * 1024),
         ("dashscope:qwen-plus", 128 * 1024),
         ("dashscope:qwen-flash", 1024 * 1024),
         ("dashscope:qwen3-coder-plus", 1024 * 1024),
@@ -45,34 +46,41 @@ protected class ModelTokenLimits {
 
         // Google Gemini models
         ("google:gemini-1.5-flash", 1024 * 1024),
-        ("google:gemini-2.5-pro-preview-05-06", 1024 * 1024),
-        ("google:gemini-2.5-pro-preview-06-05", 1024 * 1024),
+        ("google:gemini-2.5-pro-preview", 1024 * 1024),
         ("google:gemini-2.5-pro", 1024 * 1024),
-        ("google:gemini-2.5-flash-preview-05-20", 1024 * 1024),
+        ("google:gemini-2.5-flash-preview", 1024 * 1024),
         ("google:gemini-2.5-flash", 1024 * 1024),
         ("google:gemini-2.5-flash-lite", 1024 * 1024),
         ("google:gemini-2.0-flash", 1024 * 1024)
     ])
 
-    public static func getContextLimit(model: String): Int64 {
-        return CONTEXT_LIMITS.get(model).getOrDefault { DEFAULT_LIMIT }
+    public static func getInputLimit(model: String): Int64 {
+        for ((key, value) in INPUT_LIMITS) {
+            if (model.startsWith(key)) {
+                return value
+            }
+        }
+        return DEFAULT_INPUT_LIMIT
     }
+
+    static const DEFAULT_OUTPUT_LIMIT: Int64 = 32 * 1024
 
     /**
      * The maximum number of output tokens that can be used in a single request.
      */
-    private static let MAX_TOKENS_LIMITS = HashMap<String, Int64>([
+    private static let OUTPUT_LIMITS = HashMap<String, Int64>([
         // Ark (ByteDance) models
         ("ark:kimi-k2-250711", 32 * 1024),
         ("ark:kimi-k2-250905", 32 * 1024),
-        ("ark:doubao-seed-1-6-flash-250828", 32 * 1024),
-        ("ark:doubao-1-5-pro-32k-250115", 8 * 1024),
-        ("ark:deepseek-v3-1-250821", 32 * 1024),
-        ("ark:deepseek-v3-250324", 32 * 1024),
-        ("ark:deepseek-r1-250528", 32 * 1024),
+        ("ark:doubao-seed-1-6-flash", 32 * 1024),
+        ("ark:doubao-1-5-pro-32k", 8 * 1024),
+        ("ark:doubao-seed-code-preview", 32 * 1024),
+        ("ark:deepseek-v3-1", 32 * 1024),
+        ("ark:deepseek-v3", 32 * 1024),
+        ("ark:deepseek-r1", 32 * 1024),
 
         // Moonshot models
-        ("moonshot:kimi-k2-0905-preview", 32* 1024),
+        ("moonshot:kimi-k2", 32* 1024),
 
         // Zhipu AI models
         ("zhipuai:glm-4.5", 32 * 1024),
@@ -91,7 +99,12 @@ protected class ModelTokenLimits {
         ("deepseek:deepseek-reasoner", 32 * 1024)
     ])
 
-    public static func getMaxOutputTokensLimit(model: String): Option<Int64> {
-        return MAX_TOKENS_LIMITS.get(model)
+    public static func getOutputLimit(model: String): Int64 {
+        for ((key, value) in OUTPUT_LIMITS) {
+            if (model.startsWith(key)) {
+                return value
+            }
+        }
+        return DEFAULT_OUTPUT_LIMIT
     }
 }

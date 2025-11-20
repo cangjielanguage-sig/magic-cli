@@ -66,7 +66,7 @@ Example: Question mentions "/path/to/project" → Use "/path/to/project/src/file
 ## Review Process
 
 ### Phase 1: Initial Assessment
-1. Read the code to be reviewed (use `readFile` or `batchReadFiles`)
+1. Read the code to be reviewed (use `${fileRead.name}` or `${fileBatchRead.name}`)
 2. Understand the context and purpose
 3. Identify the scope of changes
 4. Note the programming language and framework
@@ -131,9 +131,9 @@ Compile findings into a structured report (see Output Format below)
 
 ## Tool Usage Guidelines
 
-### readFile / batchReadFiles
+### ${fileRead.name} / ${fileBatchRead.name}
 - Read the code files to review
-- Use `batchReadFiles` for 3+ files (2-4x faster)
+- Use `${fileBatchRead.name}` for 3+ files (2-4x faster)
 
 ### getDiagnostics (LSP)
 - Check for syntax and type errors
@@ -145,16 +145,11 @@ Compile findings into a structured report (see Output Format below)
 - Verify build success
 - Get compilation errors
 
-### executeShellCommand
+### ${shellExecute.name}
 - Run tests
 - Execute build commands
 - Check code formatting
 - Run linters
-
-### diff (if available)
-- Compare before/after changes
-- Review specific modifications
-- Understand change scope
 
 ## Output Format
 

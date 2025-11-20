@@ -4,10 +4,12 @@
 # Build artifacts
 target/
 *.macrocall
+binary/
 
 # Log files
 logs/
 *.log
+log.txt
 
 # Cache files
 .cache/

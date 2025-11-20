@@ -13,7 +13,7 @@ import cli.core.agents.*
 import cli.io.*
 
 import std.collection.ArrayList
-import std.fs.{Path, exists, Directory}
+import std.fs.{Path, exists, Directory, canonicalize}
 import std.collection.HashMap
 import std.sync.{Mutex, AtomicOptionReference}
 
@@ -23,12 +23,19 @@ protected class CliApp {
     protected let thinkIndicator = AtomicOptionReference<StatusIndicator>()
     protected let conversationManager: ConversationManager
     protected let customCommandManager: CustomCommandManager
+    protected let customAgentManager: CustomAgentManager
     protected let mcpManager: MCPConfigManager
     protected let tokenStatusManager: TokenStatusManager
 
     protected init() {
-        this.agent = if (CliConfig.language.toAsciiLower() == 'cangjie') {
+        let lang = CliConfig.language.toAsciiLower()
+        this.agent = if (lang == 'cangjie') {
             CangjieCodeAgent()
+        } else if (lang.startsWith("agent:")) {
+            // Currently, this is an internal experimental feature
+            // Customized agent: --language agent:<agent_dir>
+            let agentDir = lang["agent:".size..]
+            CustomAgent(canonicalize(agentDir))
         } else {
             GeneralCodeAgent()
         }
@@ -43,6 +50,7 @@ protected class CliApp {
 
         this.conversationManager = ConversationManager(Compactor())
         this.customCommandManager = CustomCommandManager()
+        this.customAgentManager = CustomAgentManager()
         this.tokenStatusManager = TokenStatusManager()
 
         // Initialize event handlers and callbacks
@@ -62,13 +70,6 @@ protected class CliApp {
                 i.stop()
             }
         }
-    }
-
-    /**
-     * Switch agent to fallback model
-     */
-    public func switchToFallbackModel(fallbackModel: ChatModel): Unit {
-        this.agent.model = fallbackModel
     }
 
     protected func startNonInteractive(input: String): Unit {

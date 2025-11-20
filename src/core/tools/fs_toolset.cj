@@ -10,7 +10,7 @@ import cli.core.tools.fs_utils.*
 import cli.core.tools.code_compression.*
 import cli.core.config.CliConfig
 
-import std.collection.{map, collectArray}
+import std.collection.{map, collectArray, fold}
 import std.fs.{Path, File, Directory, remove, exists, FSException}
 
 //----------------------------------------------------------------------------------
@@ -21,7 +21,7 @@ import std.fs.{Path, File, Directory, remove, exists, FSException}
     description: "Lists all files and subdirectories in a directory and returns the list",
     parameters: { path: "Directory path, must be an absolute path" }
 ]
-func listDirectory(path: String): String {
+protected func listDirectory(path: String): String {
     if (!Path(path).isAbsolute()) {
         return "Directory path must be absolute"
     }
@@ -60,19 +60,21 @@ func listDirectory(path: String): String {
         endLine: "Optional: Ending line number (1-based, inclusive). If not provided, reads to end of file"
     }
 ]
-func readFile(filePath: String, startLine: Option<Int64>, endLine: Option<Int64>): String {
+protected func fileRead(filePath: String, startLine: Option<Int64>, endLine: Option<Int64>): String {
     let start = startLine ?? 1
     let end = endLine.map { n => n.toString() } ?? "EOF"
     let message = "${filePath} (${start}-${end})"
     PrintUtils.printTool("Read File", message)
     var content = catRange(filePath, startLine ?? 1, endLine: endLine ?? Int64.Max)
 
-    if (filePath.endsWith(".cj") && content.size > getCompressionThreshold(false)) {
-        content = compressCode(filePath, startLine: startLine ?? 1, endLine: endLine ?? Int64.Max)
+    if (content.size > getCompressionThreshold(false)) {
+        content = compressCode(filePath, startLine: startLine ?? 1, endLine: endLine ?? Int64.Max, originalContent: content)
     }
 
     PrintUtils.printToolResult(content)
-    return "<file-content path=${filePath} start=${start} end=${end}>\n${content}\n</file-content>"
+    let startInfo = startLine.map { n => " start=${n}" } ?? ""
+    let endInfo = endLine.map { n => " end=${n}" } ?? ""
+    return "<file-content path=${filePath}${startInfo}${endInfo}>\n${content}\n</file-content>"
 }
 
 @tool[
@@ -83,7 +85,7 @@ func readFile(filePath: String, startLine: Option<Int64>, endLine: Option<Int64>
         fileType: "Optional: A glob pattern to filter which files are searched (e.g., '*.js', '*.{ts,tsx}', 'src/**'). If omitted, searches all files (respecting potential global ignores).",
     }
 ]
-func grepSearch(pattern: String, path: Option<String>, include: Option<String>): String {
+protected func grepSearch(pattern: String, path: Option<String>, include: Option<String>): String {
     // Construct the info message
     let strBuilder = StringBuilder("pattern: ${pattern}")
     if (let Some(path) <- path) {
@@ -115,6 +117,11 @@ func grepSearch(pattern: String, path: Option<String>, include: Option<String>):
 //     return listTree(path)
 // }
 
+/**
+ * Maximum number of glob results to return (prevents context overflow)
+ */
+const MAX_GLOB_RESULTS: Int64 = 100
+
 @tool[
     description: "Efficiently finds files matching specific extensions patterns (e.g., `src/**/*.ts`, `**/*.md`), returning absolute paths. Ideal for quickly locating files based on their extension name, especially in large codebases.",
     parameters: {
@@ -122,7 +129,7 @@ func grepSearch(pattern: String, path: Option<String>, include: Option<String>):
         path: "Optional: absolute directory path to search in. Defaults to current working directory."
     }
 ]
-func globSearch(pattern: String, path: Option<String>): String {
+protected func globSearch(pattern: String, path: Option<String>): String {
     let searchPath = path ?? CliConfig.cwd.toString()
     if (!Path(searchPath).isAbsolute()) {
         return "Path must be absolute"
@@ -142,12 +149,26 @@ func globSearch(pattern: String, path: Option<String>): String {
             return "No files matching pattern '${pattern}' found"
         }
 
+        let totalMatches = results.size
+        let shouldTruncate = totalMatches > MAX_GLOB_RESULTS
+        let resultsToShow = if (shouldTruncate) {
+            results[0..MAX_GLOB_RESULTS]
+        } else {
+            results
+        }
+
         let found = String.join(
-            results |> map { file => "- ${file}" } |> collectArray,
+            resultsToShow |> map { file => "- ${file}" } |> collectArray,
             delimiter: "\n"
         )
         PrintUtils.printToolResult(found)
-        return "Found ${results.size} matches:\n${found}"
+
+        if (shouldTruncate) {
+            let remaining = totalMatches - MAX_GLOB_RESULTS
+            return "Found ${totalMatches} matches (showing first ${MAX_GLOB_RESULTS}):\n${found}\n\n[Truncated: ${remaining} more files not shown. Use a more specific pattern to reduce results.]"
+        } else {
+            return "Found ${totalMatches} matches:\n${found}"
+        }
     } catch (e: Exception) {
         return "Error during glob search: ${e}"
     }
@@ -157,23 +178,51 @@ func globSearch(pattern: String, path: Option<String>): String {
  * Read multiple files in parallel
  */
 @tool[
-    description: "${BATCH_READ_FILE_DESCRIPTION}",
+    description: "${FILE_BATCH_READ_DESCRIPTION}",
     parameters: {
         filePaths: "Array of JSON objects, each containing the absolute path to the file to read, optional startLine, and optional endLine."
     }
 ]
-protected func batchReadFiles(files: Array<ReadFileParam>): String {
+protected func fileBatchRead(files: Array<ReadFileParam>): String {
     // Construct the info message
-    let paths = files |> map { param =>
+    let paths = files |> map { param: ReadFileParam =>
             let start = param.startLine ?? 1
             let end = param.endLine.map { n => n.toString() } ?? "EOF"
-            "${param.path} (${start}-${end})"
+            "${param.filePath} (${start}-${end})"
         } |> collectArray
 
     let message = String.join(paths, delimiter: "\n")
     PrintUtils.printTool("Batch Read Files", message)
 
-    let result = batchRead(files)
+    // Validate input
+    if (files.isEmpty()) {
+        let errorResult = HashMap<String, JsonValue>()
+        errorResult["error"] = JsonString("No file paths provided")
+        errorResult["files"] = JsonArray([])
+        return JsonObject(errorResult).toJsonString()
+    }
+
+    let results = batchRead(files)
+
+    //code compression
+    var totalChars = results |> fold(0) { sum: Int, r: ?String => sum + (r?.size ?? 0) }
+    for (i in 0..files.size) {
+        if (totalChars <= getCompressionThreshold(true)) {
+            break
+        }
+        let filePath = files[i].filePath
+        if (let Some(fileContent) <- results[i]) {
+            let old = fileContent.size
+            let newContent = compressCode(filePath, originalContent: fileContent)
+            results[i] = newContent
+            let new = newContent.size
+            totalChars += (new - old)
+        }
+    }
+
+    // Merge all file content
+    let result = mergeBatchResults(files, results)
+
     PrintUtils.printToolResult(result)
     return result
 }
@@ -184,86 +233,91 @@ protected func batchReadFiles(files: Array<ReadFileParam>): String {
  * Read-only file system tools
  */
 @toolset[
-    tools: [listDirectory, readFile, batchReadFiles, grepSearch, globSearch]
+    tools: [listDirectory, fileRead, fileBatchRead, grepSearch, globSearch]
 ]
 public class ReadOnlyFSToolset {
+}
+
+//------------------------------------------------------------------------------------
+
+@tool[
+    description: "Creates a file with content and returns the creation result",
+    parameters: {
+        filePath: "File path, must be an absolute path",
+        content: "File content"
+    }
+]
+protected func fileCreate(filePath: String, content: String): String {
+    if (!Path(filePath).isAbsolute()) {
+        return "File path must be absolute"
+    }
+
+    if (InputUtils.confirm("Create File ${filePath}", content) == Confirmation.Deny) {
+        return "User denied the operation"
+    }
+
+    try {
+        let file = File(filePath, Write)
+        file.write(content.toArray())
+        file.close()
+        return "File ${filePath} created successfully!"
+    } catch (e: Exception) {
+        return "Failed to create file: ${e}"
+    }
+}
+
+@tool[
+    description: "Writes content to a single file and returns the write result",
+    parameters: { filePath: "File path, must be an absolute path", content: "Content to write" }
+]
+protected func fileWrite(filePath: String, content: String): String {
+    if (!Path(filePath).isAbsolute()) {
+        return "File path must be absolute"
+    }
+
+    let message = filePath + "\n" + content
+    if (InputUtils.confirm("Write File", message) == Confirmation.Deny) {
+        return "User denied the operation"
+    }
+    return writeFileBasic(filePath, content)
+}
+
+@tool[
+    description: "${FILE_EDIT_DESCRIPTION}",
+    parameters: {
+        filePath: "File path, must be an absolute path",
+        oldContent: "The exact literal text to replace, preferably unescaped. Including at least 3 lines of context BEFORE and AFTER the target text, matching whitespace and indentation precisely. If this string is not the exact literal text (i.e. you escaped it) or does not match exactly, the tool will fail.",
+        newContent: "The exact literal text to replace `oldContent` with, preferably unescaped. Provide the EXACT text. newContent MUST be different from oldContent; otherwise, the tool will fail."
+    }
+]
+protected func fileEdit(filePath: String, oldContent: String, newContent: String): String {
+    return FSToolset.fileMultiEditImpl(
+        "Edit File", filePath, [MultiEditParam(oldContent: oldContent, newContent: newContent)]
+    )
 }
 
 /**
  * General file system tools
  */
 @toolset[
-    tools: [listDirectory, readFile, batchReadFiles, grepSearch, globSearch]
+    tools: [
+        listDirectory, grepSearch, globSearch,
+        fileRead, fileBatchRead, fileCreate, fileWrite, fileEdit
+    ]
 ]
 public class FSToolset {
     @tool[
-        description: "Creates a file with content and returns the creation result",
-        parameters: {
-            filePath: "File path, must be an absolute path",
-            content: "File content"
-        }
-    ]
-    func createFile(filePath: String, content: String): String {
-        if (!Path(filePath).isAbsolute()) {
-            return "File path must be absolute"
-        }
-
-        if (InputUtils.confirm("Create File ${filePath}", content) == Confirmation.Deny) {
-            return "User denied the operation"
-        }
-
-        try {
-            let file = File(filePath, Write)
-            file.write(content.toArray())
-            file.close()
-            return "File ${filePath} created successfully!"
-        } catch (e: Exception) {
-            return "Failed to create file: ${e}"
-        }
-    }
-
-    @tool[
-        description: "Writes content to a single file and returns the write result",
-        parameters: { filePath: "File path, must be an absolute path", content: "Content to write" }
-    ]
-    func writeFile(filePath: String, content: String): String {
-        if (!Path(filePath).isAbsolute()) {
-            return "File path must be absolute"
-        }
-
-        let message = filePath + "\n" + content
-        if (InputUtils.confirm("Write File", message) == Confirmation.Deny) {
-            return "User denied the operation"
-        }
-        return writeFileBasic(filePath, content)
-    }
-
-    @tool[
-        description: "${EDIT_FILE_DESCRIPTION}",
-        parameters: {
-            filePath: "File path, must be an absolute path",
-            oldContent: "The exact literal text to replace, preferably unescaped. Including at least 3 lines of context BEFORE and AFTER the target text, matching whitespace and indentation precisely. If this string is not the exact literal text (i.e. you escaped it) or does not match exactly, the tool will fail.",
-            newContent: "The exact literal text to replace `oldContent` with, preferably unescaped. Provide the EXACT text. newContent MUST be different from oldContent; otherwise, the tool will fail."
-        }
-    ]
-    func editFile(filePath: String, oldContent: String, newContent: String): String {
-        return multiEditFileImpl(
-            "Edit File", filePath, [MultiEditParam(oldContent: oldContent, newContent: newContent)]
-        )
-    }
-
-    @tool[
-        description: "${MULTI_EDIT_FILE_DESCRIPTION}",
+        description: "${FILE_MULTI_EDIT_DESCRIPTION}",
         parameters: {
             filePath: "File path, must be an absolute path",
             edits: "Array of edit operations to perform sequentially on the file"
         }
     ]
-    func multiEditFile(filePath: String, edits: Array<MultiEditParam>): String {
-        return multiEditFileImpl("Multi-Edit File", filePath, edits)
+    func fileMultiEdit(filePath: String, edits: Array<MultiEditParam>): String {
+        return fileMultiEditImpl("Multi-Edit File", filePath, edits)
     }
 
-    private func multiEditFileImpl(toolName: String, filePath: String, edits: Array<MultiEditParam>): String {
+    static func fileMultiEditImpl(toolName: String, filePath: String, edits: Array<MultiEditParam>): String {
         if (!Path(filePath).isAbsolute()) {
             return "File path must be absolute"
         }

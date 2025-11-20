@@ -9,6 +9,7 @@ import magic.utils.readFile
 
 import cli.core.config.CliConfig
 import cli.io.{PrintUtils, CompletionListUtils, wrapBox, WithColor, Theme, AnsiColor, Align}
+import cli.utils.loadMarkdown
 
 import std.fs.{exists, Directory, Path, File}
 import std.collection.{HashMap, ArrayList, enumerate, filter, map, collectArray}
@@ -22,7 +23,6 @@ protected class CustomCommand {
 
 protected class CustomCommandManager {
     private var commands = HashMap<String, CustomCommand>()
-    private let commandsDir = CliConfig.dotDir.join("commands")
 
     public init() {
         registerBuiltinCommands()
@@ -33,15 +33,24 @@ protected class CustomCommandManager {
      * Load all command configurations from the commands directory
      */
     private func loadCommands(): Unit {
+        for (commandDir in CliConfig.commandDirs) {
+            loadCommandUnderDir(commandDir)
+        }
+    }
+
+    /**
+     * Load all command configurations from the given directory
+     */
+    private func loadCommandUnderDir(commandDir: Path): Unit {
         this.commands.clear()
 
-        if (!exists(commandsDir)) {
-            LogUtils.info("Commands directory does not exist: ${commandsDir}")
+        if (!exists(commandDir)) {
+            LogUtils.info("Commands directory does not exist: ${commandDir}")
             return
         }
 
         try {
-            for (entry in Directory.readFrom(commandsDir)) {
+            for (entry in Directory.readFrom(commandDir)) {
                 if (!entry.isRegular()) {
                     continue
                 }
@@ -108,38 +117,19 @@ protected class CustomCommandManager {
      * Load a single command from Markdown file
      */
     private func loadCommandFromMd(filePath: Path): Option<CustomCommand> {
-        let content = readFile(filePath)
-        let lines = content.split("\n")
-        var pivot = -1
-        for ((idx, line) in enumerate(lines)) {
-            if (line.startsWith("---")) {
-                pivot = idx
-                break
-            }
-        }
-        if (pivot == -1) {
-            return CustomCommand(description: "", prompt: content)
-        }
-        let prompt = String.join(lines[pivot+1..], delimiter: "\n")
-        for (line in lines[0..pivot]) {
-            let items = line.split(":")
-            if (items.size == 2 && items[0].trimAscii() == "description") {
-                return CustomCommand(description: items[1].trimAscii(), prompt: prompt)
-            }
-        }
-        return CustomCommand(description: "", prompt: prompt)
+        let (metadata, content) = loadMarkdown(filePath)
+        return CustomCommand(description: metadata.get("description") ?? "", prompt: content)
+    }
+
+    protected func getCommand(name: String): Option<CustomCommand> {
+        return this.commands.get(name)
     }
 
     /**
      * Build the full user query by replacing $ARGS in the command prompt template
      */
-    private func buildUserRequest(name: String, args: String): Option<String> {
-        if (let Some(command) <- commands.get(name)) {
-            return command.prompt.replace("$ARGS", args)
-        } else {
-            PrintUtils.printLine("❌ Custom command '${name}' not found. Use '/cmd list' to see available commands.")
-            return None
-        }
+    protected func handleCustomCommand(customCommand: CustomCommand, args: String): String {
+        return customCommand.prompt.replace("$ARGS", args)
     }
 
     /**
@@ -147,7 +137,7 @@ protected class CustomCommandManager {
      */
     private func listCommands(): Unit {
         if (commands.isEmpty()) {
-            PrintUtils.printLine("No custom commands found. Create JSON files in ${commandsDir} to add commands.")
+            PrintUtils.printLine("No custom commands found")
             return
         }
 
@@ -187,7 +177,7 @@ protected class CustomCommandManager {
     /**
      * Handle custom command input parsing and execution
      */
-    public func handleCommand(input: String): Option<String> {
+    public func handleCommand(input: String): Unit {
         // Check for direct /<command> format
         // /<command> args...
         let parts = input.split(" ") |>
@@ -198,31 +188,28 @@ protected class CustomCommandManager {
         let args = String.join(parts[1..], delimiter: " ")
 
         // /cmd xxx
-        if (cmdName == "cmd") {
-            if (args.isEmpty() || args == "list") {
-                // /cmd or /cmd list
-                listCommands()
-            } else if (parts.size >= 2 && parts[1] == "help") {
-                // /cmd help <name>
-                if (parts.size >= 3) {
-                    showHelp(parts[2])
-                } else {
-                    PrintUtils.printLine("Usage: /cmd help <command-name>")
-                }
-            } else if (args == "reload") {
-                // /cmd reload
-                reloadCommands()
+        if (cmdName != "cmd") {
+            throw UnsupportedException("Unreachable")
+        }
+        if (args.isEmpty() || args == "list") {
+            // /cmd or /cmd list
+            listCommands()
+        } else if (parts.size >= 2 && parts[1] == "help") {
+            // /cmd help <name>
+            if (parts.size >= 3) {
+                showHelp(parts[2])
             } else {
-                PrintUtils.printLine("Unknown command. Available options:")
-                PrintUtils.printLine("  /cmd list          - List all commands")
-                PrintUtils.printLine("  /cmd help <name>   - Show command help")
-                PrintUtils.printLine("  /cmd reload        - Reload commands")
-                PrintUtils.printLine("  /<name> [args]     - Execute command (new)")
+                PrintUtils.printLine("Usage: /cmd help <command-name>")
             }
-            return None
+        } else if (args == "reload") {
+            // /cmd reload
+            reloadCommands()
         } else {
-            // Custom command
-            return buildUserRequest(cmdName, args)
+            PrintUtils.printLine("Unknown command. Available options:")
+            PrintUtils.printLine("  /cmd list          - List all commands")
+            PrintUtils.printLine("  /cmd help <name>   - Show command help")
+            PrintUtils.printLine("  /cmd reload        - Reload commands")
+            PrintUtils.printLine("  /<name> [args]     - Execute command (new)")
         }
     }
 

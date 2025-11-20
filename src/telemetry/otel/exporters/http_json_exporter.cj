@@ -1,17 +1,14 @@
 package cli.telemetry.otel.exporters
 
 import cli.telemetry.otel.*
+import magic.log.LogUtils
+import magic.utils.http.HttpUtils
 
 import std.collection.*
-import std.io.StringReader
+import std.fs.*
 import std.time.*
 
-import std.net.{SocketAddress, TcpSocket}
-
 import stdx.encoding.json.*
-import stdx.net.http.*
-import stdx.net.tls.TlsClientConfig
-import stdx.encoding.url.URL
 
 /**
  * Shared HTTP client helper that performs JSON POST requests with timeouts and headers.
@@ -34,57 +31,29 @@ protected class JsonHttpTransport {
     }
 
     public func send(payload: String): Bool {
-        let client = buildClient()
         try {
-            // POST the JSON payload and treat any non-2xx status as a transport failure.
-            let request = prepareRequest(payload)
-            let response = client.send(request)
-            let status = Int64(response.status)
-            if (status >= 200 && status < 300) {
-                return true
+            let jsonValue = JsonValue.fromStr(payload)
+            let jsonObject = jsonValue.asObject()
+
+            let httpHeaders = HashMap<String, String>()
+            for ((key, value) in headers) {
+                httpHeaders[key] = value
             }
-            let bodyReader = StringReader(response.body)
-            let _ = bodyReader.readToEnd()
-            return false
+
+            let result = HttpUtils.post(endpoint, httpHeaders, jsonObject, verify: false)
+
+            match (result) {
+                case Some(response) =>
+                    return true
+                case None =>
+                    return false
+            }
         } catch (ex: Exception) {
+            LogUtils.debug("Telemetry export failed: ${ex.message}")
             return false
-        } finally {
-            client.close()
         }
     }
 
-    private func prepareRequest(payload: String): HttpRequest {
-        let builder = HttpRequestBuilder().url(endpoint).post()
-        builder.body(payload)
-        for ((key, value) in headers) {
-            builder.header(key, value)
-        }
-        return builder.build()
-    }
-
-    private func buildClient(): Client {
-        let builder = ClientBuilder()
-        builder.readTimeout(Duration.millisecond * timeoutMs)
-
-        if (endpoint.startsWith("https")) {
-            var tlsConfig = TlsClientConfig()
-            let url = URL.parse(endpoint)
-            tlsConfig.domain = url.hostName
-            tlsConfig.domain = ""
-            builder.tlsConfig(tlsConfig)
-        }
-
-        let connector = { address: SocketAddress =>
-            let socket = TcpSocket(address)
-            let timeout = Duration.millisecond * timeoutMs
-            socket.readTimeout = timeout
-            socket.writeTimeout = timeout
-            socket.connect(timeout: timeout)
-            return socket
-        }
-        builder.connector(connector)
-        return builder.build()
-    }
 }
 
 public class JsonHttpSpanExporter <: SpanExporter {

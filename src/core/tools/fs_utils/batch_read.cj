@@ -8,7 +8,7 @@ import std.collection.{map, collectArray, ArrayList, HashMap}
 import std.fs.File
 import stdx.encoding.json.*
 
-protected const BATCH_READ_FILE_DESCRIPTION = """
+protected const FILE_BATCH_READ_DESCRIPTION = """
 🚀 Batch read multiple files in parallel for maximum performance (2-4x faster than sequential reading).
 
 This tool uses parallel execution to read multiple files simultaneously.
@@ -24,7 +24,7 @@ Performance:
 - Recommended for 3+ files
 
 Example usage:
-- "Use batchReadFiles to read 6 files: /path/to/file1.cj, /path/to/file2.cj, /path/to/file3.cj"
+- "Use fileBatchRead to read 6 files: /path/to/file1.cj, /path/to/file2.cj, /path/to/file3.cj"
 - "Read all config files: /project/config.toml, /project/settings.toml"
 
 Returns: JSON object with file contents, status, and performance metrics.
@@ -33,7 +33,7 @@ Returns: JSON object with file contents, status, and performance metrics.
 @jsonable
 protected class ReadFileParam {
     @field["The absolute path to the file to read"]
-    protected let path: String
+    protected let filePath: String
 
     @field["Optional: Starting line number (1-based, inclusive). If not provided, reads from start of file"]
     protected let startLine: Option<Int64>
@@ -42,15 +42,12 @@ protected class ReadFileParam {
     protected let endLine: Option<Int64>
 }
 
-protected func batchRead(files: Array<ReadFileParam>): String {
-    // Validate input
-    if (files.isEmpty()) {
-        let errorResult = HashMap<String, JsonValue>()
-        errorResult["error"] = JsonString("No file paths provided")
-        errorResult["files"] = JsonArray([])
-        return JsonObject(errorResult).toJsonString()
-    }
+@jsonable
+protected struct BatchReadFilesParam {
+    protected let files: Array<ReadFileParam>
+}
 
+protected func batchRead(files: Array<ReadFileParam>): Array<Option<String>> {
     let totalFiles = files.size
 
     LogUtils.info("[FSToolset] Batch reading ${files.size} files in parallel...")
@@ -73,14 +70,14 @@ protected func batchRead(files: Array<ReadFileParam>): String {
             let param = files[index]
             let fut = spawn {
                 try {
-                    let content = catRange(param.path, param.startLine ?? 1, endLine: param.endLine ?? Int64.Max)
+                    let content = catRange(param.filePath, param.startLine ?? 1, endLine: param.endLine ?? Int64.Max)
                     let end = param.endLine.map { n => n.toString() } ?? "EOF"
-                    let result = "<file-content path=${param.path} start=${param.startLine ?? 1} end=${end}>\n${content}\n</file-content>"
-                    LogUtils.debug("[FSToolset] Parallel read: ${param.path} (${content.size} bytes)")
+                    let result = "<file-content path=${param.filePath} start=${param.startLine ?? 1} end=${end}>\n${content}\n</file-content>"
+                    LogUtils.debug("[FSToolset] Parallel read: ${param.filePath} (${content.size} bytes)")
                     return (index, result)
                 } catch (e: Exception) {
-                    LogUtils.error("[FSToolset] Failed to read ${param.path}: ${e.message}")
-                    return (index, "Error reading ${param.path}: ${e.message}")
+                    LogUtils.error("[FSToolset] Failed to read ${param.filePath}: ${e.message}")
+                    return (index, "Error reading ${param.filePath}: ${e.message}")
                 }
             }
             futures.add(fut)
@@ -91,14 +88,13 @@ protected func batchRead(files: Array<ReadFileParam>): String {
             results[fileIndex] = content
         }
     }
-
-    return mergeBatchResults(files, results)
+    return results.toArray()
 }
 
 /**
  * Merge batch results into a single string
  */
-private func mergeBatchResults(files: Array<ReadFileParam>, results: ArrayList<Option<String>>): String {
+protected func mergeBatchResults(files: Array<ReadFileParam>, results: Array<Option<String>>): String {
     // Collect successful and failed files
     let successFiles = ArrayList<String>()
     let failedFiles = ArrayList<String>()
