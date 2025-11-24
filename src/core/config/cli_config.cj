@@ -3,6 +3,7 @@ package cli.core.config
 import magic.core.model.ChatModel
 import magic.model.ModelManager
 import magic.log.LogUtils
+import magic.config.Config
 
 import std.fs.*
 import std.io.readToEnd
@@ -112,13 +113,15 @@ protected class CliConfig {
 
     /**
      * Whether to enable data collection for telemetry and analytics
+     * The default value from CliSettingManager will be used.
      */
-    public static var collectData: Bool = CliSettingManager.setting.collectData
+    public static var collectData: Bool = false
 
     /**
      * Temperature agents will use
+     * The default value from CliSettingManager will be used.
      */
-    public static var temperature: Float64 = CliSettingManager.setting.temperature
+    public static var temperature: Float64 = 0.0
 
     /**
      * The chat model to use
@@ -179,9 +182,10 @@ protected class CliConfig {
     public static var nonInteractivePrompt: String = ""
 
     /**
-    * language in [cangjie, general, unknown]
-    */
-    public static var language: String = "unknown" // will be set during the arguments parsing
+     * The programming language setting for the CLI.
+     * It will be set during the arguments parsing
+     */
+    public static var language: String = ""
 
     public static prop userRules: String {
         get() {
@@ -205,13 +209,49 @@ protected class CliConfig {
     public static var commandDirs: ArrayList<Path> = ArrayList([CliConfig.dotDir.join("commands")])
 
     /**
+     * The default input token limit for the model
+     * The default value from CliSettingManager will be used.
+     */
+    public static var defaultModelInputLimit: Int64 = 0
+
+    /**
+     * The default output token limit for the model
+     * The default value from CliSettingManager will be used.
+     */
+    public static var defaultModelOutputLimit: Int64 = 0
+
+    /**
      * Code compression
      * When the number of characters of the code exceeds this threshold * LLM's content window * 4,
      * the code will be compressed.
      * The reason we multiple by 4 is because 1 token has about 4 characters on average.
      */
-    public static var readFileThreshold: Float64 = 0.05
-    public static var batchReadFilesThreshold: Float64 = 0.1
+    public static var fileReadThreshold: Float64 = 0.05
+    public static var fileBatchReadThreshold: Float64 = 0.1
+
+    public static func toString(): String {
+        let strBuilder = StringBuilder()
+        strBuilder.append("CliConfig Setting:\n")
+        strBuilder.append("  version: ${CliConfig.version}\n")
+        strBuilder.append("  language: ${CliConfig.language}\n")
+        strBuilder.append("  auto: ${CliConfig.auto}\n")
+        strBuilder.append("  collectData: ${CliConfig.collectData}\n")
+        strBuilder.append("  temperature: ${CliConfig.temperature}\n")
+        strBuilder.append("  model: ${CliConfig.model}\n")
+        strBuilder.append("  fastModel: ${CliConfig.fastModel}\n")
+        strBuilder.append("  fallbackModels: ${CliConfig.fallbackModels}\n")
+        // strBuilder.append("  nonInteractive: ${CliConfig.nonInteractive}\n")
+        // strBuilder.append("  nonInteractivePrompt: ${CliConfig.nonInteractivePrompt}\n")
+        strBuilder.append("  defaultModelInputLimit: ${CliConfig.defaultModelInputLimit}\n")
+        strBuilder.append("  defaultModelOutputLimit: ${CliConfig.defaultModelOutputLimit}\n")
+        strBuilder.append("  enableModelToolCall: ${Config.enableModelToolCall}\n")
+        // strBuilder.append("  enableParallelToolCall: ${Config.enableParallelToolCall}\n")
+        strBuilder.append("  fileReadThreshold: ${CliConfig.fileReadThreshold}\n")
+        strBuilder.append("  fileBatchReadThreshold: ${CliConfig.fileBatchReadThreshold}\n")
+        strBuilder.append("  subagentDirs: ${CliConfig.subagentDirs}\n")
+        strBuilder.append("  commandDirs: ${CliConfig.commandDirs}\n")
+        return strBuilder.toString()
+    }
 
     /**
      * Clean up old log files based on retention policy
