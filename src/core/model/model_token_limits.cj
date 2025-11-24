@@ -1,10 +1,10 @@
 package cli.core.model
 
+import cli.core.config.CliConfig
+
 import std.collection.HashMap
 
 protected class ModelTokenLimits {
-    static const DEFAULT_INPUT_LIMIT: Int64 = 128 * 1024
-
     /**
      * The maximum number of input tokens that can be used in a single request.
      */
@@ -60,10 +60,8 @@ protected class ModelTokenLimits {
                 return value
             }
         }
-        return DEFAULT_INPUT_LIMIT
+        return CliConfig.defaultModelInputLimit
     }
-
-    static const DEFAULT_OUTPUT_LIMIT: Int64 = 32 * 1024
 
     /**
      * The maximum number of output tokens that can be used in a single request.
@@ -105,6 +103,6 @@ protected class ModelTokenLimits {
                 return value
             }
         }
-        return DEFAULT_OUTPUT_LIMIT
+        return CliConfig.defaultModelOutputLimit
     }
 }

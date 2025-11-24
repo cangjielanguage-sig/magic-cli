@@ -1,6 +1,7 @@
 package cli
 
 import magic.config.Config
+import magic.log.LogUtils
 
 import cli.core.config.CliConfig
 import cli.io.{InputUtils, PrintUtils}
@@ -45,6 +46,7 @@ func cliMain(args: Array<String>): Int64 {
 
     // Start the setting guideline when first time to run
     initSettingGuideline()
+    LogUtils.debug(CliConfig.toString())
 
     // Initialize the app context
     let app = CliApp()

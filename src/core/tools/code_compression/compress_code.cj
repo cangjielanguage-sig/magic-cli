@@ -9,15 +9,15 @@ import cli.core.model.CliModelManager
 import std.fs.Path
 
 protected func compressCode(
-    filePath: String, 
-    startLine!: Int = 1, 
+    filePath: String,
+    startLine!: Int = 1,
     endLine!: Int = Int.Max,
     originalContent!: String = ""): String {
     let language: String = match {
         case filePath.endsWith(".cj") => "cangjie"
         case filePath.endsWith(".py") => "python"
         case filePath.endsWith(".java") => "java"
-        case _ => 
+        case _ =>
             LogUtils.debug("Code compression not supported for this file type `${Path(filePath).extensionName}`.")
             return originalContent
     }
@@ -44,9 +44,9 @@ protected func getCompressionThreshold(batchRead: Bool): Int {
         (CliModelManager.lastAvailableModel ?? CliModelManager.model).fullName
     )
     let compressionThreshold = if (batchRead) {
-        CliConfig.batchReadFilesThreshold
+        CliConfig.fileBatchReadThreshold
     } else {
-        CliConfig.readFileThreshold
+        CliConfig.fileReadThreshold
     }
 
     // each token has about 4 characters on average

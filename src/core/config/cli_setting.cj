@@ -13,6 +13,7 @@ import stdx.encoding.json.*
 protected class CliSetting {
     /**
      * The programming language setting for the CLI.
+     * Language in [cangjie, general, unknown]
      */
     protected var language: String = "unknown"
 
@@ -41,6 +42,16 @@ protected class CliSetting {
      * Temperature agents will use
      */
     protected var temperature: Float64 = 1.0
+
+     /**
+     * Default input limit for models
+     */
+    protected var defaultModelInputLimit: Int64 = 128 * 1024
+
+    /**
+     * Default output limit for models
+     */
+    protected var defaultModelOutputLimit: Int64 = 32 * 1024
 
     /**
      * Whether to enable data collection for telemetry and analytics
