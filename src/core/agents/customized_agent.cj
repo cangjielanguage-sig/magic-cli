@@ -39,7 +39,7 @@ private let SYSTEM_PROMPT_TEMPLATE = """
         fileRead
     ]
 ]
-public class CustomizedAgent {
+public class CustomAgent {
     private let agentDir: Path
 
     public init(agentDir: Path) {
@@ -51,6 +51,7 @@ public class CustomizedAgent {
             ("AGENT_DIR", agentDir.toString())
         ])
         this.name = metadata.get("name") ?? "Customized Agent"
+        // this.description = metadata.get("description") ?? "Customized Agent"
 
         for (tool in (metadata.get("tools") ?? "").split(",")) {
             match (tool.trimAscii()) {

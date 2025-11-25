@@ -50,17 +50,21 @@ private func executeCommand(input: String, app: CliApp): Option<Bool> {
         case "/exit" | "exit" =>
             PrintUtils.printExitMessage()
             return false  // Signal to exit main loop
+
         case "/help" | "help" =>
             CustomCommandManager.printBuiltinCommands()
             return true
+
         case "/clear" | "clear" =>
             app.conversationManager.clearConversation()
             PrintUtils.clearScreen()
             PrintUtils.printLogo()
             return true
+
         case "/compact" | "compact" =>
             app.conversationManager.compact(manual: true)
             return true
+
         case "/memory" | "memory" =>
             let userRules = CliConfig.userRules
             if (userRules.isEmpty()) {
@@ -71,30 +75,50 @@ private func executeCommand(input: String, app: CliApp): Option<Bool> {
                 PrintUtils.printLine(userRules)
             }
             return true
+
         case "/init" | "init" =>
             initMagicFile()
             return true
+
         case "/status" | "status" =>
             app.tokenStatusManager.printStatus()
             return true
-        case _input where _input.startsWith("/cmd") =>
-            if (let Some(request) <- app.customCommandManager.handleCommand(input)) {
-                executeAgentTask(app, request)
-            }
-            return true
+
        case _input where _input.startsWith("/mcp") =>
             app.mcpManager.handleCommand(input.split(" "), app.agent)
             return true
+
         case _input where _input.startsWith("/conversation") =>
             app.conversationManager.handleCommand(input.split(" "))
             return true
 
-        // Handle direct /<command> format for custom commands
-        case _input where _input.startsWith("/") =>
-            if (let Some(request) <- app.customCommandManager.handleCommand(input)) {
-                executeAgentTask(app, request)
-            }
+        case _input where _input.startsWith("/cmd") =>
+            app.customCommandManager.handleCommand(input)
             return true
+
+        case "/agents" =>
+            app.customAgentManager.listAgents()
+            return true
+
+        // Handle direct /<command> ...
+        case _input where _input.startsWith("/") =>
+            // Get command name
+            if (let Some(pivot) <- _input.indexOf(b' ')) {
+                let cmdName = _input[1..pivot] // Remove the leading '/'
+                let args = _input[pivot+1..]
+                // Check if it's a custom sub-agent
+                if (let Some(subagent) <- app.customAgentManager.getAgent(cmdName)) {
+                    executeAgentTask(app, args, subagent: subagent)
+                } else if (let Some(command) <- app.customCommandManager.getCommand(cmdName)) {
+                    let request = app.customCommandManager.handleCustomCommand(command, args)
+                    executeAgentTask(app, request)
+                } else {
+                    PrintUtils.printLine("💥 Command '${cmdName}' not found. Use '/cmd list' to see available commands.")
+                }
+                return true
+            } else {
+                return None
+            }
 
         case _ => // Not an available command
             return None
@@ -103,10 +127,14 @@ private func executeCommand(input: String, app: CliApp): Option<Bool> {
 
 //-------------------------------------------------------
 
-private func executeAgentTask(app: CliApp, input: String): Unit {
+private func executeAgentTask(app: CliApp, input: String, subagent!: Option<Agent> = None): Unit {
     LogUtils.debug("Handle user input `${input}`")
     // Each time we execute an agent task, we need to reset the sub-agent indent
     PrintUtils.resetSubAgent()
+
+    // Get the agent to use
+    let agent = subagent ?? app.agent
+    let isSubagent = subagent.isSome()
 
     // Try all available models in sequence
      let allModels = CliModelManager.getAllModels()
@@ -118,13 +146,19 @@ private func executeAgentTask(app: CliApp, input: String): Unit {
             } else {
                 PrintUtils.printLine("Model Fallback: switch to: ${currModel.fullName}")
                 LogUtils.debug("Switch model: ${currModel.fullName}")
-                app.switchToFallbackModel(currModel)
+                // Switch to the fallback model
+                agent.model = currModel
             }
 
             // Execute with current model
-            let asyncResponse = app.agent.asyncChat(
-                AgentRequest(input, conversation: app.conversationManager.conversation)
-            )
+            let asyncResponse = if (!isSubagent) {
+                agent.asyncChat(
+                    AgentRequest(input, conversation: app.conversationManager.conversation)
+                )
+            } else {
+                //  Sub-agent request, no conversation
+                agent.asyncChat(AgentRequest(input))
+            }
             // Start cancellation checker
             let cancelChecker = CancelChecker(app, asyncResponse)
             cancelChecker.start()
@@ -147,7 +181,7 @@ private func executeAgentTask(app: CliApp, input: String): Unit {
                 // PrintUtils.printLine("Cancelled".withColor(AnsiColor.color256(240)))
                 return
             } else {
-                handleAgentResponse(app, asyncResponse)
+                handleAgentResponse(app, asyncResponse, isSubagent: isSubagent)
             }
             // Compact is called once per successful execution, not per retry attempt
             CliModelManager.lastAvailableModel = currModel
@@ -167,7 +201,7 @@ private func executeAgentTask(app: CliApp, input: String): Unit {
 /**
  * Handle the agent response, print the response and update the conversation
  */
-private func handleAgentResponse(app: CliApp, response: AsyncAgentResponse): Unit {
+private func handleAgentResponse(app: CliApp, response: AsyncAgentResponse, isSubagent!: Bool): Unit {
     // This ensures response.content access is safe
     let content = response.content
     match (response.status) {
@@ -176,10 +210,12 @@ private func handleAgentResponse(app: CliApp, response: AsyncAgentResponse): Uni
             if (!content.isEmpty()) {
                 PrintUtils.printAgentResponse(response)
             }
-            app.conversationManager.conversation.addChatRound(response.execution.chatRound)
-            app.conversationManager.compact()
-            spawn {
-                DataCollector.collectChatRound(response.execution.chatRound)
+            if (!isSubagent) {
+                app.conversationManager.conversation.addChatRound(response.execution.chatRound)
+                app.conversationManager.compact()
+                spawn {
+                    DataCollector.collectChatRound(response.execution.chatRound)
+                }
             }
         case AgentResponseStatus.Cancelled => ()
         case AgentResponseStatus.Failed =>
