@@ -31,33 +31,49 @@ char* get_node_text(TSNode node, const char* source_code) {
 }
 
 char* get_modifiers_text(TSNode node, const char* source_code) {
-
     uint32_t child_count = ts_node_child_count(node);
-    TSNode modifiers_node;
+    TSNode modifiers_node = {0}; // Initialize to null node
+    bool found_modifier = false;
 
     for (uint32_t i = 0; i < child_count; i++) {
         const char* field_name = ts_node_field_name_for_child(node, i);
         // Check both by field name (if available) and by node type
         if (field_name && strcmp(field_name, "modifiers") == 0) {
             modifiers_node = ts_node_child(node, i);
+            found_modifier = true;
             break;
         }
         // If field name is not found, check the node type
         TSNode potential_child = ts_node_child(node, i);
         if (strcmp(ts_node_type(potential_child), "modifiers") == 0) {
             modifiers_node = potential_child;
+            found_modifier = true;
             break;
         }
     }
+    
+    // Check if we found a modifiers node
+    if (!found_modifier) {
+        return NULL;
+    }
+    
+    // Check if the modifiers node is valid
+    if (ts_node_is_null(modifiers_node)) {
+        return NULL;
+    }
+    
     uint32_t modifier_count = ts_node_child_count(modifiers_node);
     
-    if (ts_node_is_null(modifiers_node) || modifier_count == 0) return NULL;
+    if (modifier_count == 0) return NULL;
 
     // Now check if we found the modifiers_node and iterate through its children
     char *rst = NULL;
     size_t sig_len = 0;
     size_t sig_cap = 64; // Initial capacity
     rst = malloc(sig_cap);
+    if (!rst) {
+        return NULL;
+    }
     rst[0] = '\0';
     for (uint32_t j = 0; j < modifier_count; j++) {
         TSNode mod_node = ts_node_child(modifiers_node, j);
@@ -67,11 +83,13 @@ char* get_modifiers_text(TSNode node, const char* source_code) {
             // Ensure enough capacity
             while (sig_len + mod_len + 1 > sig_cap) {
                 sig_cap *= 2;
-                rst = realloc(rst, sig_cap);
-                if (!rst) {
+                char* temp = realloc(rst, sig_cap);
+                if (!temp) {
                     free(mod_text);
+                    free(rst);
                     return NULL;
                 }
+                rst = temp;
             }
             strcat(rst, mod_text);
             if (mod_text[0] == '@') strcat(rst, "\n");
@@ -125,7 +143,7 @@ char* escape_xml(const char* input) {
             case '\'': escaped_len += 6; break;  // &apos;
             case '\n': escaped_len += 5; break;  // &#10;
             case '\r': escaped_len += 5; break;  // &#13;
-            case '\t': escaped_len += 5; break;  // &#9;
+            case '\t': escaped_len += 4; break;  // &#9;
             default:   break;
         }
     }
@@ -168,7 +186,7 @@ char* escape_xml(const char* input) {
                 break;
             case '\t':
                 strcpy(escaped + j, "&#9;");
-                j += 5;
+                j += 4;
                 break;
             default:
                 escaped[j++] = input[i];
