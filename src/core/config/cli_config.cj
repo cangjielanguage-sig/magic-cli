@@ -210,8 +210,8 @@ protected class CliConfig {
      * the code will be compressed.
      * The reason we multiple by 4 is because 1 token has about 4 characters on average.
      */
-    public static var readFileThreshold: Float64 = 0.025
-    public static var batchReadFilesThreshold: Float64 = 0.05
+    public static var readFileThreshold: Float64 = 0.05
+    public static var batchReadFilesThreshold: Float64 = 0.1
 
     /**
      * Clean up old log files based on retention policy
