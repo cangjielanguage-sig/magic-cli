@@ -23,6 +23,15 @@ typedef enum {
     ENTITY_UNKNOWN
 } entity_type_t;
 
+// Structure to represent a parsing error
+typedef struct {
+    int line;
+    char* message;
+    char* error_line;
+    char* code_above_error_line;
+    char* code_below_error_line;
+} parse_error_t;
+
 // Forward declaration
 typedef struct signature_node signature_node_t;
 
