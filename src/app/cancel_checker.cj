@@ -35,7 +35,7 @@ class CancelChecker {
                     }
                     return
                 }
-                // sleep(Duration.millisecond * 20) // Poll every 20ms
+                sleep(Duration.millisecond * 20) // Poll every 20ms
             }
         }
     }
