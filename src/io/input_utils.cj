@@ -76,8 +76,7 @@ protected class InputUtils {
             let options = [
                 "Yes, proceed",
                 "Yes, allow all edits during this session",
-                "No, stop",
-                "Wait, input guidelines"
+                "No, and tell Magic-Cli what to do differently"
             ]
             match (getOptions(options)) {
                 case Some(index) =>
@@ -88,9 +87,6 @@ protected class InputUtils {
                         PrintUtils.printApproval()
                         CliConfig.auto = true
                         return Confirmation.Approve
-                    } else if (index == 2) {
-                        PrintUtils.printCancellation()
-                        return Confirmation.Deny
                     } else {
                         let input = getUserInput(prompt: "> ")
                         throw ToolException("User denied the tool to run with guidelines: \"${input}\".\nNOTE You must follow her/his guidelines to execute. Remember that obeying user guidelines is the most important.")
