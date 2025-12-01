@@ -212,6 +212,10 @@ class DisplayContext {
 /**
  * Extract @path context based on cursor position
  * Returns (atIndex, pathStart, pathEnd, pathPrefix) or None
+ * 
+ * Key insight: Use cursor position to determine the replacement range.
+ * - pathEnd is set to cursor position (what user is currently typing)
+ * - Everything after cursor is preserved
  */
 func extractPathContext(text: String, cursor: Int64): Option<(Int64, Int64, Int64, String)> {
     let runes = text.toRuneArray()
@@ -231,23 +235,21 @@ func extractPathContext(text: String, cursor: Int64): Option<(Int64, Int64, Int6
         return None
     }
 
-    // Find the first space after the @ symbol
     let pathStart = atIndex + 1
-    var pathEnd = runes.size
-    for (i in pathStart..runes.size) {
+    
+    // Check if there's a space between @ and cursor
+    // If there's a space before cursor, the path input has ended
+    for (i in pathStart..cursor) {
         if (runes[i] == r' ') {
-            pathEnd = i
-            break
+            return None // Space found before cursor, path has ended
         }
     }
 
-    // Check if the first space is before the current cursor
-    // If there's a space before cursor, the path has ended and no completion should show
-    if (pathEnd < cursor) {
-        return None // Path has ended before cursor
-    }
+    // pathEnd is the cursor position - we replace from @+1 to cursor
+    // Everything after cursor is preserved
+    let pathEnd = cursor
 
-    // Extract path prefix up to cursor position
+    // Extract path prefix (from @ to cursor)
     let pathPrefix = String(runes[pathStart..cursor])
 
     return Some((atIndex, pathStart, pathEnd, pathPrefix))
