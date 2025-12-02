@@ -340,11 +340,18 @@ public class Readline {
             // Use rune-based operations to handle multi-byte characters correctly
             let runes = currentText.toRuneArray()
             let beforePathRunes = runes[0..pathStart]
-            let afterPathRunes = runes[pathEnd..]
+            let afterRunes = runes[pathEnd..]
             let selectedRunes = selected.toRuneArray()
 
+            // Add space separator if afterRunes is not empty and doesn't start with space
+            let afterPathRunes = if (afterRunes.size > 0 && afterRunes[0] != r' ') {
+                " " + String(afterRunes)
+            } else {
+                String(afterRunes)
+            }
+
             // Reconstruct text using rune arrays
-            newText = String(beforePathRunes) + selected + String(afterPathRunes)
+            newText = String(beforePathRunes) + selected + afterPathRunes
             // Set cursor to end of inserted path (in rune/character count)
             newCursor = beforePathRunes.size + selectedRunes.size
         }
