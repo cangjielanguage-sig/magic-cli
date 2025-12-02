@@ -212,10 +212,6 @@ class DisplayContext {
 /**
  * Extract @path context based on cursor position
  * Returns (atIndex, pathStart, pathEnd, pathPrefix) or None
- * 
- * Key insight: Use cursor position to determine the replacement range.
- * - pathEnd is set to cursor position (what user is currently typing)
- * - Everything after cursor is preserved
  */
 func extractPathContext(text: String, cursor: Int64): Option<(Int64, Int64, Int64, String)> {
     let runes = text.toRuneArray()
@@ -235,21 +231,23 @@ func extractPathContext(text: String, cursor: Int64): Option<(Int64, Int64, Int6
         return None
     }
 
+    // Find the first space after the @ symbol
     let pathStart = atIndex + 1
-    
-    // Check if there's a space between @ and cursor
-    // If there's a space before cursor, the path input has ended
-    for (i in pathStart..cursor) {
+    var pathEnd = runes.size
+    for (i in pathStart..runes.size) {
         if (runes[i] == r' ') {
-            return None // Space found before cursor, path has ended
+            pathEnd = i
+            break
         }
     }
 
-    // pathEnd is the cursor position - we replace from @+1 to cursor
-    // Everything after cursor is preserved
-    let pathEnd = cursor
+    // Check if the first space is before the current cursor
+    // If there's a space before cursor, the path has ended and no completion should show
+    if (pathEnd < cursor) {
+        return None // Path has ended before cursor
+    }
 
-    // Extract path prefix (from @ to cursor)
+    // Extract path prefix up to cursor position
     let pathPrefix = String(runes[pathStart..cursor])
 
     return Some((atIndex, pathStart, pathEnd, pathPrefix))
@@ -340,18 +338,11 @@ public class Readline {
             // Use rune-based operations to handle multi-byte characters correctly
             let runes = currentText.toRuneArray()
             let beforePathRunes = runes[0..pathStart]
-            let afterRunes = runes[pathEnd..]
+            let afterPathRunes = runes[pathEnd..]
             let selectedRunes = selected.toRuneArray()
 
-            // Add space separator if afterRunes is not empty and doesn't start with space
-            let afterPathRunes = if (afterRunes.size > 0 && afterRunes[0] != r' ') {
-                " " + String(afterRunes)
-            } else {
-                String(afterRunes)
-            }
-
             // Reconstruct text using rune arrays
-            newText = String(beforePathRunes) + selected + afterPathRunes
+            newText = String(beforePathRunes) + selected + String(afterPathRunes)
             // Set cursor to end of inserted path (in rune/character count)
             newCursor = beforePathRunes.size + selectedRunes.size
         }
