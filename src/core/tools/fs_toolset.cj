@@ -37,7 +37,9 @@ protected func listDirectory(path: String): String {
         }
 
         if (exitCode == 0) {
-            let outString = stdout.trimAscii()
+            // Remove \r characters to prevent cursor from jumping to line start
+            // Windows uses \r\n, and \r alone causes display issues
+            let outString = stdout.replace("\r", "").trimAscii()
             PrintUtils.printToolResult(outString)
             return "Directory contents:\n${outString}"
         } else {
