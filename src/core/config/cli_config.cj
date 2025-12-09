@@ -179,7 +179,13 @@ protected class CliConfig {
      * The prompt when running magic-cli in non-interactive mode
      */
     public static var nonInteractive: Bool = false
+
     public static var nonInteractivePrompt: String = ""
+
+    /**
+     * The output format for non-interactive mode: plain | colorful
+     */
+    public static var nonInteractiveOutputFormat = "colorful"
 
     /**
      * The programming language setting for the CLI.

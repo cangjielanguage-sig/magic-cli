@@ -50,7 +50,7 @@ protected class MCPToolWrapper <: Tool {
             args.iterator() |> map { kv => "${kv[0]}: ${kv[1]}" } |> collectArray,
             delimiter: "\n"
         )
-        PrintUtils.printTool("📦 MCP Server: ${this.serverName} | 🔧 ${this.mcpTool.name}", message)
+        PrintUtils.printTool("📦 MCP Server: ${this.serverName} | 🔧 ${this.mcpTool.name}", longMessage: message)
         return this.mcpTool.invoke(args)
     }
 

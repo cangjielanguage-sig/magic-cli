@@ -24,7 +24,7 @@ public class SearchToolset {
         }
     ]
     public func search(query: String): String {
-        PrintUtils.printTool("Tavily Search", query)
+        PrintUtils.printTool("Tavily Search", shortMessage: query)
         let tool = TavilyTool()
         return tool.search(query)
     }
