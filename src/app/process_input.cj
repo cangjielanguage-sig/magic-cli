@@ -3,7 +3,6 @@ package cli.app
 import magic.core.agent.*
 import magic.log.LogUtils
 import magic.core.model.ChatModel
-import magic.core.message.{ChatRound, Message, MessageList, MessageRole}
 
 import cli.io.*
 import cli.core.config.CliConfig
@@ -127,40 +126,6 @@ private func executeCommand(input: String, app: CliApp): Option<Bool> {
 }
 
 //-------------------------------------------------------
-/**
- * Save an incomplete chat round (e.g., when cancelled or failed)
- * This ensures user questions are preserved even when the response is incomplete
- */
-private func saveIncompleteChatRound(
-    app: CliApp,
-    question: String,
-    answer: String,
-    response!: Option<AsyncAgentResponse> = None): Unit {
-    try {
-        // Try to get steps from execution if available
-        let steps = if (let Some(resp) <- response) {
-            try {
-                resp.execution.steps
-            } catch (_ex: Exception) {
-                MessageList()
-            }
-        } else {
-            MessageList()
-        }
-
-        let chatRound = ChatRound(
-            Message.user(question),
-            Message.assistant(answer),
-            steps
-        )
-        app.conversationManager.conversation.addChatRound(chatRound)
-        LogUtils.debug("Saved incomplete chat round: question='${question}', answer='${answer}'")
-    } catch (ex: Exception) {
-        LogUtils.error("Failed to save incomplete chat round: ${ex.message}")
-    }
-}
-
-//-------------------------------------------------------
 
 private func executeAgentTask(app: CliApp, input: String, subagent!: Option<Agent> = None): Unit {
     LogUtils.debug("Handle user input `${input}`")
@@ -213,34 +178,16 @@ private func executeAgentTask(app: CliApp, input: String, subagent!: Option<Agen
             // Check if cancellation occurred
             if (cancelChecker.hasCancel()) {
                 app.stopThinkIndicator()
-                // Save incomplete chat round when cancelled
-                if (!isSubagent) {
-                    try {
-                        let partialContent = try {
-                            asyncResponse.content
-                        } catch (_ex: Exception) {
-                            "对话被用户取消 (Cancelled by user)"
-                        }
-                        saveIncompleteChatRound(app, input, partialContent, response: asyncResponse)
-                    } catch (_ex: Exception) {
-                        // If we can't get content, save with a cancellation message
-                        saveIncompleteChatRound(app, input, "对话被用户取消 (Cancelled by user)")
-                    }
-                }
+                // PrintUtils.printLine("Cancelled".withColor(AnsiColor.color256(240)))
                 return
             } else {
-                handleAgentResponse(app, asyncResponse, isSubagent: isSubagent, cancelChecker: cancelChecker, input: input)
+                handleAgentResponse(app, asyncResponse, isSubagent: isSubagent)
             }
             // Compact is called once per successful execution, not per retry attempt
             CliModelManager.lastAvailableModel = currModel
             return // Success, exit retry loop
         } catch (ex: Exception) {
             if (idx == allModels.size - 1) { // All models are tried
-                // Save incomplete chat round when all models failed
-                if (!isSubagent) {
-                    let errorMsg = "执行失败: ${ex.message}"
-                    saveIncompleteChatRound(app, input, errorMsg)
-                }
                 throw ex
             } else if (CliModelManager.shouldFallback(ex)) {
                 LogUtils.info("Model ${currModel.fullName} failed, trying fallback")
@@ -254,7 +201,7 @@ private func executeAgentTask(app: CliApp, input: String, subagent!: Option<Agen
 /**
  * Handle the agent response, print the response and update the conversation
  */
-private func handleAgentResponse(app: CliApp, response: AsyncAgentResponse, isSubagent!: Bool, cancelChecker!: Option<CancelChecker> = None, input!: String): Unit {
+private func handleAgentResponse(app: CliApp, response: AsyncAgentResponse, isSubagent!: Bool): Unit {
     // This ensures response.content access is safe
     let content = response.content
     match (response.status) {
@@ -270,23 +217,9 @@ private func handleAgentResponse(app: CliApp, response: AsyncAgentResponse, isSu
                     DataCollector.collectChatRound(response.execution.chatRound)
                 }
             }
-        case AgentResponseStatus.Cancelled =>
-            // Save incomplete chat round when cancelled
-            // Check if already saved by cancelChecker to avoid duplicate saving
-            let alreadySaved = if (let Some(checker) <- cancelChecker) {
-                checker.hasCancel()  // If cancelChecker detected ESC, it already saved in line 232-247
-            } else {
-                false
-            }
-            if (!isSubagent && !alreadySaved) {
-                saveIncompleteChatRound(app, input, content, response: response)
-            }
+        case AgentResponseStatus.Cancelled => ()
         case AgentResponseStatus.Failed =>
             PrintUtils.printLine(response.content.withColor(AnsiColor.color256(240)))
-            // Save incomplete chat round when failed
-            if (!isSubagent) {
-                saveIncompleteChatRound(app, input, content, response: response)
-            }
     }
 }
 
