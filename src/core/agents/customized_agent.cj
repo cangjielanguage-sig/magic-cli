@@ -2,6 +2,7 @@ package cli.core.agents
 
 import magic.dsl.*
 import magic.prelude.*
+import magic.log.LogUtils
 import magic.config.Config
 import magic.tool.{AgentAsTool, SubAgentMode}
 import magic.prompt.Template
@@ -35,8 +36,6 @@ private let SYSTEM_PROMPT_TEMPLATE = """
     tools: [
         // ReadOnlyFSToolset(),
         // ShellTool()
-        listDirectory,
-        fileRead
     ]
 ]
 public class CustomAgent {
@@ -51,17 +50,19 @@ public class CustomAgent {
             ("AGENT_DIR", agentDir.toString())
         ])
         this.name = metadata.get("name") ?? "Customized Agent"
-        // this.description = metadata.get("description") ?? "Customized Agent"
+        this.description = metadata.get("description") ?? "Customized Agent"
 
         for (tool in (metadata.get("tools") ?? "").split(",")) {
             match (tool.trimAscii()) {
-                case "listDirectory" => () // builtin
-                case "fileRead" => () // builtin
+                case "listDirectory" => this.toolManager.addTool(listDirectory)
+                case "fileRead" => this.toolManager.addTool(fileRead)
                 case "fileCreate" => this.toolManager.addTool(fileCreate)
                 case "fileWrite" => this.toolManager.addTool(fileWrite)
                 case "fileEdit" => this.toolManager.addTool(fileEdit)
                 case "shellExecute" => this.toolManager.addTool(shellExecute)
-                case _ => ()
+                case "grepSearch" => this.toolManager.addTool(grepSearch)
+                case "globSearch" => this.toolManager.addTool(globSearch)
+                case _ => LogUtils.error("Unknown tool: ${tool.trimAscii()}")
             }
         }
     }

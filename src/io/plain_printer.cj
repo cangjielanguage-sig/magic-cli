@@ -8,11 +8,11 @@ import std.collection.{ArrayList, enumerate, map, collectArray}
 import std.time.DateTime
 
 /**
- * MarkdownPrinter - Generates clean markdown format for file output
- * Removes ANSI colors and converts box decorations to markdown formatting with colors
+ * PlainPrinter - Generates plain text format for file output
+ * Removes ANSI colors and converts box decorations to plain text formatting
  * This printer is enabled when non-interactive mode is enabled
  */
-protected class MarkdownPrinter <: Printer {
+protected class PlainPrinter <: Printer {
     /**
      * Non-interactive mode does not support sub-agent indentation
      */
@@ -21,11 +21,13 @@ protected class MarkdownPrinter <: Printer {
     public func endSubAgent(): Unit { }
 
     public func printLine(line: String, withIndent!: Bool = false): Unit {
-        println(line)
+        let cleanLine = removeAnsiEscape(line)
+        println(cleanLine)
     }
 
     public func printString(str: String, withIndent!: Bool = false): Unit {
-        print(str, flush: true)
+        let cleanStr = removeAnsiEscape(str)
+        print(cleanStr, flush: true)
     }
 
     public func printPlan(plan: Plan): Unit {
@@ -40,57 +42,54 @@ protected class MarkdownPrinter <: Printer {
     }
 
     public func printTool(name: String, shortMessage: String, longMessage: String, needConfirm!: Bool = false): Unit {
-        let strBuilder = StringBuilder("## Tool: ${removeAnsiEscape(name)}")
-        if (!shortMessage.isEmpty()) {
-            strBuilder.append(" (${removeAnsiEscape(shortMessage)})")
+        let cleanName = removeAnsiEscape(name)
+        let cleanShortMessage = removeAnsiEscape(shortMessage)
+        let cleanLongMessage = removeAnsiEscape(longMessage)
+        let strBuilder = StringBuilder("## Tool: ${cleanName}")
+        if (!cleanShortMessage.isEmpty()) {
+            strBuilder.append(" (${cleanShortMessage})")
         }
-        if (!longMessage.isEmpty()) {
-            strBuilder.append("\n\n${removeAnsiEscape(longMessage)}")
+        if (!cleanLongMessage.isEmpty()) {
+            strBuilder.append("\n\n${cleanLongMessage}")
         }
         let markdownContent = strBuilder.toString()
-        printLine(renderMarkdown(markdownContent))
+        printLine(markdownContent)
         printLine("")
     }
 
     public func printToolFailure(toolInfo: String, failure!: String = "Failed ..."): Unit {
-        let markdownContent = StringBuilder()
-        markdownContent.append(removeAnsiEscape(toolInfo))
-        markdownContent.append("\n")
-        markdownContent.append("- ${removeAnsiEscape(failure)}")
-        printLine(renderMarkdown(markdownContent.toString()))
-        printLine("")
+        let cleanToolInfo = removeAnsiEscape(toolInfo)
+        let cleanFailure = removeAnsiEscape(failure)
+
+        printLine(cleanToolInfo)
+        printLine("- ${cleanFailure}")
     }
 
     public func printToolResult(result: String): Unit {
         let cleanResult = removeAnsiEscape(result)
-        let markdownContent = StringBuilder("### Tool Result\n\n")
-        markdownContent.append(cleanResult)
-        printLine(renderMarkdown(markdownContent.toString()))
+        printLine("### Tool Result\n")
+        printLine(cleanResult)
         printLine("")
     }
 
     public func printAgentResponse(response: AgentResponse): Unit {
-        let markdownContent = StringBuilder("---\n")
-        markdownContent.append("## Agent Response\n\n")
-        markdownContent.append(removeAnsiEscape(response.content))
-        printLine(renderMarkdown(markdownContent.toString()))
+        printLine("---\n")
+        printLine("## Agent Response\n")
+        printLine(response.content)
         printLine("")
     }
 
     public func printAgentResponse(response: AsyncAgentResponse): Unit {
-        let markdownContent = StringBuilder("---\n")
-        markdownContent.append("## Agent Response\n\n")
-        markdownContent.append(removeAnsiEscape(response.content))
-        printLine(renderMarkdown(markdownContent.toString()))
+        printLine("---\n")
+        printLine("## Agent Response\n")
+        printLine(response.content)
         printLine("")
     }
 
     public func printShellResult(output: String): Unit {
-        let markdownContent = StringBuilder("```bash\n")
-        markdownContent.append(output)
-        markdownContent.append("\n```")
-        printLine(renderMarkdown(markdownContent.toString()))
-        printLine("")
+        printLine("```bash")
+        printLine(output)
+        printLine("```")
     }
 
     public func printApproval(): Unit {

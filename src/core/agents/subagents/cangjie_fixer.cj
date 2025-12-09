@@ -285,7 +285,7 @@ protected class CangjieFixer {
         } else {
             thought
         }
-        PrintUtils.printTool("Deep Thinking", thought)
+        PrintUtils.printTool("Deep Thinking", longMessage: thought)
         return msg
     }
 }
@@ -313,7 +313,7 @@ protected func fixCangjieProjectCompileError(path: String): String {
     var modified = false // Whether the cjpm.toml file is modified
     let projectDir = Path(path)
     try {
-        PrintUtils.printTool("CangjieFixer", "path: ${path}")
+        PrintUtils.printTool("CangjieFixer", shortMessage: path)
         PrintUtils.beginSubAgent()
 
         // Modify the cjpm.toml file to output json build result

@@ -45,7 +45,7 @@ protected class CliApp {
             agent.toolManager.addTools(mcpManager.loadMCPServers())
         } catch (ex: Exception) {
             LogUtils.error("Failed to load MCP servers: ${ex.message}")
-            PrintUtils.printTool("MCP Loading", "Warning: Failed to load MCP servers, continuing without MCP tools")
+            PrintUtils.printProcedureFailure("MCP Loading", failure: "Failed to load MCP servers, continuing without MCP tools")
         }
 
         this.conversationManager = ConversationManager(Compactor())

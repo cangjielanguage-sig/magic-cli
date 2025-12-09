@@ -20,6 +20,32 @@ import std.sync.{AtomicOptionReference, AtomicBool}
 import std.process.executeWithOutput
 
 /**
+ * Main input processing function - determines input type and routes accordingly
+ */
+func processInput(app: CliApp, input: String): Bool {
+    if (input.startsWith("!")) {
+        // Shell command - remove "!" and execute
+        executeShellCommand(input[1..], app)
+        return true  // Continue running
+    }
+    // Try to execute as a built-in or customized command
+    if (let Some(status) <- executeCommand(input, app)) {
+        return status
+    }
+    // Otherwise, let agent process the input
+    try {
+        executeAgent(app, input)
+    } catch (ex: Exception) {
+        let msg = "Execution failure: ${ex.message}"
+        PrintUtils.printLine(msg.withColor(AnsiColor.color256(100)))
+        LogUtils.error(ex)
+    }
+    return true  // Continue running
+}
+
+//-------------------------------------------------------
+
+/**
  * Execute shell command (input starting with !)
  */
 private func executeShellCommand(command: String, app: CliApp): Unit {
@@ -68,10 +94,10 @@ private func executeCommand(input: String, app: CliApp): Option<Bool> {
         case "/memory" | "memory" =>
             let userRules = CliConfig.userRules
             if (userRules.isEmpty()) {
-                PrintUtils.printTool("User Memory (MAGIC.md)", "📝 No MAGIC.md file found in current directory")
+                PrintUtils.printLine("📝 No MAGIC.md file found in current directory")
                 PrintUtils.printLine("Create a MAGIC.md file in your project to set custom rules and app for Magic-cli to use.")
             } else {
-                PrintUtils.printTool("User Memory (MAGIC.md)", "📝 Current MAGIC.md content:")
+                PrintUtils.printLine("📝 Current MAGIC.md content:")
                 PrintUtils.printLine(userRules)
             }
             return true
@@ -106,12 +132,11 @@ private func executeCommand(input: String, app: CliApp): Option<Bool> {
             if (let Some(pivot) <- _input.indexOf(b' ')) {
                 let cmdName = _input[1..pivot] // Remove the leading '/'
                 let args = _input[pivot+1..]
-                // Check if it's a custom sub-agent
-                if (let Some(subagent) <- app.customAgentManager.getAgent(cmdName)) {
-                    executeAgentTask(app, args, subagent: subagent)
-                } else if (let Some(command) <- app.customCommandManager.getCommand(cmdName)) {
-                    let request = app.customCommandManager.handleCustomCommand(command, args)
-                    executeAgentTask(app, request)
+                if (let Some(command) <- app.customCommandManager.getCommand(cmdName)) {
+                    let question = app.customCommandManager.handleCustomCommand(command, args)
+                    LogUtils.debug("Handle custom command '${cmdName}' with args '${args}'")
+                    LogUtils.debug("   Question: ${question}")
+                    executeAgent(app, question)
                 } else {
                     PrintUtils.printLine("💥 Command '${cmdName}' not found. Use '/cmd list' to see available commands.")
                 }
@@ -127,14 +152,14 @@ private func executeCommand(input: String, app: CliApp): Option<Bool> {
 
 //-------------------------------------------------------
 
-private func executeAgentTask(app: CliApp, input: String, subagent!: Option<Agent> = None): Unit {
+private func executeAgent(app: CliApp, input: String): Unit {
     LogUtils.debug("Handle user input `${input}`")
     // Each time we execute an agent task, we need to reset the sub-agent indent
     PrintUtils.resetSubAgent()
 
-    // Get the agent to use
-    let agent = subagent ?? app.agent
-    let isSubagent = subagent.isSome()
+    // Parse agent name and question to get the agent to use
+    let (agent, question) = parseAgentAndQuestion(app, input.trimAscii())
+    let isSubagent = agent.name == app.agent.name
 
     // Try all available models in sequence
      let allModels = CliModelManager.getAllModels()
@@ -150,14 +175,14 @@ private func executeAgentTask(app: CliApp, input: String, subagent!: Option<Agen
                 agent.model = currModel
             }
 
-            // Execute with current model
-            let asyncResponse = if (!isSubagent) {
-                agent.asyncChat(
-                    AgentRequest(input, conversation: app.conversationManager.conversation)
-                )
+            // Execute with the current model
+            let asyncResponse = if (isSubagent) {
+                //  Sub-agent process the question without conversations
+                agent.asyncChat(AgentRequest(question))
             } else {
-                //  Sub-agent request, no conversation
-                agent.asyncChat(AgentRequest(input))
+                agent.asyncChat(
+                    AgentRequest(question, conversation: app.conversationManager.conversation)
+                )
             }
             // Start cancellation checker
             let cancelChecker = CancelChecker(app, asyncResponse)
@@ -178,12 +203,10 @@ private func executeAgentTask(app: CliApp, input: String, subagent!: Option<Agen
             // Check if cancellation occurred
             if (cancelChecker.hasCancel()) {
                 app.stopThinkIndicator()
-                // PrintUtils.printLine("Cancelled".withColor(AnsiColor.color256(240)))
                 return
             } else {
                 handleAgentResponse(app, asyncResponse, isSubagent: isSubagent)
             }
-            // Compact is called once per successful execution, not per retry attempt
             CliModelManager.lastAvailableModel = currModel
             return // Success, exit retry loop
         } catch (ex: Exception) {
@@ -198,6 +221,25 @@ private func executeAgentTask(app: CliApp, input: String, subagent!: Option<Agen
     }
 }
 
+/**
+ * Parse the input string to extract the agent name and the question.
+ * Case 1: @<agent-name> ...., return agent and question
+ * Case 2: no agent name, return None for agent name
+ */
+private func parseAgentAndQuestion(app: CliApp, input: String): (Agent, String) {
+    if (!input.startsWith("@")) {
+        return (app.agent, input) // No agent name, return default agent
+    }
+    if (let Some(pivot) <- input.indexOf(b' ')) {
+        let name = input[1..pivot] // Remove the leading '@'
+        let args = input[pivot..].trimAscii()
+
+        if (let Some(subAgent) <- app.customAgentManager.getAgent(name)) {
+            return (subAgent, args)
+        }
+    }
+    return (app.agent, input) // No sub-agent found, return default agent
+}
 /**
  * Handle the agent response, print the response and update the conversation
  */
@@ -221,30 +263,4 @@ private func handleAgentResponse(app: CliApp, response: AsyncAgentResponse, isSu
         case AgentResponseStatus.Failed =>
             PrintUtils.printLine(response.content.withColor(AnsiColor.color256(240)))
     }
-}
-
-//-------------------------------------------------------
-
-/**
- * Main input processing function - determines input type and routes accordingly
- */
-func processInput(app: CliApp, input: String): Bool {
-    if (input.startsWith("!")) {
-        // Shell command - remove "!" and execute
-        executeShellCommand(input[1..], app)
-        return true  // Continue running
-    }
-    // Try to execute as a command
-    if (let Some(status) <- executeCommand(input, app)) {
-        return status
-    }
-    // Otherwise, let agent process the input
-    try {
-        executeAgentTask(app, input)
-    } catch (ex: Exception) {
-        let msg = "Execution failure: ${ex.message}"
-        PrintUtils.printLine(msg.withColor(AnsiColor.color256(100)))
-        LogUtils.error(ex)
-    }
-    return true  // Continue running
 }

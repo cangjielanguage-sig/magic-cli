@@ -211,11 +211,11 @@ protected class ConversationManager {
 
     public func compact(manual!: Bool = false): Unit {
         if (let Some(index) <- this.compactor.calculateCompactIndex(this.conversation)) {
-            PrintUtils.printTool("Compacting conversation...", "🚀 Working on it...")
+            PrintUtils.printProcedure("Compacting conversation...", "🚀 Working on it...")
             this.conversation.compactBy(compactor, firstN: index, keepOrigin: false)
-            PrintUtils.printTool("Compacting conversation...", "🥳 Compacted successfully!")
+            PrintUtils.printProcedure("Compacting conversation...", "🥳 Compacted successfully!")
         } else if (manual) {
-            PrintUtils.printTool("Compacting conversation...",
+            PrintUtils.printProcedure("Compacting conversation...",
                 "🌱 Conversation context is short enough, no need to compact!")
         }
     }

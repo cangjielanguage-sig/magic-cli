@@ -1,7 +1,10 @@
 package cli.io
 
 import magic.core.agent.{AsyncAgentResponse, AgentResponse}
+
+import cli.core.plan.Plan
 import cli.core.config.CliConfig
+
 import std.fs.OpenMode
 import std.collection.{ArrayList, enumerate, map, collectArray}
 import std.time.DateTime
@@ -21,14 +24,19 @@ protected interface Printer {
     func printString(str: String, withIndent!: Bool): Unit
 
     /**
+     * Print a plan
+     */
+    func printPlan(plan: Plan): Unit
+
+    /**
      * Print tool execution information
      */
-    func printTool(name: String, message: String, needConfirm!: Bool): Unit
+    func printTool(name: String, shortMessage: String, longMessage: String, needConfirm!: Bool): Unit
 
     /**
      * Print tool failure information
      */
-    func printToolFailure(toolInfo: String, failureInfo!: String): Unit
+    func printToolFailure(toolInfo: String, failure!: String): Unit
 
     /**
      * Print tool result

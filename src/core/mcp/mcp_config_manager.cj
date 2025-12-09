@@ -115,7 +115,7 @@ public class MCPConfigManager {
     }
 
     public func showLoadedMCPTools(agent: Agent): Unit {
-        PrintUtils.printTool("MCP Servers and Tools", "🔌Total MCP tools loaded: ")
+        PrintUtils.printProcedure("MCP Servers and Tools", "🔌 Total MCP tools loaded: ")
 
         if (this.mcpClients.isEmpty()) {
             PrintUtils.printLine("No MCP servers currently loaded")

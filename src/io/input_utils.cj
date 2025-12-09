@@ -1,9 +1,10 @@
 package cli.io
 
-import cli.core.config.CliConfig
-
 import magic.log.LogUtils
 import magic.core.tool.ToolException
+
+import cli.core.config.CliConfig
+import cli.core.plan.Plan
 
 import std.collection.{map, enumerate, collectArray}
 import std.time.DateTime
@@ -61,8 +62,18 @@ protected class InputUtils {
         }
     }
 
-    public static func confirm(title: String, content: String, footer!: Option<String> = None): Confirmation {
-        PrintUtils.printTool(title, content, needConfirm: !CliConfig.auto)
+    public static func confirm(plan: Plan): Confirmation {
+        let tasks: Array<String> = plan.tasks |>
+            map { task =>
+                "${'╰─'.withColor(AnsiColor.BRIGHT_BLACK)} ${task.description.withColor(AnsiColor.BOLD)}"
+            } |> collectArray
+        let footer = "💡 Plan has been created. Please confirm if you need to modify the plan. ʘ‿ʘ".withColor(Theme.HIGHLIGHT)
+
+        return confirm("Plan", "", String.join(tasks, delimiter: "\n"), footer: footer)
+    }
+
+    public static func confirm(title: String, shortMessage: String, longMessage: String, footer!: Option<String> = None): Confirmation {
+        PrintUtils.printTool(title, shortMessage: shortMessage, longMessage: longMessage, needConfirm: !CliConfig.auto)
         if (let Some(footer) <- footer) {
             PrintUtils.printLine(footer)
             PrintUtils.printLine("")

@@ -68,7 +68,10 @@ private func getRipgrepPath(): Option<String> {
  */
 private func grepWithRipgrep(pattern: String, path: Option<String>, include: Option<String>, rgPath: String): String {
     try {
-        let rgCmd = ArrayList<String>([rgPath, "--line-number", "--with-filename", "--no-heading"])
+        let rgCmd = ArrayList<String>([rgPath, "-r", "--line-number", "--with-filename", "--no-heading"])
+        for (dir in IGNORED_DIR) {
+            rgCmd.add("--exclude-dir=${dir}")
+        }
 
         // Add glob pattern if specified
         if (let Some(includePattern) <- include) {
