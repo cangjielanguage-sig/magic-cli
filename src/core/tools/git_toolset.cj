@@ -17,7 +17,7 @@ public class GitToolset {
         parameters: { path: "Directory path to initialize Git repository, must be an absolute path" }
     ]
     public func gitInit(path: String): String {
-        PrintUtils.printTool("Git Init", path)
+        PrintUtils.printTool("Git Init", shortMessage: path)
 
         try {
             let cmd = "git"
@@ -48,7 +48,7 @@ public class GitToolset {
         parameters: { url: "Remote repository URL", path: "Local target directory path, must be an absolute path" }
     ]
     public func gitClone(url: String, path: String): String {
-        PrintUtils.printTool("Git Clone", "${url} -> ${path}")
+        PrintUtils.printTool("Git Clone", longMessage: "${url} -> ${path}")
 
         try {
             let cmd = "git"
@@ -79,7 +79,7 @@ public class GitToolset {
         parameters: { path: "Working directory path, must be an absolute path", files: "Files or directories to add, use . for all files" }
     ]
     public func gitAdd(path: String, files: String): String {
-        PrintUtils.printTool("Git Add", "${path} - ${files}")
+        PrintUtils.printTool("Git Add", longMessage: "${path} - ${files}")
 
         try {
             let cmd = "git"
@@ -110,7 +110,7 @@ public class GitToolset {
         parameters: { path: "Working directory path, must be an absolute path", message: "Commit message" }
     ]
     public func gitCommit(path: String, message: String): String {
-        PrintUtils.printTool("Git Commit", "${path} - ${message}")
+        PrintUtils.printTool("Git Commit", longMessage: "${path} - ${message}")
 
         try {
             let cmd = "git"
@@ -141,7 +141,7 @@ public class GitToolset {
         parameters: { path: "Working directory path, must be an absolute path", remote: "Remote repository name, default is origin", branch: "Branch name, default is current branch" }
     ]
     public func gitPush(path: String, remote: String, branch: String): String {
-        PrintUtils.printTool("Git Push", "${path} - ${remote} ${branch}")
+        PrintUtils.printTool("Git Push", longMessage: "${path} - ${remote} ${branch}")
 
         try {
             let cmd = "git"
@@ -179,7 +179,7 @@ public class GitToolset {
         parameters: { path: "Working directory path, must be an absolute path", remote: "Remote repository name, default is origin", branch: "Branch name, default is current branch" }
     ]
     public func gitPull(path: String, remote: String, branch: String): String {
-        PrintUtils.printTool("Git Pull", "${path} - ${remote} ${branch}")
+        PrintUtils.printTool("Git Pull", longMessage: "${path} - ${remote} ${branch}")
 
         try {
             let cmd = "git"
@@ -217,7 +217,7 @@ public class GitToolset {
         parameters: { path: "Working directory path, must be an absolute path" }
     ]
     public func gitStatus(path: String): String {
-        PrintUtils.printTool("Git Status", path)
+        PrintUtils.printTool("Git Status", shortMessage: path)
 
         try {
             let cmd = "git"
@@ -244,7 +244,7 @@ public class GitToolset {
         parameters: { path: "Working directory path, must be an absolute path", action: "Action type: list, create, delete", branchName: "Branch name (required for create or delete)" }
     ]
     public func gitBranch(path: String, action: String, branchName: String): String {
-        PrintUtils.printTool("Git Branch", "${path} - ${action} ${branchName}")
+        PrintUtils.printTool("Git Branch", longMessage: "${path} - ${action} ${branchName}")
 
         try {
             let cmd = "git"
@@ -283,7 +283,7 @@ public class GitToolset {
         parameters: { path: "Working directory path, must be an absolute path", target: "Target branch name or commit hash", createNew: "Whether to create new branch (true/false)" }
     ]
     public func gitCheckout(path: String, target: String, createNew: Bool): String {
-        PrintUtils.printTool("Git Checkout", "${path} - ${target}")
+        PrintUtils.printTool("Git Checkout", longMessage: "${path} - ${target}")
 
         try {
             let cmd = "git"
@@ -318,7 +318,7 @@ public class GitToolset {
         parameters: { path: "Working directory path, must be an absolute path", branch: "Branch name to merge" }
     ]
     public func gitMerge(path: String, branch: String): String {
-        PrintUtils.printTool("Git Merge", "${path} - ${branch}")
+        PrintUtils.printTool("Git Merge", longMessage: "${path} - ${branch}")
 
         try {
             let cmd = "git"
@@ -349,7 +349,7 @@ public class GitToolset {
         parameters: { path: "Working directory path, must be an absolute path", limit: "Limit number of commits to display, default is all" }
     ]
     public func gitLog(path: String, limit: Int64): String {
-        PrintUtils.printTool("Git Log", path)
+        PrintUtils.printTool("Git Log", shortMessage: path)
 
         try {
             let cmd = "git"
@@ -380,7 +380,7 @@ public class GitToolset {
         parameters: { path: "Working directory path, must be an absolute path", staged: "Whether to view staged differences (true/false)", target: "Target for comparison (branch name or commit hash, optional)" }
     ]
     public func gitDiff(path: String, staged: Bool, target: String): String {
-        PrintUtils.printTool("Git Diff", path)
+        PrintUtils.printTool("Git Diff", shortMessage: path)
 
         try {
             let cmd = "git"
@@ -417,7 +417,7 @@ public class GitToolset {
         parameters: { path: "Working directory path, must be an absolute path", action: "Action type: save, pop, list, clear", message: "Stash message (optional for save)" }
     ]
     public func gitStash(path: String, action: String, message: String): String {
-        PrintUtils.printTool("Git Stash", "${path} - ${action}")
+        PrintUtils.printTool("Git Stash", longMessage: "${path} - ${action}")
 
         try {
             let cmd = "git"
@@ -462,7 +462,7 @@ public class GitToolset {
         parameters: { path: "Working directory path, must be an absolute path", mode: "Reset mode: soft (keep changes in staging area), mixed (keep changes in working area), hard (discard all changes)", target: "Target commit (default is HEAD)" }
     ]
     public func gitReset(path: String, mode: String, target: String): String {
-        PrintUtils.printTool("Git Reset", "${path} - ${mode} ${target}")
+        PrintUtils.printTool("Git Reset", longMessage: "${path} - ${mode} ${target}")
 
         try {
             let cmd = "git"

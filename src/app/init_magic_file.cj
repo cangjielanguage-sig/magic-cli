@@ -37,17 +37,17 @@ Please start analyzing the project and return the MAGIC.md content:
 func initMagicFile(): Unit {
     let agent = CodeAnalyzer()
     if (exists(CliConfig.magicMarkdownPath)) {
-        if (InputUtils.confirm("MAGIC.md already exists.", "Overwrite?") == Confirmation.Deny) {
+        if (InputUtils.confirm("MAGIC.md already exists.", "Overwrite?", "") == Confirmation.Deny) {
             return
         }
     }
 
-    PrintUtils.printTool("MAGIC.md Init", "🔍 Analyzing project structure and generating MAGIC.md...")
+    PrintUtils.printProcedure("MAGIC.md Init", "🔍 Analyzing project structure and generating MAGIC.md...")
     let response = agent.chat(AgentRequest(INIT_PROMPT))
 
     try {
         File.writeTo(CliConfig.magicMarkdownPath, response.content.toArray())
-        PrintUtils.printTool("MAGIC.md Init", "✅ MAGIC.md initialized successfully!")
+        PrintUtils.printProcedure("MAGIC.md Init", "✅ MAGIC.md initialized successfully!")
 
         let runes = response.content.toRuneArray()
         let preview = if (runes.size > 300) {
@@ -59,6 +59,6 @@ func initMagicFile(): Unit {
         PrintUtils.printLine(preview)
         PrintUtils.printLine("\n💡 Use '/memory' to view the full content anytime!")
     } catch (e: Exception) {
-        PrintUtils.printLine("❌ Failed to write MAGIC.md: ${e.message}")
+        PrintUtils.printProcedureFailure("MAGIC.md Init", failure: "❌ Failed to write MAGIC.md: ${e.message}")
     }
 }
