@@ -34,7 +34,7 @@ func processInput(app: CliApp, input: String): Bool {
     }
     // Otherwise, let agent process the input
     try {
-        executeAgentTask(app, input)
+        executeAgent(app, input)
     } catch (ex: Exception) {
         let msg = "Execution failure: ${ex.message}"
         PrintUtils.printLine(msg.withColor(AnsiColor.color256(100)))
@@ -132,14 +132,11 @@ private func executeCommand(input: String, app: CliApp): Option<Bool> {
             if (let Some(pivot) <- _input.indexOf(b' ')) {
                 let cmdName = _input[1..pivot] // Remove the leading '/'
                 let args = _input[pivot+1..]
-                // Check if it's a custom sub-agent
-                if (let Some(subagent) <- app.customAgentManager.getAgent(cmdName)) {
-                    executeAgentTask(app, args, subagent: subagent)
-                } else if (let Some(command) <- app.customCommandManager.getCommand(cmdName)) {
-                    let request = app.customCommandManager.handleCustomCommand(command, args)
+                if (let Some(command) <- app.customCommandManager.getCommand(cmdName)) {
+                    let question = app.customCommandManager.handleCustomCommand(command, args)
                     LogUtils.debug("Handle custom command '${cmdName}' with args '${args}'")
-                    LogUtils.debug("   Request: ${request}")
-                    executeAgentTask(app, request)
+                    LogUtils.debug("   Question: ${question}")
+                    executeAgent(app, question)
                 } else {
                     PrintUtils.printLine("💥 Command '${cmdName}' not found. Use '/cmd list' to see available commands.")
                 }
@@ -155,7 +152,7 @@ private func executeCommand(input: String, app: CliApp): Option<Bool> {
 
 //-------------------------------------------------------
 
-private func executeAgentTask(app: CliApp, input: String, subagent!: Option<Agent> = None): Unit {
+private func executeAgent(app: CliApp, input: String): Unit {
     LogUtils.debug("Handle user input `${input}`")
     // Each time we execute an agent task, we need to reset the sub-agent indent
     PrintUtils.resetSubAgent()
