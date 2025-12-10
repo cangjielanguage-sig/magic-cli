@@ -159,7 +159,7 @@ private func executeAgent(app: CliApp, input: String): Unit {
 
     // Parse agent name and question to get the agent to use
     let (agent, question) = parseAgentAndQuestion(app, input.trimAscii())
-    let isSubagent = agent.name == app.agent.name
+    let isSubagent = agent.name != app.agent.name
 
     // Try all available models in sequence
      let allModels = CliModelManager.getAllModels()
