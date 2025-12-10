@@ -3,6 +3,7 @@ package cli.app
 import magic.core.agent.*
 import magic.log.LogUtils
 import magic.core.model.ChatModel
+import magic.core.message.{Message, MessageList, ChatRound}
 
 import cli.io.*
 import cli.core.config.CliConfig
@@ -203,14 +204,30 @@ private func executeAgent(app: CliApp, input: String): Unit {
             // Check if cancellation occurred
             if (cancelChecker.hasCancel()) {
                 app.stopThinkIndicator()
+                if (!isSubagent) {
+                    try {
+                        let partialContent = try {
+                            asyncResponse.content
+                        } catch (_ex: Exception) {
+                            "对话被用户取消 (Cancelled by user)"
+                        }
+                        saveIncompleteChatRound(app, question, partialContent, response: asyncResponse)
+                    } catch (_ex: Exception) {
+                        saveIncompleteChatRound(app, question, "对话被用户取消 (Cancelled by user)")
+                    }
+                }
                 return
             } else {
-                handleAgentResponse(app, asyncResponse, isSubagent: isSubagent)
+                handleAgentResponse(app, asyncResponse, isSubagent: isSubagent, input: question)
             }
             CliModelManager.lastAvailableModel = currModel
             return // Success, exit retry loop
         } catch (ex: Exception) {
             if (idx == allModels.size - 1) { // All models are tried
+                if (!isSubagent) {
+                    let errorMsg = "执行失败: ${ex.message}"
+                    saveIncompleteChatRound(app, question, errorMsg)
+                }
                 throw ex
             } else if (CliModelManager.shouldFallback(ex)) {
                 LogUtils.info("Model ${currModel.fullName} failed, trying fallback")
@@ -218,6 +235,37 @@ private func executeAgent(app: CliApp, input: String): Unit {
                 throw ex
             }
         }
+    }
+}
+
+/**
+ * Save an incomplete chat round when conversation is cancelled or failed
+ */
+private func saveIncompleteChatRound(
+    app: CliApp,
+    question: String,
+    answer: String,
+    response!: Option<AsyncAgentResponse> = None): Unit {
+    try {
+        let steps = if (let Some(resp) <- response) {
+            try {
+                resp.execution.steps
+            } catch (_ex: Exception) {
+                MessageList()
+            }
+        } else {
+            MessageList()
+        }
+
+        let chatRound = ChatRound(
+            Message.user(question),
+            Message.assistant(answer),
+            steps
+        )
+        app.conversationManager.conversation.addChatRound(chatRound)
+        LogUtils.debug("Saved incomplete chat round: question='${question}', answer='${answer}'")
+    } catch (ex: Exception) {
+        LogUtils.error("Failed to save incomplete chat round: ${ex.message}")
     }
 }
 
@@ -243,7 +291,7 @@ private func parseAgentAndQuestion(app: CliApp, input: String): (Agent, String) 
 /**
  * Handle the agent response, print the response and update the conversation
  */
-private func handleAgentResponse(app: CliApp, response: AsyncAgentResponse, isSubagent!: Bool): Unit {
+private func handleAgentResponse(app: CliApp, response: AsyncAgentResponse, isSubagent!: Bool, input!: String): Unit {
     // This ensures response.content access is safe
     let content = response.content
     match (response.status) {
@@ -259,8 +307,14 @@ private func handleAgentResponse(app: CliApp, response: AsyncAgentResponse, isSu
                     DataCollector.collectChatRound(response.execution.chatRound)
                 }
             }
-        case AgentResponseStatus.Cancelled => ()
+        case AgentResponseStatus.Cancelled =>
+            if (!isSubagent) {
+                saveIncompleteChatRound(app, input, content, response: response)
+            }
         case AgentResponseStatus.Failed =>
             PrintUtils.printLine(response.content.withColor(AnsiColor.color256(240)))
+            if (!isSubagent) {
+                saveIncompleteChatRound(app, input, content, response: response)
+            }
     }
 }
