@@ -80,6 +80,10 @@ public struct LSPNotification {
 public struct Position {
     public var line: Int64
     public var character: Int64
+
+    public func toOneBased(): Position {
+        Position(line: this.line + 1, character: this.character + 1)
+    }
 }
 
 /**
@@ -89,6 +93,10 @@ public struct Position {
 public struct Range {
     public var start: Position
     public var end: Position
+
+    public func toOneBased(): Range {
+        Range(start: this.start.toOneBased(), end: this.end.toOneBased())
+    }
 }
 
 /**
@@ -103,11 +111,16 @@ public struct TextDocumentIdentifier {
  * LSP Text Document Item for didOpen notification
  */
 @jsonable
-public struct TextDocumentItem {
+public struct TextDocument {
     public var uri: String
     public var languageId: String
     public var version: Int64
     public var text: String
+}
+
+@jsonable
+public struct OpenDocumentParam {
+    public var textDocument: TextDocument
 }
 
 /**
@@ -241,6 +254,7 @@ public struct SemanticTokensLegend {
     public var tokenModifiers: Array<String>
 }
 
+//------------------------------------------------------
 /**
  * LSP Semantic Tokens Parameters
  */
@@ -256,6 +270,25 @@ public struct SemanticTokensParams {
 public struct SemanticTokensResult {
     public var data: Array<Int64>
 }
+
+/**
+ * Individual semantic token information
+ */
+@jsonable
+public class SemanticTokenInfo {
+    public var line: Int64
+    public var character: Int64
+    public var length: Int64
+    public var tokenType: String
+    public var tokenModifiers: Array<String>
+    public var text: String
+
+    func adaptToOneBased(): Unit {
+        this.line = this.line + 1
+        this.character = this.character + 1
+    }
+}
+//------------------------------------------------------
 
 /**
  * LSP Hover Parameters
@@ -277,6 +310,18 @@ public struct HoverResult {
 }
 
 /**
+ * Hover information for a specific position
+ */
+@jsonable
+public struct HoverInfo {
+    public var line: Int64
+    public var character: Int64
+    public var contents: String
+    public var range: Option<Range> = None
+    public let symbol: String
+}
+
+/**
  * LSP Marked String for hover content
  */
 @jsonable
@@ -284,6 +329,8 @@ public struct MarkedString {
     public var language: Option<String> = None
     public var value: String
 }
+
+//------------------------------------------------------
 
 /**
  * LSP Document Symbol Parameters
@@ -297,54 +344,138 @@ public struct DocumentSymbolParams {
  * LSP Document Symbol
  */
 @jsonable
-public struct DocumentSymbol {
+public class DocumentSymbol {
     public var name: String
     public var detail: Option<String> = None
     public var kind: Int64
     public var range: Range
     public var selectionRange: Range
     public var children: Option<Array<DocumentSymbol>> = None
+
+    func toString(): String {
+        let strBuilder = StringBuilder("${this.name} (${this.getSymbolKindName()})\n")
+        match (this.detail) {
+            case Some(detail) => strBuilder.append("Detail: ${detail}\n")
+            case _ => ()
+        }
+        strBuilder.append("  Range: ${this.range.start.line}:${this.range.start.character} - ${this.range.end.line}:${this.range.end.character}\n")
+        return strBuilder.toString()
+    }
+
+    func adaptToOneBased(): Unit {
+        this.range = this.range.toOneBased()
+        this.selectionRange = this.selectionRange.toOneBased()
+        for (child in (this.children ?? [])) {
+            child.adaptToOneBased()
+        }
+    }
+
+    // Helper function to get symbol kind name
+    private func getSymbolKindName(): String {
+        match (this.kind) {
+            case 1 => "File"
+            case 2 => "Module"
+            case 3 => "Namespace"
+            case 4 => "Package"
+            case 5 => "Class"
+            case 6 => "Method"
+            case 7 => "Property"
+            case 8 => "Field"
+            case 9 => "Constructor"
+            case 10 => "Enum"
+            case 11 => "Interface"
+            case 12 => "Function"
+            case 13 => "Variable"
+            case 14 => "Constant"
+            case 15 => "String"
+            case 16 => "Number"
+            case 17 => "Boolean"
+            case 18 => "Array"
+            case 19 => "Object"
+            case 20 => "Key"
+            case 21 => "Null"
+            case 22 => "EnumMember"
+            case 23 => "Struct"
+            case 24 => "Event"
+            case 25 => "Operator"
+            case 26 => "TypeParameter"
+            case _ => "Unknown"
+        }
+    }
+}
+
+//------------------------------------------------------
+
+/**
+ * LSP Text Document Position Parameters
+ */
+@jsonable
+public struct DefinitionParams {
+    public var textDocument: TextDocumentIdentifier
+    public var position: Position
+}
+
+@jsonable
+public class Location {
+    public let uri: String
+    public var range: Range
 }
 
 /**
- * LSP Document Symbol Result
+ * LSP Definition Result
  */
-// Array<DocumentSymbol>
+@jsonable
+public struct DefinitionResult {
+    public let locations: Array<Location>
+
+    func adaptToOneBased(): Unit {
+        for (location in this.locations) {
+            location.range = location.range.toOneBased()
+        }
+    }
+}
+
+//------------------------------------------------------
+
+/**
+ * LSP Reference Parameters
+ */
+@jsonable
+public struct ReferenceParams {
+    public var textDocument: TextDocumentIdentifier
+    public var position: Position
+    public var context: ReferenceContext
+}
+
+@jsonable
+public struct ReferenceContext {
+    /**
+     * Include the declaration of the current symbol.
+     */
+    public var includeDeclaration: Bool = false
+}
+
+@jsonable
+public struct ReferenceResult {
+    public let locations: Array<Location>
+
+    func adaptToOneBased(): Unit {
+        for (location in this.locations) {
+            location.range = location.range.toOneBased()
+        }
+    }
+}
+
+//------------------------------------------------------
 
 /**
  * Semantic Information Result for getSemanticInfo function
  */
 @jsonable
-public struct SemanticInfoResult {
+public struct LineSemanticInfo {
     public var filePath: String
     public var line: Int64
     public var tokens: Array<SemanticTokenInfo>
     public var hoverInfos: Array<HoverInfo>
-    public var symbols: Array<DocumentSymbol>
-    public var timestamp: Int64
 }
 
-/**
- * Individual semantic token information
- */
-@jsonable
-public class SemanticTokenInfo {
-    public var line: Int64
-    public var character: Int64
-    public var length: Int64
-    public var tokenType: String
-    public var tokenModifiers: Array<String>
-    public var text: String
-}
-
-/**
- * Hover information for a specific position
- */
-@jsonable
-public struct HoverInfo {
-    public var line: Int64
-    public var character: Int64
-    public var contents: String
-    public var range: Option<Range> = None
-    public let symbol: String
-}
