@@ -54,7 +54,7 @@ public class LSPToolset {
             let client = LSPClient("LSPServer")
 
             LogUtils.info("🔧 初始化 LSP 客户端，工作目录: ${CliConfig.cwd.toString()}")
-            client.initialize(root: CliConfig.cwd.toString())
+            client.initialize(root: CliConfig.cwd)
 
             LogUtils.info("✅ LSP 客户端初始化成功")
 
@@ -764,122 +764,6 @@ Example usage:
         }
     }
 
-    /**
-     * Tool 3: Get hover information for a symbol at a specific location
-     *
-     * Returns type information and documentation for a symbol.
-     * This is useful for understanding what a symbol is without jumping to its definition.
-     */
-    @tool[
-        description: """
-Get hover information (type, documentation) for a symbol at a specific location in a Cangjie file.
-This provides detailed information about what a symbol is, including its type signature and documentation.
-
-Use this when you want to:
-- Check the type of a variable or parameter
-- Read documentation for a function or class
-- Understand what a symbol does without navigating to its definition
-- Get parameter information for functions
-
-Returns information including:
-- Type signature of the symbol
-- Documentation comments if available
-- Parameter information for functions
-- Return type information
-
-Example usage:
-- "What is the type of the variable 'count' at line 42?"
-- "Show me the documentation for the function at line 15"
-- "What parameters does this function take?"
-""",
-        parameters: {
-            filePath: "Absolute path to the Cangjie file (must end with .cj)",
-            line: "Line number where the symbol is located (1-based, starting from 1)",
-            character: "Character position in the line (0-based, starting from 0)"
-        }
-    ]
-    public func getSymbolHoverInfo(
-        filePath: String,
-        line: Int64,
-        character: Int64
-    ): String {
-        // 验证参数
-        if (!filePath.endsWith(".cj")) {
-            return "Error: File must be a Cangjie file (.cj extension)"
-        }
-
-        if (line < 1) {
-            return "Error: Line number must be positive (1-based)"
-        }
-
-        if (character < 0) {
-            return "Error: Character position must be non-negative (0-based)"
-        }
-
-        let path = Path(filePath)
-
-        if (!path.isAbsolute()) {
-            return "Error: File path must be absolute"
-        }
-
-        if (!exists(path)) {
-            return "Error: File does not exist: ${filePath}"
-        }
-
-        // 获取 LSP 客户端
-        let client = try {
-            getOrCreateLSPClient()
-        } catch (e: Exception) {
-            return "Error: Failed to initialize LSP client: ${e.message}"
-        }
-
-        try {
-            // 打开文档
-            openDocumentIfNeeded(client, path)
-
-            // 获取语义tokens
-            LogUtils.info("📊 获取语义tokens...")
-            let tokens = client.getSemanticTokens(path)
-
-            if (tokens.isEmpty()) {
-                return "No semantic information available for ${filePath}"
-            }
-
-            // 获取hover信息
-            LogUtils.info("💡 获取hover信息...")
-            let hovers = client.getHovers(path, tokens)
-
-            if (hovers.isEmpty()) {
-                return "No hover information available at line ${line}, character ${character}"
-            }
-
-            // 转换为0-based行号（LSP使用0-based）
-            let lspLine = line - 1
-
-            // 查找指定位置的hover信息
-            for (hover in hovers) {
-                // 检查hover的位置是否匹配
-                if (hover.line == lspLine) {
-                    // 构建结果JSON
-                    let result = HashMap<String, JsonValue>()
-                    result["line"] = JsonInt(hover.line + 1) // 转回1-based
-                    result["contents"] = JsonString(hover.contents)
-                    result["symbol"] = JsonString(hover.symbol)
-
-                    let jsonResult = JsonObject(result).toJsonString()
-                    LogUtils.debug("Hover结果: ${jsonResult}")
-
-                    return jsonResult
-                }
-            }
-
-            return "No hover information found at line ${line}, character ${character}"
-
-        } catch (e: Exception) {
-            LogUtils.error("获取hover信息失败: ${e}")
-            return "Error: ${e.message}"
-        }
-    }
 
     /**
      * Tool 4: Get code summary for a Cangjie file

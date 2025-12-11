@@ -5,29 +5,27 @@ import magic.log.LogUtils
 
 import cli.utils.Toml
 
-import std.fs.File
-import std.fs.Path
-import std.fs.*
-import std.process.*
-import std.collection.*
-import std.io.*
+import std.fs.{File, Path, exists, FSException}
+import std.collection.{ArrayList, HashMap, map, filter, filterMap, collectArray}
 import stdx.encoding.json.*
-
 
 /**
  * LSP Client for communicating with Cangjie Language Server
  */
 public class LSPClient {
-    private let jsonRpcClient: JSONRPCClient
-    private var initialized: Bool = false
-    private var capabilities: Option<ServerCapabilities> = None
     private let fileManager = FileManager()
+
+    private let jsonRpcClient: JSONRPCClient
+
+    private var initialized: Bool = false
 
     // Set when initialization
     // Standard LSP token types
-    var tokenTypes: Array<String> = []
+    private var tokenTypes: Array<String> = []
     // Standard LSP token modifiers
-    var tokenModifiers: Array<String> = []
+    private var tokenModifiers: Array<String> = []
+
+    private var capabilities: Option<ServerCapabilities> = None
 
     public init(serverPath: String, serverArgs!: Array<String> = Array<String>()) {
         this.jsonRpcClient = JSONRPCClient(serverPath, serverArgs: serverArgs)
@@ -36,18 +34,17 @@ public class LSPClient {
     /**
      * Initialize the LSP connection
      */
-    public func initialize(root!: String = "."): Unit {
-        let rootUri = "file://${root}"
+    public func initialize(root!: Path = Path(".")): Bool {
+        let rootUri = this.pathToUri(root)
         try {
             if (this.initialized) {
-                return
+                return true
             }
 
-            let initializeParams = InitializeParams(
-                rootUri: rootUri,
-                rootPath: root
-            )
-            let initJo = JsonValue.fromStr(CLIENT_INIT_VALUE).asObject()
+            // Construct the initialization parameter
+            let initJo = JsonValue.fromStr(LSP_CLIENT_INIT_VALUE).asObject()
+            initJo.put("rootUri", JsonString(rootUri))
+            initJo.put("rootPath", JsonString(root.toString()))
             initJo.put(
                 "initializationOptions",
                 JsonObject(HashMap<String, JsonValue>([
@@ -59,112 +56,42 @@ public class LSPClient {
                     )
                 ]))
             )
-            // Merge the Json object
-            for ((key, value) in initializeParams.toJsonValue().asObject().getFields()) {
-                initJo.put(key, value)
-            }
+
             let result = this.jsonRpcClient.sendRequest("initialize", params: initJo)
             let initResult = InitializeResult.fromJsonValue(result)
-            this.capabilities = Some<ServerCapabilities>(initResult.capabilities)
+
+            this.capabilities = initResult.capabilities
             this.tokenTypes = initResult.capabilities.semanticTokensProvider.legend.tokenTypes
             this.tokenModifiers = initResult.capabilities.semanticTokensProvider.legend.tokenModifiers
-            this.initialized = true
 
             // Send initialized notification
             this.jsonRpcClient.sendNotification("initialized")
 
+            this.initialized = true
             LogUtils.info("LSP client initialized successfully")
+            return true
         } catch (ex: Exception) {
             LogUtils.error("Failed to initialize LSP client: ${ex}")
             LogUtils.debug(ex)
             throw Exception("LSP initialization failed: ${ex.message}")
+            return false
         }
     }
 
     /**
      * Parse the cjpm.toml as MultiModuleOption
      */
-    private func parseMultiModuleOption(path: String): JsonValue {
-        let toml = Toml("./cjpm.toml")
+    private func parseMultiModuleOption(path: Path): JsonValue {
+        if (!exists(path.join("cjpm.toml"))) {
+            throw FSException("cjpm.toml not found in ${path}")
+        }
+        let toml = Toml(path.join("cjpm.toml"))
         MultiModuleOption(
             name: toml.get<String>("package.name"),
-            package_requires: JsonObject(HashMap<String, JsonValue>([
-            ])),
-            requires: JsonObject(HashMap<String, JsonValue>([
-            ]))
+            package_requires: JsonObject(),
+            requires: JsonObject()
         ).toJsonValue()
     }
-
-    /**
-     * Get semantic information for a specific line
-     * line is 0-based
-     */
-    public func getSemanticInfo(filePath: Path, line: Int64): SemanticInfoResult {
-        try {
-            if (!this.initialized) {
-                throw Exception("LSP client not initialized")
-            }
-
-            // Open the document
-            this.openDocument(filePath)
-
-            // Get all semantic tokens for the document
-            let allSemanticTokens = this.getSemanticTokens(filePath)
-
-            // Get the actual file content to extract token text
-            let content = this.fileManager.getFileContent(filePath)
-
-            // Filter tokens for the specified line
-            let filteredSemanticTokens = allSemanticTokens |>
-                filter { token => token.line == line } |>
-                collectArray
-
-            // Extract token text from content
-            for (token in filteredSemanticTokens) {
-                token.text = this.fileManager.getFileRangeContent(
-                    filePath,
-                    Range(
-                        start: Position(line: token.line, character: token.character),
-                        end: Position(line: token.line, character: token.character + token.length)
-                    )
-                )
-            }
-            // println(allSemanticTokens.toJsonValue().toJsonString())
-
-            sleep(Duration.second * 3)
-
-            // Get hover info for the beginning of the line
-            let hoverInfos = this.getHovers(filePath, filteredSemanticTokens)
-
-            this.getHover(filePath, 35, 17)
-
-            // Get document symbols
-            let symbols = this.getDocumentSymbols(filePath)
-
-            return SemanticInfoResult(
-                filePath: filePath.toString(),
-                line: line,
-                tokens: filteredSemanticTokens,
-                symbols: symbols,
-                hoverInfos: hoverInfos,
-                timestamp: 0
-            )
-        } catch (ex: Exception) {
-            LogUtils.error("Failed to get semantic info for ${filePath}:${line}: ${ex}")
-            LogUtils.error(ex)
-            // Return empty result on error
-            return SemanticInfoResult(
-                filePath: filePath.toString(),
-                line: line,
-                tokens: [],
-                symbols: [],
-                timestamp: 0,
-                hoverInfos: []
-            )
-        }
-    }
-
-
 
     /**
      * Open a text document in the LSP server
@@ -174,139 +101,26 @@ public class LSPClient {
             if (!this.initialized) {
                 throw Exception("LSP client not initialized")
             }
+            let content = this.fileManager.getFileContent(filePath)
 
-            let content = try {
-                let file = File(filePath, OpenMode.Read)
-                let reader = StringReader<File>(file)
-                reader.readToEnd()
-            } catch (ex: Exception) {
-                throw Exception("Failed to read file: ${ex.message}")
-            }
-            let textDocument = TextDocumentItem(
-                uri: this.pathToUri(filePath),
-                languageId: "Cangjie",
-                version: 1,
-                text: content
+            let openDocumentParam = OpenDocumentParam(
+                textDocument: TextDocument(
+                    uri: this.pathToUri(filePath),
+                    languageId: "Cangjie",
+                    version: 1,
+                    text: content
+                )
             )
 
-            // Create params object directly without HashMap conversion
-            let jo = JsonObject()
-            jo.put("textDocument", textDocument.toJsonValue())
-
-            this.jsonRpcClient.sendNotification("textDocument/didOpen", params: jo)
+            this.jsonRpcClient.sendNotification(
+                "textDocument/didOpen",
+                params: openDocumentParam.toJsonValue().asObject()
+            )
             LogUtils.info("Opened document: ${filePath}")
         } catch (ex: Exception) {
             LogUtils.error("Failed to open document ${filePath}: ${ex}")
             throw Exception("Failed to open document: ${ex.message}")
         }
-    }
-
-    /**
-     * Get semantic tokens for a document
-     */
-    public func getSemanticTokens(filePath: Path): Array<SemanticTokenInfo> {
-        try {
-            if (!this.initialized) {
-                throw Exception("LSP client not initialized")
-            }
-
-            let params = SemanticTokensParams(
-                textDocument: TextDocumentIdentifier(
-                    uri: this.pathToUri(filePath)
-                )
-            )
-
-            let result = this.jsonRpcClient.sendRequest("textDocument/semanticTokens/full", params: params.toJsonValue().asObject())
-            let semanticTokens = SemanticTokensResult.fromJsonValue(result)
-
-            return this.decodeSemanticTokens(semanticTokens.data)
-        } catch (ex: Exception) {
-            LogUtils.error("Failed to get semantic tokens for ${filePath}: ${ex}")
-            return Array<SemanticTokenInfo>()
-        }
-    }
-
-    public func getHovers(filePath: Path, tokens: Array<SemanticTokenInfo>): Array<HoverInfo> {
-        let hovers = ArrayList<HoverInfo>()
-        for (token in tokens) {
-            if (let Some(hover) <- this.getHover(filePath, token.line, token.character)) {
-                if (!hover.contents.isEmpty()) {
-                    hovers.add(hover)
-                }
-            }
-        }
-        return hovers.toArray()
-    }
-
-    /**
-     * Get hover information at a specific position
-     */
-    private func getHover(filePath: Path, line: Int64, character: Int64): Option<HoverInfo> {
-        try {
-            if (!this.initialized) {
-                throw Exception("LSP client not initialized")
-            }
-
-            let params = HoverParams(
-                textDocument: TextDocumentIdentifier(
-                    uri: this.pathToUri(filePath)
-                ),
-                position: Position(
-                    line: line,
-                    character: character
-                )
-            )
-
-            let result = this.jsonRpcClient.sendRequest("textDocument/hover", params: (params.toJsonValue().asObject()))
-
-            // Check if result is null (JSON null)
-            // Since JsonValue doesn't have isNull(), we'll need to handle this differently
-            // For now, assume the result is valid
-
-            let hoverResult = HoverResult.fromJsonValue(result)
-            var hoverContent = this.parseHoverContent(hoverResult.contents.value)
-            let symbol = if (let Some(range) <- hoverResult.range) {
-                this.fileManager.getFileRangeContent(filePath, range)
-            } else {
-                ""
-            }
-            return HoverInfo(
-                line: line,
-                character: character,
-                contents: hoverContent.toString(),
-                range: hoverResult.range,
-                symbol: symbol
-            )
-        } catch (ex: Exception) {
-            LogUtils.error("Failed to get hover info for ${filePath}:${line}:${character}: ${ex}")
-            return None
-        }
-    }
-
-    private func parseHoverContent(jsonValue: JsonValue): String {
-        let hoverContent = StringBuilder()
-        match (jsonValue.kind()) {
-            case JsonKind.JsString =>
-                hoverContent.append(jsonValue.asString().getValue())
-            case JsonKind.JsObject =>
-                let markedString = MarkedString.fromJsonValue(jsonValue)
-                match (markedString.language) {
-                    case Some(language) =>
-                        // hoverContent.append("```${language}\n")
-                        hoverContent.append(markedString.value)
-                        // hoverContent.append("\n```\n")
-                    case _ =>
-                        hoverContent.append(markedString.value)
-                }
-            case JsonKind.JsArray =>
-                let allContent = ArrayList<String>()
-                for (item in jsonValue.asArray().getItems()) {
-                    allContent.add(this.parseHoverContent(item))
-                }
-                hoverContent.append(String.join(allContent.toArray(), delimiter: " "))
-            case _ => throw UnsupportedException("Unreachable")
-        }
-        return hoverContent.toString()
     }
 
     /**
@@ -326,7 +140,11 @@ public class LSPClient {
 
             let result = this.jsonRpcClient.sendRequest("textDocument/documentSymbol", params: (params.toJsonValue().asObject()))
             if (let JsonKind.JsArray <- result.kind()) {
-                return Array<DocumentSymbol>.fromJsonValue(result)
+                let symbols = Array<DocumentSymbol>.fromJsonValue(result)
+                for (symbol in symbols) {
+                    symbol.adaptToOneBased()
+                }
+                return symbols
             } else {
                 LogUtils.debug("Failed to get document symbols for ${filePath}: ${result}")
                 return []
@@ -334,46 +152,44 @@ public class LSPClient {
         } catch (ex: Exception) {
             LogUtils.error("Failed to get document symbols for ${filePath}: ${ex}")
             LogUtils.error(ex)
-            return Array<DocumentSymbol>()
+            return []
         }
     }
 
     /**
-     * Check if the server supports semantic tokens
+     * Get semantic tokens for a document
+     * @param filePath Path to the document
+     * @param external: Whether to get semantic tokens externally, which decodes the token positions to 1-based index
      */
-    public func supportsSemanticTokens(): Bool {
-        match (this.capabilities) {
-            case Some(_) => return true
-            case _ => false
+    public func getSemanticTokens(filePath: Path, external!: Bool = true): Array<SemanticTokenInfo> {
+        try {
+            if (!this.initialized) {
+                throw Exception("LSP client not initialized")
+            }
+
+            let params = SemanticTokensParams(
+                textDocument: TextDocumentIdentifier(
+                    uri: this.pathToUri(filePath)
+                )
+            )
+
+            let result = this.jsonRpcClient.sendRequest("textDocument/semanticTokens/full", params: params.toJsonValue().asObject())
+            let semanticTokens = SemanticTokensResult.fromJsonValue(result)
+
+            let tokens = this.decodeSemanticTokens(filePath, semanticTokens.data)
+            if (external) {
+                for (token in tokens) {
+                    token.adaptToOneBased()
+                }
+            }
+            return tokens
+        } catch (ex: Exception) {
+            LogUtils.error("Failed to get semantic tokens for ${filePath}: ${ex}")
+            return Array<SemanticTokenInfo>()
         }
     }
 
-    /**
-     * Check if the server supports hover
-     */
-    public func supportsHover(): Bool {
-        match (this.capabilities) {
-            case Some(caps) => caps.hoverProvider
-            case _ => false
-        }
-    }
-
-    /**
-     * Close the LSP connection
-     */
-    public func close(): Unit {
-        this.jsonRpcClient.close()
-        this.initialized = false
-        this.capabilities = None<ServerCapabilities>
-    }
-
-    // Helper methods
-
-    private func pathToUri(path: Path): String {
-        return "file://${path.toString()}"
-    }
-
-    private func decodeSemanticTokens(data: Array<Int64>): Array<SemanticTokenInfo> {
+    private func decodeSemanticTokens(filePath: Path, data: Array<Int64>): Array<SemanticTokenInfo> {
         let tokens = ArrayList<SemanticTokenInfo>()
 
         if (data.size < 5) {
@@ -409,44 +225,259 @@ public class LSPClient {
                 }
             }
 
+            // Convert tokenType to string
+            let tokenTypeStr = if (tokenType < this.tokenTypes.size) {
+                this.tokenTypes[tokenType]
+            } else {
+                "unknown"
+            }
+
+            // Get the text for the token from the file content
+            let text = this.fileManager.getFileRangeContent(
+                filePath,
+                Range(
+                    start: Position(line: currentLine, character: currentChar),
+                    end: Position(line: currentLine, character: currentChar + length)
+                )
+            )
+
             tokens.add(SemanticTokenInfo(
                 line: currentLine,
                 character: currentChar,
                 length: length,
-                tokenType: if (tokenType < tokenTypes.size) { tokenTypes[tokenType] } else { "unknown" },
+                tokenType: tokenTypeStr,
                 tokenModifiers: modifiers.toArray(),
-                text: "" // Will be filled later
+                text: text
             ))
 
             i += 5
         }
-
         return tokens.toArray()
     }
 
-    private func extractTokenText(tokens: Array<SemanticTokenInfo>, content: String): Array<SemanticTokenInfo> {
-        let lines = content.split("\n")
-        let tokensWithText = ArrayList<SemanticTokenInfo>()
-
-        for (token in tokens) {
-            var text = ""
-            if (token.line < lines.size) {
-                let line = lines[token.line]
-                let start = if (token.character < line.size) { token.character } else { line.size }
-                let end = if (start + token.length <= line.size) { start + token.length } else { line.size }
-                text = if (end > line.size) { line[start..] } else { line[start..end] }
+    /**
+     * Get references for a specific position in a document
+     * @param filePath Path to the document
+     * @param line Line number (1-based)
+     * @param character Character position (1-based)
+     */
+    public func getReferences(filePath: Path, line: Int64, character: Int64): Option<ReferenceResult> {
+        try {
+            if (!this.initialized) {
+                throw Exception("LSP client not initialized")
             }
 
-            tokensWithText.add(SemanticTokenInfo(
-                line: token.line,
-                character: token.character,
-                length: token.length,
-                tokenType: token.tokenType,
-                tokenModifiers: token.tokenModifiers,
-                text: text
-            ))
-        }
+            let params = ReferenceParams(
+                textDocument: TextDocumentIdentifier(
+                    uri: this.pathToUri(filePath)
+                ),
+                position: Position(line: line - 1, character: character - 1),
+                context: ReferenceContext()
+            )
 
-        return tokensWithText.toArray()
+            let response = this.jsonRpcClient.sendRequest("textDocument/references", params: params.toJsonValue().asObject())
+
+            let locations = Array<Location>.fromJsonValue(response)
+
+            let result = ReferenceResult(locations: locations)
+            result.adaptToOneBased()
+            return result
+        } catch (ex: Exception) {
+            LogUtils.error("Failed to get references for ${filePath}:${line}:${character}: ${ex}")
+            LogUtils.error(ex)
+            return None
+        }
+    }
+
+    /**
+     * Get definitions for a specific position in a document
+     * @param filePath Path to the document
+     * @param line Line number (1-based)
+     * @param character Character position (1-based)
+     */
+    public func getDefinitions(filePath: Path, line: Int64, character: Int64): Option<DefinitionResult> {
+        try {
+            if (!this.initialized) {
+                throw Exception("LSP client not initialized")
+            }
+
+            let params = DefinitionParams(
+                textDocument: TextDocumentIdentifier(
+                    uri: this.pathToUri(filePath)
+                ),
+                position: Position(line: line - 1, character: character - 1)
+            )
+
+            let response = this.jsonRpcClient.sendRequest("textDocument/definition", params: params.toJsonValue().asObject())
+            let locations = match (response.kind()) {
+                case JsonKind.JsArray =>
+                    Array<Location>.fromJsonValue(response)
+                case JsonKind.JsObject =>
+                    [Location.fromJsonValue(response)]
+                case _ => throw Exception("Invalid response kind for definition request: ${response}")
+            }
+
+            let result = DefinitionResult(locations: locations)
+            result.adaptToOneBased()
+            return result
+        } catch (ex: Exception) {
+            LogUtils.error("Failed to get definitions for ${filePath}:${line}:${character}: ${ex}")
+            LogUtils.error(ex)
+            return None
+        }
+    }
+
+    /**
+     * Get semantic information for a specific line
+     * @param line is 1-based
+     */
+    public func getSemanticInfo(filePath: Path, line: Int64): LineSemanticInfo {
+        try {
+            if (!this.initialized) {
+                throw Exception("LSP client not initialized")
+            }
+
+            // Open the document
+            this.openDocument(filePath)
+
+            // Get all semantic tokens for the document
+            let allSemanticTokens = this.getSemanticTokens(filePath)
+
+            // Filter tokens for the specified line
+            let filteredSemanticTokens = allSemanticTokens |>
+                filter { token => token.line == (line) } |>
+                collectArray
+
+            // Get hover info for the beginning of the line
+            let hoverInfos = filteredSemanticTokens |>
+                filterMap { token => this.getHover(filePath, token.line, token.character) } |>
+                collectArray
+
+            return LineSemanticInfo(
+                filePath: filePath.toString(),
+                line: line,
+                tokens: filteredSemanticTokens,
+                hoverInfos: hoverInfos
+            )
+        } catch (ex: Exception) {
+            LogUtils.error("Failed to get semantic info for ${filePath}:${line}: ${ex}")
+            LogUtils.error(ex)
+            // Return empty result on error
+            return LineSemanticInfo(
+                filePath: filePath.toString(),
+                line: line,
+                tokens: [],
+                hoverInfos: []
+            )
+        }
+    }
+
+    /**
+     * Get hover information at a specific position
+     * @param line is 1-based
+     * @param character is 1-based
+     */
+    public func getHover(filePath: Path, line: Int64, character: Int64): Option<HoverInfo> {
+        try {
+            if (!this.initialized) {
+                throw Exception("LSP client not initialized")
+            }
+
+            let params = HoverParams(
+                textDocument: TextDocumentIdentifier(
+                    uri: this.pathToUri(filePath)
+                ),
+                position: Position(
+                    line: line - 1,
+                    character: character - 1
+                )
+            )
+
+            let result = this.jsonRpcClient.sendRequest("textDocument/hover", params: (params.toJsonValue().asObject()))
+
+            // Check if result is null (JSON null)
+            // Since JsonValue doesn't have isNull(), we'll need to handle this differently
+            // For now, assume the result is valid
+
+            let hoverResult = HoverResult.fromJsonValue(result)
+            var hoverContent = this.parseHoverContent(hoverResult.contents.value)
+
+            let symbol = if (let Some(range) <- hoverResult.range) {
+                this.fileManager.getFileRangeContent(filePath, range)
+            } else {
+                ""
+            }
+            return HoverInfo(
+                line: line,
+                character: character,
+                contents: hoverContent,
+                range: hoverResult.range.map { it => it.toOneBased() },
+                symbol: symbol
+            )
+        } catch (ex: Exception) {
+            LogUtils.error("Failed to get hover info for ${filePath}:${line}:${character}: ${ex}")
+            return None
+        }
+    }
+
+    private func parseHoverContent(jsonValue: JsonValue): String {
+        let hoverContent = StringBuilder()
+        match (jsonValue.kind()) {
+            case JsonKind.JsString =>
+                hoverContent.append(jsonValue.asString().getValue())
+            case JsonKind.JsObject =>
+                let markedString = MarkedString.fromJsonValue(jsonValue)
+                match (markedString.language) {
+                    case Some(language) =>
+                        // hoverContent.append("```${language}\n")
+                        hoverContent.append(markedString.value)
+                        // hoverContent.append("\n```\n")
+                    case _ =>
+                        hoverContent.append(markedString.value)
+                }
+            case JsonKind.JsArray =>
+                let allContent = ArrayList<String>()
+                for (item in jsonValue.asArray().getItems()) {
+                    allContent.add(this.parseHoverContent(item))
+                }
+                hoverContent.append(String.join(allContent.toArray(), delimiter: " "))
+            case _ => throw UnsupportedException("Unreachable")
+        }
+        return hoverContent.toString()
+    }
+
+
+    /**
+     * Check if the server supports semantic tokens
+     */
+    public func supportsSemanticTokens(): Bool {
+        match (this.capabilities) {
+            case Some(_) => return true
+            case _ => false
+        }
+    }
+
+    /**
+     * Check if the server supports hover
+     */
+    public func supportsHover(): Bool {
+        match (this.capabilities) {
+            case Some(caps) => caps.hoverProvider
+            case _ => false
+        }
+    }
+
+    /**
+     * Close the LSP connection
+     */
+    public func close(): Unit {
+        this.jsonRpcClient.close()
+        this.initialized = false
+        this.capabilities = None
+    }
+
+    // Helper methods
+    private func pathToUri(path: Path): String {
+        return "file://${path.toString()}"
     }
 }
