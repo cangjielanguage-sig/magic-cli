@@ -68,18 +68,17 @@ private func getRipgrepPath(): Option<String> {
  */
 private func grepWithRipgrep(pattern: String, path: Option<String>, include: Option<String>, rgPath: String): String {
     try {
-        let rgCmd = ArrayList<String>([rgPath, "-r", "--line-number", "--with-filename", "--no-heading"])
+        let rgCmd = ArrayList<String>([rgPath, "--line-number", "--with-filename", "--no-heading"])
         for (dir in IGNORED_DIR) {
-            rgCmd.add("--exclude-dir=${dir}")
+            rgCmd.add("--glob='!${dir}'")
         }
 
         // Add glob pattern if specified
         if (let Some(includePattern) <- include) {
-            rgCmd.add("--glob")
-            rgCmd.add(includePattern)
+            rgCmd.add("--glob='${includePattern}'")
         }
 
-        rgCmd.add(pattern)
+        rgCmd.add("'${pattern}'")
 
         // Add search path (default to current directory)
         let searchPath = path ?? "."
@@ -88,15 +87,15 @@ private func grepWithRipgrep(pattern: String, path: Option<String>, include: Opt
         let command = String.join(rgCmd.toArray(), delimiter: " ")
         LogUtils.debug("[Run command] ${command}")
 
-        let workingDir = path.map { s => Path(s) } ?? CliConfig.cwd
-        let (exitCode, stdOutData, stdErrData) = executeWithOutput(rgPath, rgCmd.toArray()[1..], workingDirectory: workingDir)
+        let (exitCode, stdOut, stdErr) = ShellUtils.execute(rgCmd.toArray(), workDir: CliConfig.cwd)
 
+        LogUtils.debug("Status: ${exitCode}")
         if (exitCode == 0) {
-            let outString = String.fromUtf8(stdOutData).trimAscii()
-            return parseGrepOutput(outString, workingDir)
+            LogUtils.debug("[Ripgrep output] ${stdOut}")
+            return parseGrepOutput(stdOut, CliConfig.cwd)
         } else {
-            let errString = String.fromUtf8(stdErrData).trimAscii()
-            return errString
+            LogUtils.debug("[Ripgrep error] ${stdErr}")
+            return stdErr
         }
     } catch (e: Exception) {
         LogUtils.info("Ripgrep failed, falling back to traditional grep: ${e.message}")
@@ -150,11 +149,10 @@ private func grepWithTraditional(pattern: String, path: Option<String>, include:
  */
 private func parseGrepOutput(rawOutput: String, workingDir: Path): String {
     let lines = rawOutput.split("\n")
-    let nonEmptyLines = lines |> filter { line: String => !line.trimAscii().isEmpty() } |> collectArray
+    let nonEmptyLines = lines |> filter { line => !line.trimAscii().isEmpty() } |> collectArray
 
     let totalMatches = nonEmptyLines.size
-    let shouldTruncate = totalMatches > MAX_GREP_MATCHES
-    let linesToProcess = if (shouldTruncate) { nonEmptyLines[0..MAX_GREP_MATCHES] } else { nonEmptyLines }
+    let linesToProcess = nonEmptyLines[0..min(nonEmptyLines.size, MAX_GREP_MATCHES)]
 
     let formattedLines = linesToProcess |>
         map { line: String =>
@@ -190,7 +188,7 @@ private func parseGrepOutput(rawOutput: String, workingDir: Path): String {
 
     let result = String.join(formattedLines, delimiter: "\n")
 
-    if (shouldTruncate) {
+    if (totalMatches > MAX_GREP_MATCHES) {
         let remaining = totalMatches - MAX_GREP_MATCHES
         return result + "\n\n[Truncated: showing ${MAX_GREP_MATCHES} of ${totalMatches} matches. ${remaining} more results not shown. Use more specific pattern or include filter.]"
     }
