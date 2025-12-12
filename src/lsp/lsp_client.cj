@@ -13,7 +13,7 @@ import stdx.encoding.json.*
  * LSP Client for communicating with Cangjie Language Server
  */
 public class LSPClient {
-    private let fileManager = FileManager()
+    private let fileCache = FileCache()
 
     private let jsonRpcClient: JSONRPCClient
 
@@ -78,6 +78,10 @@ public class LSPClient {
         }
     }
 
+    public func isInitialized(): Bool {
+        return this.initialized
+    }
+
     /**
      * Parse the cjpm.toml as MultiModuleOption
      */
@@ -96,18 +100,22 @@ public class LSPClient {
     /**
      * Open a text document in the LSP server
      */
-    public func openDocument(filePath: Path): Unit {
+    public func openDocument(filePath: Path, version!: Int64 = 1): Unit {
         try {
             if (!this.initialized) {
                 throw Exception("LSP client not initialized")
             }
-            let content = this.fileManager.getFileContent(filePath)
+            // Invalidate existing file cache before opening the document
+            // to ensure we get the latest content
+            this.fileCache.invalidateCache(filePath)
+
+            let content = this.fileCache.getFileContent(filePath)
 
             let openDocumentParam = OpenDocumentParam(
                 textDocument: TextDocument(
                     uri: this.pathToUri(filePath),
                     languageId: "Cangjie",
-                    version: 1,
+                    version: version,
                     text: content
                 )
             )
@@ -233,7 +241,7 @@ public class LSPClient {
             }
 
             // Get the text for the token from the file content
-            let text = this.fileManager.getFileRangeContent(
+            let text = this.fileCache.getFileRangeContent(
                 filePath,
                 Range(
                     start: Position(line: currentLine, character: currentChar),
@@ -279,9 +287,16 @@ public class LSPClient {
 
             let locations = Array<Location>.fromJsonValue(response)
 
-            let result = ReferenceResult(locations: locations)
-            result.adaptToOneBased()
-            return result
+            let references = locations |> map { location: Location =>
+                ReferenceInfo(
+                    location: location.toOneBased(),
+                    symbol: this.fileCache.getFileRangeContent(
+                        this.uriToPath(location.uri), location.range
+                    )
+                )
+            } |> collectArray
+
+            return ReferenceResult(references: references)
         } catch (ex: Exception) {
             LogUtils.error("Failed to get references for ${filePath}:${line}:${character}: ${ex}")
             LogUtils.error(ex)
@@ -317,9 +332,15 @@ public class LSPClient {
                 case _ => throw Exception("Invalid response kind for definition request: ${response}")
             }
 
-            let result = DefinitionResult(locations: locations)
-            result.adaptToOneBased()
-            return result
+            let definitions = locations |> map { location: Location =>
+                DefinitionInfo(
+                    location: location.toOneBased(),
+                    symbol: this.fileCache.getFileRangeContent(
+                        this.uriToPath(location.uri), location.range
+                    )
+                )
+            } |> collectArray
+            return DefinitionResult(definitions: definitions)
         } catch (ex: Exception) {
             LogUtils.error("Failed to get definitions for ${filePath}:${line}:${character}: ${ex}")
             LogUtils.error(ex)
@@ -403,7 +424,7 @@ public class LSPClient {
             var hoverContent = this.parseHoverContent(hoverResult.contents.value)
 
             let symbol = if (let Some(range) <- hoverResult.range) {
-                this.fileManager.getFileRangeContent(filePath, range)
+                this.fileCache.getFileRangeContent(filePath, range)
             } else {
                 ""
             }
@@ -471,6 +492,10 @@ public class LSPClient {
      * Close the LSP connection
      */
     public func close(): Unit {
+        if (!this.initialized) {
+            return
+        }
+        this.fileCache.clearAll()
         this.jsonRpcClient.close()
         this.initialized = false
         this.capabilities = None
@@ -479,5 +504,9 @@ public class LSPClient {
     // Helper methods
     private func pathToUri(path: Path): String {
         return "file://${path.toString()}"
+    }
+
+    private func uriToPath(uri: String): Path {
+        return Path(uri.replace("file://", ""))
     }
 }

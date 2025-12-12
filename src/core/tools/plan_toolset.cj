@@ -31,9 +31,9 @@ public class PlanToolset {
     }
 
     @tool[
-        description: "View the current plan and the completion status of each task (TODO/DONE)."
+        description: "Review the current plan and the completion status of each task (TODO/DONE)."
     ]
-    public func todoView(): String {
+    public func todoReview(): String {
         if (this.plan.isEmpty()) {
             return "No current plan."
         }

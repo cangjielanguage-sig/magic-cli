@@ -11,7 +11,7 @@ import std.collection.*
  * LSP Request Message - JSON-RPC 2.0 Request
  */
 @jsonable
-public struct LSPRequest {
+struct LSPRequest {
     public var jsonrpc: String = "2.0"
     public var id: Int64
     public var method: String
@@ -22,7 +22,7 @@ public struct LSPRequest {
  * Result of response is a JSON value; however, we cannot let JsonValue as Jsonable,
  * so, we introduce a wrap type here
  */
-public struct LSPResult <: Jsonable<LSPResult> {
+struct LSPResult <: Jsonable<LSPResult> {
     public let value: JsonValue
 
     public init(value: JsonValue) {
@@ -46,7 +46,7 @@ public struct LSPResult <: Jsonable<LSPResult> {
  * LSP Response Message - JSON-RPC 2.0 Response
  */
 @jsonable
-public struct LSPResponse {
+struct LSPResponse {
     public var jsonrpc: String = "2.0"
     public var id: Int64
     public var result: Option<LSPResult> = None
@@ -57,7 +57,7 @@ public struct LSPResponse {
  * LSP Error Information
  */
 @jsonable
-public struct LSPError {
+struct LSPError {
     public var code: Int64
     public var message: String
     public var data: Option<JsonObject> = None
@@ -67,7 +67,7 @@ public struct LSPError {
  * LSP Notification Message - JSON-RPC 2.0 Notification
  */
 @jsonable
-public struct LSPNotification {
+struct LSPNotification {
     public var jsonrpc: String = "2.0"
     public var method: String
     public var params: Option<JsonObject> = None
@@ -103,7 +103,7 @@ public struct Range {
  * LSP Text Document Identifier
  */
 @jsonable
-public struct TextDocumentIdentifier {
+struct TextDocumentIdentifier {
     public var uri: String
 }
 
@@ -111,7 +111,7 @@ public struct TextDocumentIdentifier {
  * LSP Text Document Item for didOpen notification
  */
 @jsonable
-public struct TextDocument {
+struct TextDocument {
     public var uri: String
     public var languageId: String
     public var version: Int64
@@ -119,7 +119,7 @@ public struct TextDocument {
 }
 
 @jsonable
-public struct OpenDocumentParam {
+struct OpenDocumentParam {
     public var textDocument: TextDocument
 }
 
@@ -127,13 +127,13 @@ public struct OpenDocumentParam {
  * LSP Initialize Parameters
  */
 @jsonable
-public struct InitializeParams {
+struct InitializeParams {
     public var rootPath: String
     public var rootUri: String
 }
 
 @jsonable
-public struct MultiModuleOption {
+struct MultiModuleOption {
     public var name: String
     public var package_requires: JsonObject
     public var requires: JsonObject
@@ -143,7 +143,7 @@ public struct MultiModuleOption {
  * LSP Client Capabilities
  */
 @jsonable
-public struct ClientCapabilities {
+struct ClientCapabilities {
     public var textDocument: Option<TextDocumentClientCapabilities> = None
 }
 
@@ -151,7 +151,7 @@ public struct ClientCapabilities {
  * LSP Text Document Client Capabilities
  */
 @jsonable
-public struct TextDocumentClientCapabilities {
+struct TextDocumentClientCapabilities {
     public var semanticTokens: Option<SemanticTokensClientCapabilities> = None
     public var hover: Option<HoverClientCapabilities> = None
     public var documentSymbol: Option<DocumentSymbolClientCapabilities> = None
@@ -161,7 +161,7 @@ public struct TextDocumentClientCapabilities {
  * LSP Semantic Tokens Client Capabilities
  */
 @jsonable
-public struct SemanticTokensClientCapabilities {
+struct SemanticTokensClientCapabilities {
     public var dynamicRegistration: Bool
     public var requests: Option<SemanticTokensClientCapabilitiesRequests> = None
 }
@@ -170,7 +170,7 @@ public struct SemanticTokensClientCapabilities {
  * LSP Semantic Tokens Client Capabilities Requests
  */
 @jsonable
-public struct SemanticTokensClientCapabilitiesRequests {
+struct SemanticTokensClientCapabilitiesRequests {
     public var full: Option<SemanticTokensFullOptions> = None
 }
 
@@ -178,7 +178,7 @@ public struct SemanticTokensClientCapabilitiesRequests {
  * LSP Semantic Tokens Full Options
  */
 @jsonable
-public struct SemanticTokensFullOptions {
+struct SemanticTokensFullOptions {
     public var delta: Bool
 }
 
@@ -186,7 +186,7 @@ public struct SemanticTokensFullOptions {
  * LSP Hover Client Capabilities
  */
 @jsonable
-public struct HoverClientCapabilities {
+struct HoverClientCapabilities {
     public var dynamicRegistration: Bool
     public var contentFormat: Option<Array<String>> = None
 }
@@ -195,7 +195,7 @@ public struct HoverClientCapabilities {
  * LSP Document Symbol Client Capabilities
  */
 @jsonable
-public struct DocumentSymbolClientCapabilities {
+struct DocumentSymbolClientCapabilities {
     public var dynamicRegistration: Bool
     public var symbolKind: Option<DocumentSymbolClientCapabilitiesSymbolKind> = None
 }
@@ -204,7 +204,7 @@ public struct DocumentSymbolClientCapabilities {
  * LSP Document Symbol Client Capabilities Symbol Kind
  */
 @jsonable
-public struct DocumentSymbolClientCapabilitiesSymbolKind {
+struct DocumentSymbolClientCapabilitiesSymbolKind {
     public var valueSet: Option<Array<Int64>> = None
 }
 
@@ -212,7 +212,7 @@ public struct DocumentSymbolClientCapabilitiesSymbolKind {
  * LSP Client Info
  */
 @jsonable
-public struct ClientInfo {
+struct ClientInfo {
     public var name: String = "cj-lsp"
     public var version: Option<String> = "0.1.0"
 }
@@ -221,7 +221,7 @@ public struct ClientInfo {
  * LSP Initialize Result
  */
 @jsonable
-public struct InitializeResult {
+struct InitializeResult {
     public var capabilities: ServerCapabilities
 }
 
@@ -229,7 +229,7 @@ public struct InitializeResult {
  * LSP Server Capabilities
  */
 @jsonable
-public struct ServerCapabilities {
+struct ServerCapabilities {
     public var semanticTokensProvider: SemanticTokensServerCapabilities
     public var hoverProvider: Bool = false
     public var documentSymbolProvider: Bool = false
@@ -239,7 +239,7 @@ public struct ServerCapabilities {
  * LSP Semantic Tokens Server Capabilities
  */
 @jsonable
-public struct SemanticTokensServerCapabilities {
+struct SemanticTokensServerCapabilities {
     public var legend: SemanticTokensLegend
     public var full: SemanticTokensFullOptions
     public var range: Bool
@@ -249,7 +249,7 @@ public struct SemanticTokensServerCapabilities {
  * LSP Semantic Tokens Legend
  */
 @jsonable
-public struct SemanticTokensLegend {
+struct SemanticTokensLegend {
     public var tokenTypes: Array<String>
     public var tokenModifiers: Array<String>
 }
@@ -259,7 +259,7 @@ public struct SemanticTokensLegend {
  * LSP Semantic Tokens Parameters
  */
 @jsonable
-public struct SemanticTokensParams {
+struct SemanticTokensParams {
     public var textDocument: TextDocumentIdentifier
 }
 
@@ -267,7 +267,7 @@ public struct SemanticTokensParams {
  * LSP Semantic Tokens Result
  */
 @jsonable
-public struct SemanticTokensResult {
+struct SemanticTokensResult {
     public var data: Array<Int64>
 }
 
@@ -294,7 +294,7 @@ public class SemanticTokenInfo {
  * LSP Hover Parameters
  */
 @jsonable
-public struct HoverParams {
+struct HoverParams {
     public var textDocument: TextDocumentIdentifier
     public var position: Position
     public var workDoneToken: Option<JsonObject> = None
@@ -304,7 +304,7 @@ public struct HoverParams {
  * LSP Hover Result
  */
 @jsonable
-public struct HoverResult {
+struct HoverResult {
     public var contents: LSPResult
     public var range: Option<Range> = None
 }
@@ -325,7 +325,7 @@ public struct HoverInfo {
  * LSP Marked String for hover content
  */
 @jsonable
-public struct MarkedString {
+struct MarkedString {
     public var language: Option<String> = None
     public var value: String
 }
@@ -336,7 +336,7 @@ public struct MarkedString {
  * LSP Document Symbol Parameters
  */
 @jsonable
-public struct DocumentSymbolParams {
+struct DocumentSymbolParams {
     public var textDocument: TextDocumentIdentifier
 }
 
@@ -350,56 +350,58 @@ public class DocumentSymbol {
     public var kind: Int64
     public var range: Range
     public var selectionRange: Range
-    public var children: Option<Array<DocumentSymbol>> = None
+    public var children: Array<DocumentSymbol> = []
 
     func toString(): String {
-        let strBuilder = StringBuilder("${this.name} (${this.getSymbolKindName()})\n")
+        let strBuilder = StringBuilder("${this.name} (${this.kindName})\n")
         match (this.detail) {
-            case Some(detail) => strBuilder.append("Detail: ${detail}\n")
+            case Some(detail) => strBuilder.append("  - Detail: ${detail}\n")
             case _ => ()
         }
-        strBuilder.append("  Range: ${this.range.start.line}:${this.range.start.character} - ${this.range.end.line}:${this.range.end.character}\n")
+        strBuilder.append("  - Range: ${this.range.start.line}:${this.range.start.character} - ${this.range.end.line}:${this.range.end.character}\n")
         return strBuilder.toString()
     }
 
     func adaptToOneBased(): Unit {
         this.range = this.range.toOneBased()
         this.selectionRange = this.selectionRange.toOneBased()
-        for (child in (this.children ?? [])) {
+        for (child in this.children) {
             child.adaptToOneBased()
         }
     }
 
     // Helper function to get symbol kind name
-    private func getSymbolKindName(): String {
-        match (this.kind) {
-            case 1 => "File"
-            case 2 => "Module"
-            case 3 => "Namespace"
-            case 4 => "Package"
-            case 5 => "Class"
-            case 6 => "Method"
-            case 7 => "Property"
-            case 8 => "Field"
-            case 9 => "Constructor"
-            case 10 => "Enum"
-            case 11 => "Interface"
-            case 12 => "Function"
-            case 13 => "Variable"
-            case 14 => "Constant"
-            case 15 => "String"
-            case 16 => "Number"
-            case 17 => "Boolean"
-            case 18 => "Array"
-            case 19 => "Object"
-            case 20 => "Key"
-            case 21 => "Null"
-            case 22 => "EnumMember"
-            case 23 => "Struct"
-            case 24 => "Event"
-            case 25 => "Operator"
-            case 26 => "TypeParameter"
-            case _ => "Unknown"
+    public prop kindName: String {
+        get() {
+            match (this.kind) {
+                case 1 => "File"
+                case 2 => "Module"
+                case 3 => "Namespace"
+                case 4 => "Package"
+                case 5 => "Class"
+                case 6 => "Method"
+                case 7 => "Property"
+                case 8 => "Field"
+                case 9 => "Constructor"
+                case 10 => "Enum"
+                case 11 => "Interface"
+                case 12 => "Function"
+                case 13 => "Variable"
+                case 14 => "Constant"
+                case 15 => "String"
+                case 16 => "Number"
+                case 17 => "Boolean"
+                case 18 => "Array"
+                case 19 => "Object"
+                case 20 => "Key"
+                case 21 => "Null"
+                case 22 => "EnumMember"
+                case 23 => "Struct"
+                case 24 => "Event"
+                case 25 => "Operator"
+                case 26 => "TypeParameter"
+                case _ => "Unknown"
+            }
         }
     }
 }
@@ -410,7 +412,7 @@ public class DocumentSymbol {
  * LSP Text Document Position Parameters
  */
 @jsonable
-public struct DefinitionParams {
+struct DefinitionParams {
     public var textDocument: TextDocumentIdentifier
     public var position: Position
 }
@@ -419,6 +421,16 @@ public struct DefinitionParams {
 public class Location {
     public let uri: String
     public var range: Range
+
+    func toOneBased(): Location {
+        return Location(uri: this.uri, range: this.range.toOneBased())
+    }
+}
+
+@jsonable
+public struct DefinitionInfo {
+    public let location: Location
+    public let symbol: String
 }
 
 /**
@@ -426,13 +438,7 @@ public class Location {
  */
 @jsonable
 public struct DefinitionResult {
-    public let locations: Array<Location>
-
-    func adaptToOneBased(): Unit {
-        for (location in this.locations) {
-            location.range = location.range.toOneBased()
-        }
-    }
+    public let definitions: Array<DefinitionInfo>
 }
 
 //------------------------------------------------------
@@ -441,14 +447,14 @@ public struct DefinitionResult {
  * LSP Reference Parameters
  */
 @jsonable
-public struct ReferenceParams {
+struct ReferenceParams {
     public var textDocument: TextDocumentIdentifier
     public var position: Position
     public var context: ReferenceContext
 }
 
 @jsonable
-public struct ReferenceContext {
+struct ReferenceContext {
     /**
      * Include the declaration of the current symbol.
      */
@@ -457,13 +463,13 @@ public struct ReferenceContext {
 
 @jsonable
 public struct ReferenceResult {
-    public let locations: Array<Location>
+    public let references: Array<ReferenceInfo>
+}
 
-    func adaptToOneBased(): Unit {
-        for (location in this.locations) {
-            location.range = location.range.toOneBased()
-        }
-    }
+@jsonable
+public struct ReferenceInfo {
+    public let location: Location
+    public let symbol: String
 }
 
 //------------------------------------------------------
@@ -478,4 +484,3 @@ public struct LineSemanticInfo {
     public var tokens: Array<SemanticTokenInfo>
     public var hoverInfos: Array<HoverInfo>
 }
-
