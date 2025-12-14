@@ -12,6 +12,8 @@ import cli.core.config.CliConfig
 
 import std.collection.{map, collectArray, fold}
 import std.fs.{Path, File, Directory, remove, exists, FSException}
+import std.unittest.*
+import std.unittest.testmacro.*
 
 //----------------------------------------------------------------------------------
 // Read only tools
@@ -296,13 +298,128 @@ protected func fileEdit(filePath: String, oldContent: String, newContent: String
     )
 }
 
+@tool[
+    description: "Extracts a specific code snippet from a source file. The tool copies the content between (and including) the specified startContent and endContent. Returns the extracted content and its length. Matching whitespace and indentation precisely. If the content occurs multiple times, the tool will fail. Extract complete code block, and AVOID extracting unmatched braces in any code snippet.",
+    parameters: {
+        filePath: "Absolute path to the source file containing the snippet to extract",
+        startContent: "Content that identifies the beginning of the snippet to extract (will be included in the extracted content)",
+        endContent: "Content that identifies the end of the snippet to extract (will be included in the extracted content), preferably more than one lines for precise match. If the content occurs multiple times, the tool will fail."
+    }
+]
+protected func extractSnippet(
+    filePath: String, 
+    startContent: String, 
+    endContent: String
+): String {
+    // Validate absolute path
+    if (!Path(filePath).isAbsolute()) {
+        return "Source file path must be absolute"
+    }
+
+    try {
+        // Read source file
+        let sourceContent = String.fromUtf8(File.readFrom(filePath))
+        
+        // Find all occurrences of startContent
+        let startOccurrences = findAllOccurrences(sourceContent, startContent)
+        if (startOccurrences.size == 0) {
+            // 检查行尾不匹配问题
+            let startHint = checkLineEndingMismatch(startContent, sourceContent)
+            PrintUtils.printToolFailure(
+                "extractSnippet (${filePath})",
+                failureInfo: "Start content not found in source file. ${startHint}"
+            )
+            return "Failed to extract snippet. Source file ${filePath} does not contain startContent '${startContent}'. ${startHint}"
+        } else if (startOccurrences.size > 1) {
+            PrintUtils.printToolFailure(
+                "extractSnippet (${filePath})",
+                failureInfo: "Start content found multiple times in source file"
+            )
+            return "Failed to extract snippet. startContent '${startContent}' appears ${startOccurrences.size} times in source file ${filePath}. Please use a more specific marker."
+        }
+        
+        // Find all occurrences of endContent
+        let endOccurrences = findAllOccurrences(sourceContent, endContent)
+        if (endOccurrences.size == 0) {
+            // 检查行尾不匹配问题
+            let endHint = checkLineEndingMismatch(endContent, sourceContent)
+            PrintUtils.printToolFailure(
+                "extractSnippet (${filePath})",
+                failureInfo: "End content not found in source file. ${endHint}"
+            )
+            return "Failed to extract snippet. Source file ${filePath} does not contain endContent '${endContent}'. ${endHint}"
+        } else if (endOccurrences.size > 1) {
+            PrintUtils.printToolFailure(
+                "extractSnippet (${filePath})",
+                failureInfo: "End content found multiple times in source file"
+            )
+            return "Failed to extract snippet. endContent '${endContent}' appears ${endOccurrences.size} times in source file ${filePath}. Please use a more specific marker."
+        }
+        
+        let startIndex = startOccurrences[0]
+        let endIndex = endOccurrences[0]
+        
+        // Verify end appears after start
+        if (endIndex <= startIndex) {
+            PrintUtils.printToolFailure(
+                "extractSnippet (${filePath})",
+                failureInfo: "End content appears before start content"
+            )
+            return "Failed to extract snippet. endContent appears before startContent in source file ${filePath}"
+        }
+        
+        // Verify end content doesn't overlap with start content
+        if (endIndex < startIndex + startContent.toArray().size) {
+            PrintUtils.printToolFailure(
+                "extractSnippet (${filePath})",
+                failureInfo: "End content overlaps with start content"
+            )
+            return "Failed to extract snippet. endContent overlaps with startContent in source file ${filePath}"
+        }
+        
+        // Extract snippet (INCLUSIVE of both startContent and endContent)
+        let snippetStart = startIndex
+        let snippetEnd = endIndex + endContent.toArray().size
+        let snippet = sourceContent[snippetStart..snippetEnd]
+        let snippetLines = snippet.split('\n').size
+        
+        return "Extracted snippet (${snippetLines} lines):\n\n${snippet}"
+        
+    } catch (ex: FSException) {
+        return "File path error or file is not readable"
+    } catch (ex: IllegalArgumentException) {
+        return "File path is empty or contains illegal characters"
+    }
+}
+
+// Helper function to find all occurrences of a substring
+protected func findAllOccurrences(content: String, search: String): Array<Int> {
+    let occurrences: ArrayList<Int> = ArrayList<Int>()
+    var maybeIndex = content.indexOf(search)
+    
+    while (true) {
+        match (maybeIndex) {
+            case Some(index) => 
+                occurrences.add(index)
+                // 从找到的位置之后继续查找
+                maybeIndex = content.indexOf(search, index + 1)
+            case None => 
+                break
+            
+        }
+    }
+    
+    return occurrences.toArray()
+}
+
 /**
  * General file system tools
  */
 @toolset[
     tools: [
         listDirectory, grepSearch, globSearch,
-        fileRead, fileBatchRead, fileCreate, fileWrite, fileEdit
+        fileRead, fileBatchRead, fileCreate, fileWrite, fileEdit,
+        extractSnippet
     ]
 ]
 public class FSToolset {
@@ -366,16 +483,17 @@ public class FSToolset {
         }
     }
 
-    /**
-    * Check if line ending mismatch exists between oldContent and fileContent
-    * Returns hint information without modifying content
-    */
-    private static func checkLineEndingMismatch(oldContent: String, fileContent: String): String {
-        if (fileContent.contains("\r\n") && !oldContent.contains("\r\n")) {
-            return "File uses Windows line endings (CRLF), but your content uses Unix (LF). Consider using \\r\\n instead of \\n."
-        } else if (!fileContent.contains("\r\n") && oldContent.contains("\r\n")) {
-            return "File uses Unix line endings (LF), but your content uses Windows (CRLF). Consider using \\n instead of \\r\\n."
-        }
-        return ""
+}
+
+/**
+* Check if line ending mismatch exists between oldContent and fileContent
+* Returns hint information without modifying content
+*/
+protected func checkLineEndingMismatch(oldContent: String, fileContent: String): String {
+    if (fileContent.contains("\r\n") && !oldContent.contains("\r\n")) {
+        return "File uses Windows line endings (CRLF), but your content uses Unix (LF). Consider using \\r\\n instead of \\n."
+    } else if (!fileContent.contains("\r\n") && oldContent.contains("\r\n")) {
+        return "File uses Unix line endings (LF), but your content uses Windows (CRLF). Consider using \\n instead of \\r\\n."
     }
+    return ""
 }

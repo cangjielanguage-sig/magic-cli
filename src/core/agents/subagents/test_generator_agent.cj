@@ -185,27 +185,15 @@ After generating tests, provide:
 
 # Test Generation Report
 
-## Target Code
-**File**: path/to/file.ext
-**Function/Class**: FunctionName or ClassName
-**Purpose**: Brief description of what the code does
-
-## Test Framework
-**Framework**: [Jest / pytest / JUnit / etc.]
-**Test File**: path/to/test_file.ext
-
 ## Generated Tests
 
 ### Test 1: [Test Name]
-**Scenario**: [What is being tested]
-**Type**: [Happy Path / Edge Case / Error Case]
-
-**Test Code**:
-[Generated test code]
+**Feature**: [Which feature is being tested]
+**Type**: [UI / logic / end2end]
 
 ### Test 2: [Test Name]
-**Scenario**: [What is being tested]
-**Type**: [Happy Path / Edge Case / Error Case]
+**Feature**: [Which feature is being tested]
+**Type**: [UI / logic / end2end]
 
 **Test Code**:
 [Generated test code]
@@ -213,9 +201,9 @@ After generating tests, provide:
 [... more tests ...]
 
 ## Coverage Summary
-- **Happy Path Tests**: X tests
-- **Edge Case Tests**: Y tests
-- **Error Case Tests**: Z tests
+- **UI Tests**: X tests
+- **logic Tests**: Y tests
+- **end2end Tests**: Z tests
 - **Total Tests**: X + Y + Z tests
 
 ## Test Execution
@@ -240,11 +228,6 @@ After generating tests, provide:
 - Find existing tests to understand naming patterns
 - Search for test framework imports and patterns
 - Locate test configuration files
-
-### getFileSymbols (LSP)
-- Get function signatures and parameter types
-- Understand class structure and methods
-- Identify public vs private interfaces
 
 ### ${shellExecute.name}
 - Run tests to verify they pass: "npm test", "pytest", etc.
@@ -312,26 +295,6 @@ Type: Edge Case
 ❌ Write tests without assertions
 ❌ Create flaky or non-deterministic tests
 ❌ Test private methods directly
-
-## Language-Specific Guidelines
-
-### For Cangjie Code:
-- Use Cangjie's built-in test framework: std.unittest
-- Wrap test suites (classes) in `@Test` annotation, wrap test cases (functions) in `@TestCase` annotation, and use `@PowerAssert` to assert the expected result.
-- Use command `cjpm test --filter <test_name>` to run a specific test suite or test case.
-- Use `cjpm build -i --coverage` and then `cjcov` to generate coverage report
-
-### For JavaScript/TypeScript:
-- Use Jest, Vitest, or Mocha as appropriate
-- Mock external dependencies
-- Use beforeEach/afterEach for setup/cleanup
-- Test both success and error cases for async functions
-
-### For Python:
-- Use pytest or unittest
-- Use fixtures for test data
-- Test exception handling with pytest.raises
-- Follow PEP 8 naming conventions
 
 ## Final Reminders
 

@@ -61,7 +61,17 @@ public class CustomAgent {
                 case "fileWrite" => this.toolManager.addTool(fileWrite)
                 case "fileEdit" => this.toolManager.addTool(fileEdit)
                 case "shellExecute" => this.toolManager.addTool(shellExecute)
+                case "extractSnippet" => this.toolManager.addTool(extractSnippet)
                 case _ => ()
+            }
+        }
+
+        for (mcp in (metadata.get("mcp") ?? "").split(",")) {
+            match (mcp.trimAscii()) {
+                case "context7" => 
+                    let client = CangjieDocAgent.startContext7()
+                    this.toolManager.addTool
+                case _ => () 
             }
         }
     }

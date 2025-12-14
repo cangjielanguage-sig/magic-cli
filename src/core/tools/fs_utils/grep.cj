@@ -105,7 +105,7 @@ private func grepWithTraditional(pattern: String, path: Option<String>, include:
     try {
         let command = if (InfoUtils.os == "windows") {
             let includeArg = include.map { s => '-Include "${s}"'} ?? ""
-            "Get-ChildItem -Recurse ${includeArg} | Select-String -Pattern \"${pattern}\" | Select-Object Path, LineNumber, Line"
+            "powershell /c Get-ChildItem -Recurse ${includeArg} | Select-String -Pattern \"${pattern}\" |Select-Object Path, LineNumber, Line"
         } else {
             let grepCmd = ArrayList<String>(["grep", '-r', '-n', '-H', '-E'])
             for (dir in IGNORED_DIR) {
