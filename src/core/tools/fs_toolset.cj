@@ -89,13 +89,10 @@ protected func fileRead(filePath: String, startLine: Option<Int64>, endLine: Opt
 protected func grepSearch(pattern: String, path: Option<String>, include: Option<String>): String {
     // Construct the info message
     let strBuilder = StringBuilder("pattern: ${pattern}")
-    if (let Some(path) <- path) {
-        strBuilder.append("\npath: ${path}")
-    }
     if (let Some(include) <- include) {
         strBuilder.append("\ninclude: ${include}")
     }
-    PrintUtils.printTool("Grep", shortMessage: strBuilder.toString())
+    PrintUtils.printTool("Grep", shortMessage: path ?? "", longMessage: strBuilder.toString())
 
     let result = grep(pattern, path, include)
     if (result.isEmpty()) {
@@ -139,8 +136,7 @@ protected func globSearch(pattern: String, path: Option<String>): String {
         return "Path does not exist: ${searchPath}"
     }
 
-    let message = "pattern: ${pattern}\npath: ${searchPath}"
-    PrintUtils.printTool("Glob Search", shortMessage: message)
+    PrintUtils.printTool("Glob Search", shortMessage: searchPath, longMessage: pattern)
 
     try {
         let results = glob(pattern, searchPath)

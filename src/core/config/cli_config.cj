@@ -235,6 +235,11 @@ protected class CliConfig {
     public static var fileReadThreshold: Float64 = 0.05
     public static var fileBatchReadThreshold: Float64 = 0.1
 
+    /**
+     * Whether to enable LSP tools
+     */
+    public static var enableLSPTool: Bool = false
+
     public static func toString(): String {
         let strBuilder = StringBuilder()
         strBuilder.append("CliConfig Setting:\n")
@@ -256,6 +261,7 @@ protected class CliConfig {
         strBuilder.append("  fileBatchReadThreshold: ${CliConfig.fileBatchReadThreshold}\n")
         strBuilder.append("  subagentDirs: ${CliConfig.subagentDirs}\n")
         strBuilder.append("  commandDirs: ${CliConfig.commandDirs}\n")
+        strBuilder.append("  enableLSPTool: ${CliConfig.enableLSPTool}\n")
         return strBuilder.toString()
     }
 

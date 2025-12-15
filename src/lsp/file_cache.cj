@@ -4,16 +4,30 @@ import std.collection.*
 import std.io.*
 import std.fs.*
 
-public class FileManager {
+class FileCache {
     private let cache = HashMap<String, String>()
+
     private let lineCache = HashMap<String, Array<String>>()
+
+    private func pathToKey(path: Path): String {
+        return canonicalize(path).toString()
+    }
+
+    /**
+     * Invalidates the cache for the given file path.
+     */
+    public func invalidateCache(path: Path): Unit {
+        let pathKey = this.pathToKey(path)
+        this.cache.remove(pathKey)
+        this.lineCache.remove(pathKey)
+    }
 
     public func getFileContent(path: String): String {
         return getFileContent(Path(path))
     }
 
     public func getFileContent(path: Path): String {
-        let pathKey = canonicalize(path).toString()
+        let pathKey = this.pathToKey(path)
         if (this.cache.contains(pathKey)) {
             return this.cache[pathKey]
         }
@@ -23,6 +37,11 @@ public class FileManager {
         return content
     }
 
+    /**
+     * Returns the content of a specific range in a file.
+     * @param path Path to the file
+     * @param range Range to extract (0-based)
+     */
     public func getFileRangeContent(path: Path, range: Range): String {
         let lines = this.getFileLines(path, range.start.line, range.end.line)
         if (lines.size == 1) {
@@ -36,8 +55,8 @@ public class FileManager {
         return strBuilder.toString()
     }
 
-    public func getFileLines(path: Path, startLine: Int64, endLine: Int64): Array<String> {
-        let pathKey = canonicalize(path).toString()
+    private func getFileLines(path: Path, startLine: Int64, endLine: Int64): Array<String> {
+        let pathKey = this.pathToKey(path)
         let lines = if (this.lineCache.contains(pathKey)) {
             this.lineCache[pathKey]
         } else {
@@ -60,5 +79,10 @@ public class FileManager {
 
     private func readFileContent(path: Path): String {
         return String.fromUtf8(File.readFrom(path))
+    }
+
+    public func clearAll(): Unit {
+        this.cache.clear()
+        this.lineCache.clear()
     }
 }

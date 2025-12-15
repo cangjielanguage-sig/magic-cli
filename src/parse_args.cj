@@ -40,6 +40,7 @@ func printHelp(): Unit {
     PrintUtils.printLine("  --default-model-input-limit <limit>  Set the default input token limit for the model (default: 128 * 1024)")
     PrintUtils.printLine("  --default-model-output-limit <limit>  Set the default output token limit for the model (default: 32 * 1024)")
     PrintUtils.printLine("  --disable-model-tool-call   Disable the model tool call (default: false)")
+    PrintUtils.printLine("  --enable-lsp-tool    Enable LSP tools (default: false)")
     PrintUtils.printLine("  --version, -v        Print the version of magic-cli")
     PrintUtils.printLine("  --help, -h           Print this help message")
 }
@@ -67,7 +68,8 @@ func parseArgsAndSetConfig(args: Array<String>): ParseArgsResult {
         Long("log-level", RequiredValue),
         Long("default-model-input-limit", RequiredValue),
         Long("default-model-output-limit", RequiredValue),
-        Long("disable-model-tool-call", NoValue)
+        Long("disable-model-tool-call", NoValue),
+        Long("enable-lsp-tool", NoValue)
     ]
     let result = try {
         parseArguments(args, argSpecs)
@@ -255,6 +257,10 @@ func parseArgsAndSetConfig(args: Array<String>): ParseArgsResult {
         changeSetting = true
     } else {
         CliConfig.collectData = CliSettingManager.setting.collectData
+    }
+
+    if (result.options.contains("enable-lsp-tool")) {
+        CliConfig.enableLSPTool = true
     }
 
     // Save the settings if any change
