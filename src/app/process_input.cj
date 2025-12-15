@@ -206,6 +206,18 @@ private func executeAgent(app: CliApp, input: String): Unit {
                 app.stopThinkIndicator()
                 // Mark cancellation without blocking
                 asyncResponse.cancel(blocking: false)
+                // Immediately save steps without waiting for execution to finish
+                if (!isSubagent) {
+                    try {
+                        let partialChatRound = asyncResponse.execution.getPartialChatRound("对话被用户取消 (Cancelled by user)")
+                        app.conversationManager.conversation.addChatRound(partialChatRound)
+                        LogUtils.debug("Immediately saved cancelled chat round with steps")
+                    } catch (ex: Exception) {
+                        saveIncompleteChatRound(app, question, "对话被用户取消 (Cancelled by user)")
+                        LogUtils.debug("Failed to save cancelled chat round immediately, used fallback: ${ex.message}")
+                    }
+                }
+                return
             }
             // Unified handling for all cases (Success, Cancelled, Failed)
             handleAgentResponse(app, question, asyncResponse, isSubagent: isSubagent)
