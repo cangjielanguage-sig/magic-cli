@@ -5,7 +5,7 @@ import magic.log.LogUtils
 
 import cli.utils.Toml
 
-import std.fs.{File, Path, exists, FSException}
+import std.fs.{File, Path, exists, canonicalize, FSException}
 import std.collection.{ArrayList, HashMap, map, filter, filterMap, collectArray}
 import stdx.encoding.json.*
 
@@ -44,7 +44,6 @@ public class LSPClient {
             // Construct the initialization parameter
             let initJo = JsonValue.fromStr(LSP_CLIENT_INIT_VALUE).asObject()
             initJo.put("rootUri", JsonString(rootUri))
-            initJo.put("rootPath", JsonString(root.toString()))
             initJo.put(
                 "initializationOptions",
                 JsonObject(HashMap<String, JsonValue>([
@@ -503,7 +502,8 @@ public class LSPClient {
 
     // Helper methods
     private func pathToUri(path: Path): String {
-        return "file://${path.toString()}"
+        let canonicalPath = canonicalize(path)
+        return "file://${canonicalPath.toString()}"
     }
 
     private func uriToPath(uri: String): Path {
