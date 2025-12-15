@@ -204,29 +204,17 @@ private func executeAgent(app: CliApp, input: String): Unit {
             // Check if cancellation occurred
             if (cancelChecker.hasCancel()) {
                 app.stopThinkIndicator()
-                if (!isSubagent) {
-                    try {
-                        let partialContent = try {
-                            asyncResponse.content
-                        } catch (_ex: Exception) {
-                            "对话被用户取消 (Cancelled by user)"
-                        }
-                        saveIncompleteChatRound(app, question, partialContent, response: asyncResponse)
-                    } catch (_ex: Exception) {
-                        saveIncompleteChatRound(app, question, "对话被用户取消 (Cancelled by user)")
-                    }
-                }
-                return
-            } else {
-                handleAgentResponse(app, asyncResponse, isSubagent: isSubagent, input: question)
+                // Mark cancellation without blocking
+                asyncResponse.cancel(blocking: false)
             }
+            // Unified handling for all cases (Success, Cancelled, Failed)
+            handleAgentResponse(app, question, asyncResponse, isSubagent: isSubagent)
             CliModelManager.lastAvailableModel = currModel
             return // Success, exit retry loop
         } catch (ex: Exception) {
             if (idx == allModels.size - 1) { // All models are tried
                 if (!isSubagent) {
-                    let errorMsg = "执行失败: ${ex.message}"
-                    saveIncompleteChatRound(app, question, errorMsg)
+                    saveIncompleteChatRound(app, question, ex.message)
                 }
                 throw ex
             } else if (CliModelManager.shouldFallback(ex)) {
@@ -244,23 +232,12 @@ private func executeAgent(app: CliApp, input: String): Unit {
 private func saveIncompleteChatRound(
     app: CliApp,
     question: String,
-    answer: String,
-    response!: Option<AsyncAgentResponse> = None): Unit {
+    answer: String): Unit {
     try {
-        let steps = if (let Some(resp) <- response) {
-            try {
-                resp.execution.steps
-            } catch (_ex: Exception) {
-                MessageList()
-            }
-        } else {
-            MessageList()
-        }
-
         let chatRound = ChatRound(
             Message.user(question),
             Message.assistant(answer),
-            steps
+            MessageList() // Empty steps to avoid concurrent access
         )
         app.conversationManager.conversation.addChatRound(chatRound)
         LogUtils.debug("Saved incomplete chat round: question='${question}', answer='${answer}'")
@@ -291,7 +268,11 @@ private func parseAgentAndQuestion(app: CliApp, input: String): (Agent, String) 
 /**
  * Handle the agent response, print the response and update the conversation
  */
-private func handleAgentResponse(app: CliApp, response: AsyncAgentResponse, isSubagent!: Bool, input!: String): Unit {
+private func handleAgentResponse(
+    app: CliApp,
+    input: String,
+    response: AsyncAgentResponse,
+    isSubagent!: Bool): Unit {
     // This ensures response.content access is safe
     let content = response.content
     match (response.status) {
@@ -309,12 +290,30 @@ private func handleAgentResponse(app: CliApp, response: AsyncAgentResponse, isSu
             }
         case AgentResponseStatus.Cancelled =>
             if (!isSubagent) {
-                saveIncompleteChatRound(app, input, content, response: response)
+                // After response.content is accessed, finished = true, execution thread has stopped
+                // Set answer manually for cancelled case, then try to access chatRound to get steps
+                try {
+                    // Set answer manually since it's not set in cancelled case
+                    response.execution.setAnswer(content)
+                    app.conversationManager.conversation.addChatRound(response.execution.chatRound)
+                    LogUtils.debug("Saved cancelled chat round with steps")
+                } catch (ex: Exception) {
+                    // Fallback if chatRound access fails
+                    saveIncompleteChatRound(app, input, content)
+                    LogUtils.debug("Failed to access chatRound for cancelled case, used fallback: ${ex.message}")
+                }
             }
         case AgentResponseStatus.Failed =>
             PrintUtils.printLine(response.content.withColor(AnsiColor.color256(240)))
             if (!isSubagent) {
-                saveIncompleteChatRound(app, input, content, response: response)
+                try {
+                    response.execution.setAnswer(content)
+                    app.conversationManager.conversation.addChatRound(response.execution.chatRound)
+                    LogUtils.debug("Saved failed chat round with steps")
+                } catch (ex: Exception) {
+                    saveIncompleteChatRound(app, input, content)
+                    LogUtils.debug("Failed to access chatRound for failed case, used fallback: ${ex.message}")
+                }
             }
     }
 }
