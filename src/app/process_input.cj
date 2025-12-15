@@ -3,6 +3,7 @@ package cli.app
 import magic.core.agent.*
 import magic.log.LogUtils
 import magic.core.model.ChatModel
+import magic.core.message.{Message, MessageList, ChatRound}
 
 import cli.io.*
 import cli.core.config.CliConfig
@@ -203,14 +204,30 @@ private func executeAgent(app: CliApp, input: String): Unit {
             // Check if cancellation occurred
             if (cancelChecker.hasCancel()) {
                 app.stopThinkIndicator()
+                // Mark cancellation without blocking
+                asyncResponse.cancel(blocking: false)
+                // Immediately save steps without waiting for execution to finish
+                if (!isSubagent) {
+                    try {
+                        let partialChatRound = asyncResponse.execution.getPartialChatRound("对话被用户取消 (Cancelled by user)")
+                        app.conversationManager.conversation.addChatRound(partialChatRound)
+                        LogUtils.debug("Immediately saved cancelled chat round with steps")
+                    } catch (ex: Exception) {
+                        saveIncompleteChatRound(app, question, "对话被用户取消 (Cancelled by user)")
+                        LogUtils.debug("Failed to save cancelled chat round immediately, used fallback: ${ex.message}")
+                    }
+                }
                 return
-            } else {
-                handleAgentResponse(app, asyncResponse, isSubagent: isSubagent)
             }
+            // Unified handling for all cases (Success, Cancelled, Failed)
+            handleAgentResponse(app, question, asyncResponse, isSubagent: isSubagent)
             CliModelManager.lastAvailableModel = currModel
             return // Success, exit retry loop
         } catch (ex: Exception) {
             if (idx == allModels.size - 1) { // All models are tried
+                if (!isSubagent) {
+                    saveIncompleteChatRound(app, question, ex.message)
+                }
                 throw ex
             } else if (CliModelManager.shouldFallback(ex)) {
                 LogUtils.info("Model ${currModel.fullName} failed, trying fallback")
@@ -218,6 +235,26 @@ private func executeAgent(app: CliApp, input: String): Unit {
                 throw ex
             }
         }
+    }
+}
+
+/**
+ * Save an incomplete chat round when conversation is cancelled or failed
+ */
+private func saveIncompleteChatRound(
+    app: CliApp,
+    question: String,
+    answer: String): Unit {
+    try {
+        let chatRound = ChatRound(
+            Message.user(question),
+            Message.assistant(answer),
+            MessageList() // Empty steps to avoid concurrent access
+        )
+        app.conversationManager.conversation.addChatRound(chatRound)
+        LogUtils.debug("Saved incomplete chat round: question='${question}', answer='${answer}'")
+    } catch (ex: Exception) {
+        LogUtils.error("Failed to save incomplete chat round: ${ex.message}")
     }
 }
 
@@ -243,7 +280,11 @@ private func parseAgentAndQuestion(app: CliApp, input: String): (Agent, String) 
 /**
  * Handle the agent response, print the response and update the conversation
  */
-private func handleAgentResponse(app: CliApp, response: AsyncAgentResponse, isSubagent!: Bool): Unit {
+private func handleAgentResponse(
+    app: CliApp,
+    input: String,
+    response: AsyncAgentResponse,
+    isSubagent!: Bool): Unit {
     // This ensures response.content access is safe
     let content = response.content
     match (response.status) {
@@ -259,8 +300,32 @@ private func handleAgentResponse(app: CliApp, response: AsyncAgentResponse, isSu
                     DataCollector.collectChatRound(response.execution.chatRound)
                 }
             }
-        case AgentResponseStatus.Cancelled => ()
+        case AgentResponseStatus.Cancelled =>
+            if (!isSubagent) {
+                // After response.content is accessed, finished = true, execution thread has stopped
+                // Set answer manually for cancelled case, then try to access chatRound to get steps
+                try {
+                    // Set answer manually since it's not set in cancelled case
+                    response.execution.setAnswer(content)
+                    app.conversationManager.conversation.addChatRound(response.execution.chatRound)
+                    LogUtils.debug("Saved cancelled chat round with steps")
+                } catch (ex: Exception) {
+                    // Fallback if chatRound access fails
+                    saveIncompleteChatRound(app, input, content)
+                    LogUtils.debug("Failed to access chatRound for cancelled case, used fallback: ${ex.message}")
+                }
+            }
         case AgentResponseStatus.Failed =>
             PrintUtils.printLine(response.content.withColor(AnsiColor.color256(240)))
+            if (!isSubagent) {
+                try {
+                    response.execution.setAnswer(content)
+                    app.conversationManager.conversation.addChatRound(response.execution.chatRound)
+                    LogUtils.debug("Saved failed chat round with steps")
+                } catch (ex: Exception) {
+                    saveIncompleteChatRound(app, input, content)
+                    LogUtils.debug("Failed to access chatRound for failed case, used fallback: ${ex.message}")
+                }
+            }
     }
 }
