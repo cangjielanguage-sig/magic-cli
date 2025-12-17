@@ -10,6 +10,37 @@ import std.process.*
 import std.io.*
 import std.fs.*
 
+@tool[
+    description: "Commit staged changes to local repository",
+    parameters: { path: "Working directory path, must be an absolute path", message: "Commit message" }
+]
+public func gitCommit(path: String, message: String): String {
+    PrintUtils.printTool("Git Commit", "${path} - ${message}")
+
+    try {
+        let cmd = "git"
+        let args: Array<String> = ["commit", "-m", message]
+
+        let (exitCode, stdOutData, stdErrData) = executeWithOutput(cmd, args, workingDirectory: Path(path))
+
+        if (exitCode == 0) {
+            let outputString = String.fromUtf8(stdOutData)
+            if (outputString.trimAscii().size == 0) {
+                return "Commit successful."
+            } else {
+                return outputString
+            }
+        } else {
+            let errorString = String.fromUtf8(stdErrData)
+            return "Error: " + errorString
+        }
+    } catch (e: ProcessException) {
+        return "Process execution error: ${e}"
+    } catch (e: Exception) {
+        return "Unknown error occurred: ${e}"
+    }
+}
+
 @toolset
 public class GitToolset {
     @tool[

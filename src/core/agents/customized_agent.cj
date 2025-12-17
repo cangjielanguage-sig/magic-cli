@@ -65,15 +65,6 @@ public class CustomAgent {
                 case _ => ()
             }
         }
-
-        for (mcp in (metadata.get("mcp") ?? "").split(",")) {
-            match (mcp.trimAscii()) {
-                case "context7" => 
-                    let client = CangjieDocAgent.startContext7()
-                    this.toolManager.addTool
-                case _ => () 
-            }
-        }
     }
 
     @tool[

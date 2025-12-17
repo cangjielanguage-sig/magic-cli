@@ -19,6 +19,37 @@ IMPORTANT: Assist with defensive security tasks only. Refuse to create, modify, 
 IMPORTANT: You must NEVER generate or guess URLs for the user unless you are confident that the URLs are for helping the user with programming. You may use URLs provided by the user in their messages or local files.
 """
 
+@When[os == "Windows"]
+@agent[
+    model: CliModelManager.model,
+    temperature: CliConfig.temperature,
+    executor: "tool-loop:1000",
+    tools: [
+        FSToolset(),
+        ShellTool(),
+        PlanToolset(),
+        // GitToolset(),
+        gitCommit,
+        // AgentAsTool(CodeAnalyzer(), mode: SubAgentMode.WithContext)
+        AgentAsTool(ExplorerAgent(), mode: SubAgentMode.WithContext),
+        AgentAsTool(EditorAgent(), mode: SubAgentMode.WithContext),
+        AgentAsTool(ReviewerAgent(), mode: SubAgentMode.WithContext),
+        AgentAsTool(TestGeneratorAgent(), mode: SubAgentMode.WithContext),
+        AgentAsTool(RefactoringAgent(), mode: SubAgentMode.WithContext)
+    ]
+]
+public class GeneralCodeAgent {
+    @prompt(
+"""
+${GENERAL_CODE_AGENT_PROMPT}
+${SYSTEM_PROMPT_SUFFIX}
+
+${CliConfig.userRules}
+"""
+    )
+}
+
+@When[os != "Windows"]
 @agent[
     model: CliModelManager.model,
     temperature: CliConfig.temperature,
