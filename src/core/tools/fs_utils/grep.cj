@@ -68,17 +68,22 @@ private func getRipgrepPath(): Option<String> {
  */
 private func grepWithRipgrep(pattern: String, path: Option<String>, include: Option<String>, rgPath: String): String {
     try {
+        let quo = if (InfoUtils.os == "windows") {
+            "\""
+        } else {
+            "'"
+        }
         let rgCmd = ArrayList<String>([rgPath, "--line-number", "--with-filename", "--no-heading"])
         for (dir in IGNORED_DIR) {
-            rgCmd.add("--glob='!${dir}'")
+            rgCmd.add("--glob=${quo}!${dir}${quo}")
         }
 
         // Add glob pattern if specified
         if (let Some(includePattern) <- include) {
-            rgCmd.add("--glob='${includePattern}'")
+            rgCmd.add("--glob=${quo}${includePattern}${quo}")
         }
 
-        rgCmd.add("'${pattern}'")
+        rgCmd.add("${quo}${pattern}${quo}")
 
         // Add search path (default to current directory)
         let searchPath = path ?? "."
