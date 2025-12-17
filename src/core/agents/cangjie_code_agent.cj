@@ -3,6 +3,7 @@ package cli.core.agents
 import magic.dsl.*
 import magic.prelude.*
 import magic.config.Config
+import magic.log.LogUtils
 import magic.tool.{AgentAsTool, SubAgentMode}
 
 import cli.core.tools.*
@@ -64,4 +65,11 @@ ${SYSTEM_PROMPT_SUFFIX}
 ${CliConfig.userRules}
 """
     )
+
+    protected init() {
+        if (CliConfig.enableLSPTool && LSPToolset.initialize()) {
+            LogUtils.info("Add LSP Tools to Toolset")
+            this.toolManager.addTools(LSPToolset().tools)
+        }
+    }
 }

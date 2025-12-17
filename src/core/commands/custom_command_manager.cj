@@ -13,12 +13,71 @@ import cli.utils.loadMarkdown
 
 import std.fs.{exists, Directory, Path, File}
 import std.collection.{HashMap, ArrayList, enumerate, filter, map, collectArray}
+import std.regex.{Regex, RegexFlag}
 import stdx.encoding.json.*
+
+private struct ParseResult {
+    public let options: HashMap<String, String>
+    public let remaining: String
+
+    public init(options: HashMap<String, String>, remaining: String) {
+        this.options = options
+        this.remaining = remaining
+    }
+}
+
+/**
+ * Parses command-line arguments into options and remaining text.
+ * Options are expected to be in the form "--key value" or "--key" for flags.
+ * Non-option arguments are collected after the first non-option token.
+ *
+ * @param input Command-line input string
+ * @return ParseResult containing parsed options and remaining text
+ */
+private func parseArgs(input: String): ParseResult {
+    let options = HashMap<String, String>()
+    var remaining = ""
+
+    // Split by spaces to process tokens
+    let tokens = input.split(" ")
+    var i = 0
+    var foundNonOption = false
+
+    while (i < tokens.size) {
+        let token = tokens[i]
+
+        // If we encounter a non-option token, collect remaining text
+        if (!token.startsWith("--")) {
+            foundNonOption = true
+            remaining = String.join(tokens[i..], delimiter: " ")
+            break
+        }
+
+        // Parse option
+        let optionName = token.removePrefix("--")
+
+        // Check if there's a value for this option
+        if (i + 1 < tokens.size && !tokens[i + 1].startsWith("--")) {
+            let optionValue = tokens[i + 1]
+            options[optionName] = optionValue
+            i += 2 // Skip both option and value
+        } else {
+            // Option without value, treat as flag with "true"
+            options[optionName] = "true"
+            i += 1
+        }
+    }
+
+    return ParseResult(options, remaining)
+}
+
+//-----------------------------------------------------------------------
 
 @jsonable
 protected class CustomCommand {
     let description: String
-    let prompt: String
+    let arguments: Array<String>
+    let content: String
 }
 
 protected class CustomCommandManager {
@@ -89,6 +148,8 @@ protected class CustomCommandManager {
         commands[name] = command
         CompletionListUtils.registerCompletionItem("/${name}")
         LogUtils.info("Loaded custom command: ${name}")
+        LogUtils.info("  description: ${command.description}")
+        LogUtils.info("  arguments: ${String.join(command.arguments, delimiter: ", ")}")
     }
 
     /**
@@ -100,8 +161,8 @@ protected class CustomCommandManager {
             let jsonValue = JsonValue.fromStr(content)
             let command = CustomCommand.fromJsonValue(jsonValue)
 
-            if (command.description.isEmpty() || command.prompt.isEmpty()) {
-                LogUtils.error("Command ${filePath}: description and prompt cannot be empty")
+            if (command.description.isEmpty() || command.content.isEmpty()) {
+                LogUtils.error("Command ${filePath}: description and content cannot be empty")
                 return None
             }
 
@@ -118,7 +179,13 @@ protected class CustomCommandManager {
      */
     private func loadCommandFromMd(filePath: Path): Option<CustomCommand> {
         let (metadata, content) = loadMarkdown(filePath)
-        return CustomCommand(description: metadata.get("description") ?? "", prompt: content)
+        return CustomCommand(
+            description: metadata.get("description") ?? "",
+            arguments: (metadata.get("arguments") ?? "").split(",") |>
+                map { x => x.trimAscii() } |>
+                collectArray,
+            content: content
+        )
     }
 
     protected func getCommand(name: String): Option<CustomCommand> {
@@ -129,7 +196,22 @@ protected class CustomCommandManager {
      * Build the full user query by replacing $ARGS in the command prompt template
      */
     protected func handleCustomCommand(customCommand: CustomCommand, args: String): String {
-        return customCommand.prompt.replace("$ARGS", args)
+        let parseResult = parseArgs(args)
+        var content = customCommand.content
+        // Note that we need to wrap ${key} and ${value} with spaces to avoid partial replacements
+        LogUtils.trace("Handle custom command")
+        for ((key, value) in parseResult.options) {
+            LogUtils.trace("Replace ${key} with ${value}")
+            content = replaceWord(content, "\\$${key}", value)
+        }
+        return replaceWord(content, "\\$ARGS", parseResult.remaining)
+    }
+
+    private func replaceWord(text: String, word: String, replacement: String): String {
+        // Use word boundary to avoid partial replacements
+        let pattern = "(?<!\\w)${word}(?!\\w)"
+        // Arguments are case-insensitive
+        return Regex(pattern, [RegexFlag.MultiLine, RegexFlag.IgnoreCase]).replaceAll(text, replacement)
     }
 
     /**
@@ -141,7 +223,7 @@ protected class CustomCommandManager {
             return
         }
 
-        PrintUtils.printTool("Custom Commands", "📋 Available custom commands:")
+        PrintUtils.printLine("📋 Available custom commands")
         for ((name, command) in commands) {
             PrintUtils.printLine("  • ${name} - ${command.description}")
         }
@@ -154,11 +236,9 @@ protected class CustomCommandManager {
      */
     private func showHelp(name: String): Unit {
         if (let Some(command) <- commands.get(name)) {
-            PrintUtils.printTool("Command Help", "📖 ${name}")
+            PrintUtils.printLine("📖 ${name}")
             PrintUtils.printLine("Description: ${command.description}")
-            PrintUtils.printLine("Usage: /${name} [your arguments]")
-            PrintUtils.printLine("Prompt template:")
-            PrintUtils.printLine("  ${command.prompt}")
+            PrintUtils.printLine("Usage: /${name} ${String.join(command.arguments, delimiter: " ")}")
         } else {
             PrintUtils.printLine("❌ Command '${name}' not found.")
         }
@@ -171,7 +251,7 @@ protected class CustomCommandManager {
         let oldSize = commands.size
         loadCommands()
         let newSize = commands.size
-        PrintUtils.printTool("Command Reload", "✅ Reloaded ${newSize} custom commands (was ${oldSize})")
+        PrintUtils.printProcedure("Command Reload", "✅ Reloaded ${newSize} custom commands (was ${oldSize})")
     }
 
     /**

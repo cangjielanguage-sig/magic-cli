@@ -1,7 +1,10 @@
 package cli.io
 
 import magic.core.agent.{AsyncAgentResponse, AgentResponse}
+
+import cli.core.plan.Plan
 import cli.core.config.CliConfig
+
 import std.fs.OpenMode
 import std.collection.{ArrayList, enumerate, map, collectArray}
 import std.time.DateTime
@@ -41,16 +44,30 @@ protected class ColorfulPrinter <: Printer {
         print(str, flush: true)
     }
 
-    public func printTool(name: String, message: String, needConfirm!: Bool = false): Unit {
+    public func printPlan(plan: Plan): Unit {
+        PrintUtils.printLine("✨ Plan")
+        for (task in plan.tasks) {
+            if (task.completed) {
+                printLine("${'╰─'.withColor(Theme.MUTED)} ${task.description.withColor(Theme.SUCCESS).withColor(AnsiColor.STRIKE_THROUGH)}")
+            } else {
+                printLine("${'╰─'.withColor(AnsiColor.BRIGHT_BLACK)} ${task.description.withColor(AnsiColor.BOLD)}")
+            }
+        }
+    }
+
+    public func printTool(name: String, shortMessage: String, longMessage: String, needConfirm!: Bool = false): Unit {
         let mark = if (needConfirm) {
             " ? ".withColor(Theme.WARNING)
         } else {
             " ✔ ".withColor(Theme.SUCCESS)
         }
-        let boxContent = wrapBox(
-            mark + name.withColor(Theme.PRIMARY).withColor(AnsiColor.BOLD),
-            content: message.withColor(Theme.INFO)
-        )
+        let title = "${mark} ${name.withColor(Theme.PRIMARY).withColor(AnsiColor.BOLD)} ${shortMessage}"
+        let boxContent = if (longMessage.isEmpty()) {
+            wrapBox(title, content: "")
+        } else {
+            wrapBox(title, content: longMessage.withColor(Theme.INFO)
+            )
+        }
         if (currentIndent == 0) {
             printLine(boxContent)
         } else {
@@ -65,13 +82,13 @@ protected class ColorfulPrinter <: Printer {
         }
     }
 
-    public func printToolFailure(toolInfo: String, failureInfo!: String = "Failed ..."): Unit {
+    public func printToolFailure(toolInfo: String, failure!: String = "Failed ..."): Unit {
         if (currentIndent == 0) {
             printLine("○ ${toolInfo}".withColor(Theme.MUTED))
-            printLine("└─ ✖ ${failureInfo}".withColor(Theme.MUTED))
+            printLine("└─ ✖ ${failure}".withColor(Theme.MUTED))
         } else {
             printLine("${' ' * (currentIndent - 2)}○ ${toolInfo}".withColor(Theme.MUTED))
-            printLine("${' ' * (currentIndent - 2)}└─ ✖ ${failureInfo}".withColor(Theme.MUTED))
+            printLine("${' ' * (currentIndent - 2)}└─ ✖ ${failure}".withColor(Theme.MUTED))
         }
     }
 
@@ -101,17 +118,17 @@ protected class ColorfulPrinter <: Printer {
 
     public func printApproval(): Unit {
         printLine(
-            "└─ 🔧 Approved to run...".withColor(Theme.MUTED),
+            "└─ 🔧 Approved to run...\n".withColor(Theme.MUTED),
             withIndent: true
         )
     }
 
     public func printCancellation(): Unit {
-        printLine("└─ ✖ Cancelled...".withColor(Theme.MUTED), withIndent: true)
+        printLine("└─ ✖ Cancelled...\n".withColor(Theme.MUTED), withIndent: true)
     }
 
     public func printInterrupt(): Unit {
-        printLine(" ❗ Interrupted ...", withIndent: true)
+        printLine(" ❗ Interrupted ...\n", withIndent: true)
     }
 
     public func printUserConfirm(): Unit {

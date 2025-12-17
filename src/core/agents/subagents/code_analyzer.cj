@@ -109,7 +109,7 @@ public class CodeAnalyzer {
 ]
 func analyzeCode(query: String): String {
     try {
-        PrintUtils.printTool("Code Analyze", "query: ${query}")
+        PrintUtils.printTool("Code Analyze", longMessage: query)
         PrintUtils.beginSubAgent()
 
         let analyzer = CodeAnalyzer()

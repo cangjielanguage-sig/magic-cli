@@ -1,41 +1,35 @@
 package cli.io
 
 import magic.core.agent.{AsyncAgentResponse, AgentResponse}
+import magic.log.LogUtils
+
+import cli.core.plan.Plan
 
 import cli.core.config.CliConfig
 
 protected class PrintUtils {
     // Printer instances - lazy initialization
-    private static var _colorfulPrinter: Option<ColorfulPrinter> = None
-    private static var _markdownPrinter: Option<MarkdownPrinter> = None
+    private static var _printer: Option<Printer> = None
 
     // Get the appropriate printer based on the current mode
     private static func getPrinter(): Printer {
-        if (CliConfig.nonInteractive) {
+        if (let Some(printer) <- _printer) {
+            return printer
+        }
+        _printer = if (CliConfig.nonInteractive) {
             // Use MarkdownPrinter for non-interactive mode (--prompt option)
-            if (let Some(printer) <- _markdownPrinter) {
-                return printer
-            } else {
-                let printer = MarkdownPrinter()
-                _markdownPrinter = Some(printer)
-                return printer
+            match (CliConfig.nonInteractiveOutputFormat) {
+                case "plain" => PlainPrinter()
+                case "markdown" => MarkdownPrinter()
+                case _ =>
+                    LogUtils.error("Invalid non-interactive output format: ${CliConfig.nonInteractiveOutputFormat}")
+                    MarkdownPrinter()
             }
         } else {
             // Use ColorfulPrinter for interactive mode
-            if (let Some(printer) <- _colorfulPrinter) {
-                return printer
-            } else {
-                let printer = ColorfulPrinter()
-                _colorfulPrinter = Some(printer)
-                return printer
-            }
+            ColorfulPrinter()
         }
-    }
-
-    // Reset printer instances when mode changes
-    static public func resetPrinters(): Unit {
-        _colorfulPrinter = None
-        _markdownPrinter = None
+        return _printer.getOrThrow()
     }
 
     //--------------------------------------------------------
@@ -83,6 +77,23 @@ protected class PrintUtils {
         getPrinter().printExitMessage()
     }
 
+    static public func printPlan(plan: Plan): Unit {
+        getPrinter().printPlan(plan)
+    }
+
+    //----------------------------------------------------------------------------------
+    // The following print methods are called by different components
+    //----------------------------------------------------------------------------------
+    static public func printProcedure(procedure: String, message: String): Unit {
+        // Internally, we use printTool to print the action and result
+        printTool(procedure, shortMessage: message)
+    }
+
+    static public func printProcedureFailure(procedure: String, failure!: String): Unit {
+        // Internally, we use printTool to print the action and result
+        printToolFailure(procedure, failure: failure)
+    }
+
     //----------------------------------------------------------------------------------
     // The following print methods are called by tools
     //----------------------------------------------------------------------------------
@@ -103,12 +114,17 @@ protected class PrintUtils {
         getPrinter().printCancellation()
     }
 
-    static public func printTool(name: String, message: String, needConfirm!: Bool = false) {
-        getPrinter().printTool(name, message, needConfirm: needConfirm)
+    static public func printTool(name: String, shortMessage!: String, longMessage!: String = "", needConfirm!: Bool = false) {
+        getPrinter().printTool(name, shortMessage, longMessage, needConfirm: needConfirm)
     }
 
-    static public func printToolFailure(toolInfo: String, failureInfo!: String = "Failed ...") {
-        getPrinter().printToolFailure(toolInfo, failureInfo: failureInfo)
+    static public func printTool(name: String, longMessage!: String, needConfirm!: Bool = false) {
+        printTool(name, shortMessage: "", longMessage: longMessage, needConfirm: needConfirm)
+    }
+
+
+    static public func printToolFailure(toolInfo: String, failure!: String = "Failed ...") {
+        getPrinter().printToolFailure(toolInfo, failure: failure)
     }
 
     static public func printToolResult(result: String, maxLength!: Int64 = 200): Unit {

@@ -24,6 +24,10 @@ protected class Toml {
         this.jsonObject = parseToml(path)
     }
 
+    protected init(path: Path) {
+        this.jsonObject = parseToml(path.toString())
+    }
+
     /**
      * Get value by key path, e.g. "a.b.c"
      */

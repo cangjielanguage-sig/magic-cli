@@ -132,12 +132,7 @@ Usage notes:
     }
 ]
 protected func shellExecute(path: String, command: String, description: Option<String>): String {
-    let title = if (let Some(_description) <- description) {
-        "Execute Command (${_description})"
-    } else {
-        "Execute Command"
-    }
-    if (InputUtils.confirm(title, command) == Confirmation.Deny) {
+    if (InputUtils.confirm("Shell", description ?? "", command) == Confirmation.Deny) {
         return "User denied the operation"
     }
 

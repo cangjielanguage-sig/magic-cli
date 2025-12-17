@@ -33,12 +33,14 @@ func printHelp(): Unit {
     PrintUtils.printLine("  --temperature, -t Set the temperature for the model (default: 1.0)")
     PrintUtils.printLine("  --prompt <prompt>, -p <prompt>  Set the prompt and run magic-cli in the non-interactive mode")
     PrintUtils.printLine("  --prompt-file <file>            Set the prompt from a file and run magic-cli in the non-interactive mode")
+    PrintUtils.printLine("  --output-format <format>        Set the output format for non-interactive mode: plain | colorful (default: colorful)")
     PrintUtils.printLine("  --log-level <level>  Set the log level (default: DEBUG)")
     PrintUtils.printLine("  --subagent-dir <dir>  Add the subagent search directories (comma-separated)")
     PrintUtils.printLine("  --command-dir <dir>   Add the command search directories (comma-separated)")
     PrintUtils.printLine("  --default-model-input-limit <limit>  Set the default input token limit for the model (default: 128 * 1024)")
     PrintUtils.printLine("  --default-model-output-limit <limit>  Set the default output token limit for the model (default: 32 * 1024)")
     PrintUtils.printLine("  --disable-model-tool-call   Disable the model tool call (default: false)")
+    PrintUtils.printLine("  --enable-lsp-tool    Enable LSP tools (default: false)")
     PrintUtils.printLine("  --version, -v        Print the version of magic-cli")
     PrintUtils.printLine("  --help, -h           Print this help message")
 }
@@ -61,11 +63,13 @@ func parseArgsAndSetConfig(args: Array<String>): ParseArgsResult {
         Full("version", r"v", NoValue),
         Full("prompt", r"p", RequiredValue),
         Long("prompt-file", RequiredValue),
+        Long("output-format", RequiredValue),
         Full("temperature", r"t", RequiredValue),
         Long("log-level", RequiredValue),
         Long("default-model-input-limit", RequiredValue),
         Long("default-model-output-limit", RequiredValue),
-        Long("disable-model-tool-call", NoValue)
+        Long("disable-model-tool-call", NoValue),
+        Long("enable-lsp-tool", NoValue)
     ]
     let result = try {
         parseArguments(args, argSpecs)
@@ -227,6 +231,14 @@ func parseArgsAndSetConfig(args: Array<String>): ParseArgsResult {
         CliConfig.nonInteractivePrompt = prompt
     }
 
+    if (let Some(format) <- result.options.get("output-format")) {
+        if (format == "colorful") {
+            CliConfig.nonInteractiveOutputFormat = "colorful"
+        } else {
+            CliConfig.nonInteractiveOutputFormat = "plain"
+        }
+    }
+
     if (let Some(language) <- result.options.get("language")) {
         CliConfig.language = language.toAsciiLower()
         CliSettingManager.setting.language = CliConfig.language
@@ -245,6 +257,10 @@ func parseArgsAndSetConfig(args: Array<String>): ParseArgsResult {
         changeSetting = true
     } else {
         CliConfig.collectData = CliSettingManager.setting.collectData
+    }
+
+    if (result.options.contains("enable-lsp-tool")) {
+        CliConfig.enableLSPTool = true
     }
 
     // Save the settings if any change

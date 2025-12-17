@@ -27,9 +27,11 @@ public class CangjieToolset {
         }
     ]
     public func cangjieRetrieveDocuments(query: String): String {
-        PrintUtils.printTool("Retrieve Cangjie Documents via Context7", "query: ${query}")
+        PrintUtils.printTool("Cangjie Docs via Context7", longMessage: query)
         let agent = CangjieDocAgent()
-        return agent.chat(query)
+        let result = agent.chat(query)
+        PrintUtils.printToolResult(result)
+        return result
     }
 
     @tool[
@@ -45,7 +47,7 @@ public class CangjieToolset {
         let packageName = CangjieToolset.toCamelCase(projectDir.fileName)
         let args: Array<String> = ["init", "--name", packageName, "--type", projectType ?? "executable"]
 
-        PrintUtils.printTool("cjpm init", projectDir.toString())
+        PrintUtils.printTool("cjpm init", shortMessage: projectDir.toString())
         let result = cjpmRun(args, projectDir)
         return "${result}\n\nThe root package name of the new project is: ${packageName}"
     }
@@ -59,7 +61,7 @@ public class CangjieToolset {
     public func cangjieCompileFile(path: String): String {
         let filePath = Path(path)
 
-        PrintUtils.printTool("cjc compile", filePath.toString())
+        PrintUtils.printTool("cjc compile", shortMessage: filePath.toString())
         let result = cjcRun([filePath.fileName], filePath.parent)
         PrintUtils.printToolResult(result)
         return result
@@ -74,7 +76,7 @@ public class CangjieToolset {
     public func cangjieBuildProject(path: Option<String>): String {
         let projectDir = path.map { p => Path(p) } ?? CliConfig.cwd
 
-        PrintUtils.printTool("cjpm build", projectDir.toString())
+        PrintUtils.printTool("cjpm build", shortMessage: projectDir.toString())
         let result = cjpmBuild(projectDir, outputJson: this.buildWithJsonOutput)
         PrintUtils.printToolResult(result.rawOutput)
         return result.processedOutput
@@ -92,7 +94,7 @@ public class CangjieToolset {
         let execName = name ?? "main"
 
         let args: Array<String> = ["run", "--name", execName]
-        PrintUtils.printTool("cjpm run", projectDir.toString() + "  --name ${execName}")
+        PrintUtils.printTool("cjpm run", shortMessage: "${projectDir.toString()} --name ${execName}")
         let result = cjpmRun(args, projectDir)
         PrintUtils.printToolResult(result)
         return result
@@ -106,7 +108,7 @@ public class CangjieToolset {
     ]
     public func cangjieCleanProject(path: Option<String>): String {
         let projectDir = path.map { p => Path(p) } ?? CliConfig.cwd
-        PrintUtils.printTool("cjpm clean", projectDir.toString())
+        PrintUtils.printTool("cjpm clean", shortMessage: projectDir.toString())
         return cjpmRun(["clean"], projectDir)
     }
 

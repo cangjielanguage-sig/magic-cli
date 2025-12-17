@@ -28,8 +28,7 @@ protected func listDirectory(path: String): String {
         return "Directory path must be absolute"
     }
 
-    let message = path
-    PrintUtils.printTool("List Directory", message)
+    PrintUtils.printTool("List Directory", shortMessage: path)
 
     try {
         let (exitCode, stdout, stderr) = if (InfoUtils.os == "windows") {
@@ -39,7 +38,9 @@ protected func listDirectory(path: String): String {
         }
 
         if (exitCode == 0) {
-            let outString = stdout.trimAscii()
+            // Remove \r characters to prevent cursor from jumping to line start
+            // Windows uses \r\n, and \r alone causes display issues
+            let outString = stdout.replace("\r", "").trimAscii()
             PrintUtils.printToolResult(outString)
             return "Directory contents:\n${outString}"
         } else {
@@ -66,7 +67,7 @@ protected func fileRead(filePath: String, startLine: Option<Int64>, endLine: Opt
     let start = startLine ?? 1
     let end = endLine.map { n => n.toString() } ?? "EOF"
     let message = "${filePath} (${start}-${end})"
-    PrintUtils.printTool("Read File", message)
+    PrintUtils.printTool("Read File", shortMessage: message)
     var content = catRange(filePath, startLine ?? 1, endLine: endLine ?? Int64.Max)
 
     if (content.size > getCompressionThreshold(false)) {
@@ -90,13 +91,10 @@ protected func fileRead(filePath: String, startLine: Option<Int64>, endLine: Opt
 protected func grepSearch(pattern: String, path: Option<String>, include: Option<String>): String {
     // Construct the info message
     let strBuilder = StringBuilder("pattern: ${pattern}")
-    if (let Some(path) <- path) {
-        strBuilder.append("\npath: ${path}")
-    }
     if (let Some(include) <- include) {
         strBuilder.append("\ninclude: ${include}")
     }
-    PrintUtils.printTool("Grep", strBuilder.toString())
+    PrintUtils.printTool("Grep", shortMessage: path ?? "", longMessage: strBuilder.toString())
 
     let result = grep(pattern, path, include)
     if (result.isEmpty()) {
@@ -140,8 +138,7 @@ protected func globSearch(pattern: String, path: Option<String>): String {
         return "Path does not exist: ${searchPath}"
     }
 
-    let message = "pattern: ${pattern}\npath: ${searchPath}"
-    PrintUtils.printTool("Glob Search", message)
+    PrintUtils.printTool("Glob Search", shortMessage: searchPath, longMessage: pattern)
 
     try {
         let results = glob(pattern, searchPath)
@@ -194,7 +191,7 @@ protected func fileBatchRead(files: Array<ReadFileParam>): String {
         } |> collectArray
 
     let message = String.join(paths, delimiter: "\n")
-    PrintUtils.printTool("Batch Read Files", message)
+    PrintUtils.printTool("Batch Read Files", longMessage: message)
 
     // Validate input
     if (files.isEmpty()) {
@@ -254,7 +251,7 @@ protected func fileCreate(filePath: String, content: String): String {
         return "File path must be absolute"
     }
 
-    if (InputUtils.confirm("Create File ${filePath}", content) == Confirmation.Deny) {
+    if (InputUtils.confirm("Create File", filePath, content) == Confirmation.Deny) {
         return "User denied the operation"
     }
 
@@ -277,8 +274,7 @@ protected func fileWrite(filePath: String, content: String): String {
         return "File path must be absolute"
     }
 
-    let message = filePath + "\n" + content
-    if (InputUtils.confirm("Write File", message) == Confirmation.Deny) {
+    if (InputUtils.confirm("Write File", filePath, content) == Confirmation.Deny) {
         return "User denied the operation"
     }
     return writeFileBasic(filePath, content)
@@ -452,7 +448,7 @@ public class FSToolset {
                     let hint = checkLineEndingMismatch(oldContent, currFileContent)
                     PrintUtils.printToolFailure(
                         "${toolName} (${filePath})",
-                        failureInfo: "File does not contain the specified content. ${hint}"
+                        failure: "File does not contain the specified content. ${hint}"
                     )
                     return "Failed to edit. File ${filePath} does not contain the specified content '${oldContent}'. ${hint}"
                 }
@@ -464,13 +460,13 @@ public class FSToolset {
             if (oldFileContent == newFileContent) {
                 PrintUtils.printToolFailure(
                     "${toolName} (${filePath})",
-                    failureInfo: "File content is not modified"
+                    failure: "File content is not modified"
                 )
                 return "No changes to apply. The oldContent and newContent are identical in file: ${filePath}"
             }
             // Render the diff message
             let message = diff(oldFileContent, newFileContent) |> PrintUtils.renderDiff
-            if (InputUtils.confirm("${toolName} (${filePath})", message) == Confirmation.Deny) {
+            if (InputUtils.confirm(toolName, filePath, message) == Confirmation.Deny) {
                 return "User denied the operation"
             }
             // Write the modified content to the file

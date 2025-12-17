@@ -78,7 +78,7 @@ func registerHooks(app: CliApp) {
     // Use sub-agent start/end events to print the sub-agent execution info
     EventHandlerManager.global.addHandler { evt: SubAgentStartEvent =>
         let name = StringUtils.splitCamelCase(evt.agent.name)
-        PrintUtils.printTool(name, "question: ${evt.agentRequest.question}")
+        PrintUtils.printTool(name, longMessage: evt.agentRequest.question)
         PrintUtils.beginSubAgent()
         EventResponse.Continue
     }

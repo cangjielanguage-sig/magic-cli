@@ -44,19 +44,55 @@ public class ShellUtils {
             stdErr: ProcessRedirect.Pipe,
             workingDirectory: workDir
         )
-        try {
-            let stdoutReader = StringReader(process.stdOutPipe)
-            let stderrReader = StringReader(process.stdErrPipe)
-            let stdout = stdoutReader.readToEnd()
-            let stderr = stderrReader.readToEnd()
 
+        let stdoutFuture = spawn {
+            let reader = StringReader(process.stdOutPipe)
+            try {
+                return reader.readToEnd()
+            } catch (e: Exception) {
+                LogUtils.debug("[ShellUtils] Failed to read stdout: ${e}")
+                return ""
+            }
+        }
+        let stderrFuture = spawn {
+            let reader = StringReader(process.stdErrPipe)
+            try {
+                return reader.readToEnd()
+            } catch (e: Exception) {
+                LogUtils.debug("[ShellUtils] Failed to read stderr: ${e}")
+                return ""
+            }
+        }
+
+        try {
             let exitCode = process.wait(timeout: timeout)
+            let stdout = try {
+                stdoutFuture.get()
+            } catch (e: Exception) {
+                LogUtils.debug("[ShellUtils] Failed to collect stdout: ${e}")
+                ""
+            }
+            let stderr = try {
+                stderrFuture.get()
+            } catch (e: Exception) {
+                LogUtils.debug("[ShellUtils] Failed to collect stderr: ${e}")
+                ""
+            }
+
             if (exitCode != 0) {
                 LogUtils.error("Shell command execution failed: ${exitCode}")
                 LogUtils.error("  ${cmd} ${String.join(cmdArgs, delimiter: ' ')}")
             }
             return (exitCode, stdout, stderr)
         } catch(ex: TimeoutException) {
+            try {
+                process.terminate(force: true)
+            } catch (terminateErr: Exception) {
+                LogUtils.debug("[ShellUtils] Failed to terminate process after timeout: ${terminateErr}")
+            }
+            // Ensure pipe readers exit before bubbling up
+            try { stdoutFuture.get() } catch (_: Exception) { }
+            try { stderrFuture.get() } catch (_: Exception) { }
             throw ShellTimeoutException("Shell command execution timed out")
         }
     }

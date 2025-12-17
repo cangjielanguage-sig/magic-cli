@@ -24,8 +24,8 @@ protected class CustomAgentManager {
             if (exists(agentDir)) {
                 let agent = CustomAgent(agentDir)
                 agents.add(agent.name, agent)
-                CompletionListUtils.registerCompletionItem("/${agent.name}")
-                LogUtils.info("Loaded custom agent: ${agent.name}")
+                CompletionListUtils.registerCompletionItem("@${agent.name}")
+                LogUtils.info("Loaded custom agent: @${agent.name}")
             } else {
                 LogUtils.error("Agent directory not found: ${agentDir}")
             }
@@ -53,6 +53,6 @@ protected class CustomAgentManager {
             PrintUtils.printLine("  • ${name.withColor(Theme.current.highlight)} - ${agent.description}")
         }
         PrintUtils.printLine("")
-        PrintUtils.printLine("Usage: /<name> [arguments]\n")
+        PrintUtils.printLine("Usage: /<agent-name> [arguments] <question in natural language>\n")
     }
 }

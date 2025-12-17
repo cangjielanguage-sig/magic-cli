@@ -4,7 +4,7 @@ package cli.lsp
  * Initialization value for LSP client
  * Obtained by checking the Cangjie LSPServer log file
  */
-const CLIENT_INIT_VALUE = """
+const LSP_CLIENT_INIT_VALUE = """
 {
     "processId": 0,
     "capabilities": {

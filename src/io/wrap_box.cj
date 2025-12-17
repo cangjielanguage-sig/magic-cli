@@ -160,29 +160,42 @@ protected func wrapBox(title: String,
         strBuilder.append("${LEFT_TOP}${HORIZONTAL_BORDER * width}${RIGHT_TOP}".withColor(boxColor))
         strBuilder.append("\n")
     }
+
     let verticalBorder = if (withBorder) {
         VERTICAL_BORDER
     } else {
         ""
     }
-    // Add the title section if title is provided
+
+    // Add the title
     if (!title.isEmpty()) {
         strBuilder.append(
-            "${verticalBorder.withColor(boxColor)}${padString(title.withColor(AnsiColor.BOLD), width: width, align: align)}${verticalBorder.withColor(boxColor)}\n"
+            "${verticalBorder.withColor(boxColor)}${padString(title.withColor(AnsiColor.BOLD), width: width, align: align)}${verticalBorder.withColor(boxColor)}"
         )
-        strBuilder.append("${verticalBorder}${HORIZONTAL_SEPARATOR * width}${verticalBorder}".withColor(boxColor))
-        strBuilder.append('\n')
     }
-    // Add content lines with vertical borders
-    for ((idx, line) in enumerate(lines)) {
-        strBuilder.append("${wrapLineWithVerticalBorder(line, width: width, boxColor: boxColor, withBorder: withBorder)}")
-        if (idx < lines.size - 1) {
+
+    // Add content
+    if (!lines.isEmpty()) {
+        // First, add the horizontal separator line
+        if (!title.isEmpty()) {
+            strBuilder.append('\n')
+            strBuilder.append("${verticalBorder}${HORIZONTAL_SEPARATOR * width}${verticalBorder}".withColor(boxColor))
             strBuilder.append('\n')
         }
+
+        // Add content lines with vertical borders
+        for ((idx, line) in enumerate(lines)) {
+            strBuilder.append("${wrapLineWithVerticalBorder(line, width: width, boxColor: boxColor, withBorder: withBorder)}")
+            if (idx < lines.size - 1) {
+                strBuilder.append('\n')
+            }
+        }
     }
-    // Add the bottom border line with corner characters
+
+    // Add the bottom horizontal border line
     if (withBorder) {
-        strBuilder.append("\n${LEFT_BOTTOM}${HORIZONTAL_BORDER * width}${RIGHT_BOTTOM}".withColor(boxColor))
+        strBuilder.append('\n')
+        strBuilder.append("${LEFT_BOTTOM}${HORIZONTAL_BORDER * width}${RIGHT_BOTTOM}".withColor(boxColor))
     }
     return strBuilder.toString()
 }
