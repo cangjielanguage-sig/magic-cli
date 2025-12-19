@@ -52,8 +52,6 @@ protected class StatusIndicator {
         var prevPrefixSize = INITIAL_PREFIX.size
         while (!Thread.currentThread.hasPendingCancellation) {
             let spinner = INDICATORS[idx % INDICATORS.size]
-            PrintUtils.printString("\r") // Move cursor to the start of the line
-            PrintUtils.printString("", withIndent: true)
 
             let timeElapsed = if (let Some(start) <- this.startTime) {
                 formatDuration(DateTime.now() - start)
@@ -64,11 +62,14 @@ protected class StatusIndicator {
 
             // If the prefix size has changed, we need to print the whole line
             if (prefix.size != prevPrefixSize) {
+                clearScreen(mode: ClearMode.EntireLine)
                 PrintUtils.printString(
                     "${prefix} ${message}... (ESC to interrupt)".withColor(Theme.MUTED), withIndent: true
                 )
             } else {
                 // Overwrite just the prefix
+                PrintUtils.printString("\r") // Move cursor to the start of the line
+                PrintUtils.printString("", withIndent: true)
                 PrintUtils.printString("${prefix}".withColor(Theme.MUTED))
             }
             prevPrefixSize = prefix.size
