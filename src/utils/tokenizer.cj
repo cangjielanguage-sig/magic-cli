@@ -1,8 +1,12 @@
 package cli.utils
 
+import magic.core.tokenizer.Tokenizer
+import magic.tokenizer.{UnicodeTokenizer, Cl100kTokenizer}
+
 /**
  * To avoid depending on external resource files, we hardcode the tiktoken file here
  */
+@When[enable_cl100k_tokenizer=="true"]
 protected let CL100K_BASE_TIKTOKEN = """
 IQ== 0
 Ig== 1
@@ -100260,3 +100264,13 @@ IG1lcmNpbGVzcw== 100252
 LldhaXRGb3I= 100253
 IGRheWNhcmU= 100254
 IENvbnZleW9y 100255"""
+
+@When[enable_cl100k_tokenizer=="true"]
+protected func buildTokenizer(): Tokenizer {
+    return Cl100kTokenizer(CL100K_BASE_TIKTOKEN)
+}
+
+@When[enable_cl100k_tokenizer!="true"]
+protected func buildTokenizer(): Tokenizer {
+    return UnicodeTokenizer()
+}

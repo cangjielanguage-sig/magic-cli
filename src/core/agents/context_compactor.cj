@@ -6,12 +6,12 @@ import magic.config.Config
 import magic.core.message.ConversationCompactor
 import magic.core.message.{Message, MessageRole, MessageList}
 import magic.log.LogUtils
-import magic.tokenizer.Cl100kTokenizer
+import magic.core.tokenizer.Tokenizer
 import magic.model.ModelManager
 
 import cli.core.model.CliModelManager
 import cli.core.model.ModelTokenLimits
-import cli.utils.CL100K_BASE_TIKTOKEN
+import cli.utils.buildTokenizer
 
 import std.fs.{canonicalize, Path}
 
@@ -90,10 +90,10 @@ const COMPACT_PRESERVE_THRESHOLD = 0.3
 
 public class Compactor <: ConversationCompactor {
 
-    private let tokenizer: Cl100kTokenizer
+    private let tokenizer: Tokenizer
 
     protected init() {
-        this.tokenizer = Cl100kTokenizer(CL100K_BASE_TIKTOKEN)
+        this.tokenizer = buildTokenizer()
     }
 
     override public func compact(conversation: Conversation): String {
