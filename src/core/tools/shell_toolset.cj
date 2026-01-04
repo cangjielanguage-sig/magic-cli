@@ -111,6 +111,7 @@ Before executing the command, please follow these steps:
 Usage notes:
   - The command argument is required.
   - It is very helpful if you write a clear, concise description of what this command does in 5-10 words.
+  - For commands that need terminal input (sudo/ssh/installers), set interactive=true. Output is printed to the terminal and not captured.
   - If the output exceeds 30000 characters, output will be truncated before being returned to you.
   - VERY IMPORTANT: You MUST avoid using search commands like `find` and `grep`. Instead use ${globSearch.name}, ${grepSearch.name} to search. You MUST avoid read tools like `cat`, `head`, `tail`, and `ls`, and use ${fileRead.name}, ${fileBatchRead.name}, ${listDirectory.name} to read files.
   - When issuing multiple commands, use the ';' or '&&' operator to separate them. DO NOT use newlines (newlines are ok in quoted strings).
@@ -128,30 +129,45 @@ Usage notes:
     parameters: {
         path: "Directory path for command execution, must be an absolute path",
         command: "The command to execute",
-        description: "Optional. Clear, concise description of what this command does in 5-10 words. Examples:\nInput: ls\nOutput: Lists files in current directory\n\nInput: git status\nOutput: Shows working tree status\n\nInput: npm install\nOutput: Installs package dependencies\n\nInput: mkdir foo\nOutput: Creates directory 'foo'"
+        description: "Optional. Clear, concise description of what this command does in 5-10 words. Examples:\nInput: ls\nOutput: Lists files in current directory\n\nInput: git status\nOutput: Shows working tree status\n\nInput: npm install\nOutput: Installs package dependencies\n\nInput: mkdir foo\nOutput: Creates directory 'foo'",
+        interactive: "Optional. When true, run attached to the user's terminal (TTY) to allow interactive input (sudo/ssh/installers). Output is shown directly in terminal and not captured."
     }
 ]
-protected func shellExecute(path: String, command: String, description: Option<String>): String {
+protected func shellExecute(path: String, command: String, description: Option<String>, interactive: Option<Bool>): String {
     if (InputUtils.confirm("Shell", description ?? "", command) == Confirmation.Deny) {
         return "User denied the operation"
     }
 
     try {
-        // Use executeWithTimeout with 3-minute default timeout to prevent hanging on daemon processes
-        let (exitCode, stdout, stderr) = ShellUtils.execute(
-            [command],
-            workDir: Path(path),
-            timeout: Duration.second * 180
-        )
-
-        if (exitCode == 0) {
-            let outString = stdout.trimAscii()
-            PrintUtils.printToolResult(outString)
-            return "Command executed successfully, output:\n${outString}"
+        let isInteractive = interactive ?? false
+        if (isInteractive) {
+            // Avoid competing reads from terminal input.
+            InputUtils.lockTerminalInput()
+            InputUtils.exitRawMode()
+            try {
+                let exitCode = ShellUtils.executeInteractive([command], workDir: Path(path))
+                return "Interactive command finished with exit code ${exitCode}."
+            } finally {
+                InputUtils.enterRawMode()
+                InputUtils.unlockTerminalInput()
+            }
         } else {
-            let errString = stderr.trimAscii()
-            PrintUtils.printToolResult(errString)
-            return "Command execution failed, error output:\n${errString}"
+            // Use executeWithTimeout with 3-minute default timeout to prevent hanging on daemon processes
+            let (exitCode, stdout, stderr) = ShellUtils.execute(
+                [command],
+                workDir: Path(path),
+                timeout: Duration.second * 180
+            )
+
+            if (exitCode == 0) {
+                let outString = stdout.trimAscii()
+                PrintUtils.printToolResult(outString)
+                return "Command executed successfully, output:\n${outString}"
+            } else {
+                let errString = stderr.trimAscii()
+                PrintUtils.printToolResult(errString)
+                return "Command execution failed, error output:\n${errString}"
+            }
         }
     } catch (e: ShellTimeoutException) {
         PrintUtils.printToolResult("Timeout")

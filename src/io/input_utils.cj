@@ -20,6 +20,8 @@ protected enum Confirmation {
 protected class InputUtils {
     // Global flag to coordinate between ESC checker and user input
     private static var isRequestingUserInput: AtomicBool = AtomicBool(false)
+    // Prevent background reads from stealing terminal input.
+    private static var terminalInputLocked: AtomicBool = AtomicBool(false)
 
     protected static let readline = Readline(CliConfig.readlineFile)
 
@@ -48,6 +50,18 @@ protected class InputUtils {
 
     public static func isRequestingInput(): Bool {
         return isRequestingUserInput.load()
+    }
+
+    public static func lockTerminalInput(): Unit {
+        terminalInputLocked.store(true)
+    }
+
+    public static func unlockTerminalInput(): Unit {
+        terminalInputLocked.store(false)
+    }
+
+    public static func isTerminalInputLocked(): Bool {
+        return terminalInputLocked.load()
     }
 
     /**

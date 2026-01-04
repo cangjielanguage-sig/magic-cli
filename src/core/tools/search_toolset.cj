@@ -1,19 +1,16 @@
 package cli.core.tools
 
-import magic.dsl.*
+import magic.dsl.{tool, toolset}
 import magic.prelude.*
-
 import magic.jsonable.*
 import magic.log.LogUtils
+import magic.utils.http.HttpUtils
 
 import cli.io.PrintUtils
-import cli.utils.ApiClient
 
 import std.env.getVariable
 import std.collection.*
 import stdx.encoding.json.*
-import std.io.*
-import std.core.StringBuilder
 
 @toolset
 public class SearchToolset {
@@ -73,17 +70,12 @@ private class TavilyTool {
             return "Search query cannot be empty"
         }
 
-        // Use default parameter values
         let maxResults: Int64 = 5
-        let includeAnswer = true
+        let includeAnswer: Bool = true
         let searchDepth = "basic"
 
-        // Validate parameters
-        let validatedMaxResults = if (maxResults > 20) { 20 } else if (maxResults < 1) { 5 } else { maxResults }
-        let validatedSearchDepth = if (searchDepth == "advanced") { "advanced" } else { "basic" }
-
         try {
-            let response = performSearch(query, validatedMaxResults, includeAnswer, validatedSearchDepth)
+            let response = performSearch(query, maxResults, includeAnswer, searchDepth)
             return formatSearchResponse(response)
         } catch (e: Exception) {
             LogUtils.error("Tavily search failed: ${e.message}")
@@ -112,7 +104,7 @@ private class TavilyTool {
 
         let requestBody = JsonObject(requestMap)
 
-        let rawResponseOpt = ApiClient.post(url, header, requestBody)
+        let rawResponseOpt = HttpUtils.post(url, header, requestBody)
         let rawResponse = match (rawResponseOpt) {
             case Some(resp) => resp
             case None => throw Exception("No response received from server")
@@ -195,7 +187,7 @@ private class TavilyTool {
     }
 
     private func formatSearchResponse(response: TavilySearchResponse): String {
-        var results = ArrayList<String>()
+        let results = ArrayList<String>()
         results.add("=== Tavily Search Results ===\n")
         results.add("Query: ${response.query}\n")
         results.add("Response time: ${response.responseTime}s\n\n")
