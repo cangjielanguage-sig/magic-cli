@@ -79,11 +79,10 @@ protected class CangjieDocAgent {
         // terminal: true
     ]
     func queryCangjie(query: String): String {
-        let docs = client.callTool("get-library-docs", [
-            ("context7CompatibleLibraryID", "/websites/cangjie-lang_cn_1_0_0"),
-            ("topic", query),
-            ("tokens", 2000),
-            ("page", 1)  // one page contains 10 results
+        let docs = client.callTool("query-docs", [
+            ("libraryId", "/websites/cangjie-lang_cn_1_0_0"),
+            ("query", query),
+            ("tokens", 2000)
         ])
         return docs.content
     }
@@ -96,11 +95,10 @@ protected class CangjieDocAgent {
         // terminal: true
     ]
     func queryCangjieStdExtension(query: String): String {
-        let docs = client.callTool("get-library-docs", [
-            ("context7CompatibleLibraryID", "/dyingchinese/cangjie-stdx"),
-            ("topic", query),
-            ("tokens", 2000),
-            ("page", 1)  // one page contains 10 results
+        let docs = client.callTool("query-docs", [
+            ("libraryId", "/dyingchinese/cangjie-stdx"),
+            ("query", query),
+            ("tokens", 2000)
         ])
         return docs.content
     }
@@ -113,11 +111,10 @@ protected class CangjieDocAgent {
     //     terminal: true
     // ]
     // func queryOpenHarmony(query: String): String {
-    //     let docs = client.callTool("get-library-docs", [
-    //         ("context7CompatibleLibraryID", "/openharmony/docs"),
-    //         ("topic", query),
-    //         ("tokens", 3000),
-    //         ("page", 1)
+    //     let docs = client.callTool("query-docs", [
+    //         ("libraryId", "/openharmony/docs"),
+    //         ("query", query),
+    //         ("tokens", 2000)
     //     ])
     //     return docs.content
     // }
