@@ -25,8 +25,8 @@ class CancelChecker {
         // Spawn a thread to check for ESC cancellation
         this.future = spawn {
             while (!Thread.currentThread.hasPendingCancellation) {
-                // Don't check for ESC when agent is requesting user input
-                if (!InputUtils.isRequestingInput() && InputUtils.checkEsc()) {
+                // Skip ESC polling while terminal input is in use.
+                if (!InputUtils.isRequestingInput() && !InputUtils.isTerminalInputLocked() && InputUtils.checkEsc()) {
                     // ESC was pressed, cancel the agent response
                     if (this.escPressed.compareAndSwap(false, true)) {  // Ensure only one cancellation
                         LogUtils.info("ESC pressed, cancelling")

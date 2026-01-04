@@ -96,4 +96,34 @@ public class ShellUtils {
             throw ShellTimeoutException("Shell command execution timed out")
         }
     }
+
+    /**
+     * Execute a command attached to the current terminal (no output capture).
+     */
+    public static func executeInteractive(command: Array<String>,
+                                          timeout!: Option<Duration> = None,
+                                          workDir!: Option<Path> = None,
+                                          withWrap!: Bool = true): Int64 {
+        let (cmd, cmdArgs) = buildCommandArgs(command, withWrap)
+
+        let process = launch(
+            cmd,
+            cmdArgs,
+            stdIn: Inherit,
+            stdOut: Inherit,
+            stdErr: Inherit,
+            workingDirectory: workDir
+        )
+
+        try {
+            return process.wait(timeout: timeout)
+        } catch(ex: TimeoutException) {
+            try {
+                process.terminate(force: true)
+            } catch (terminateErr: Exception) {
+                LogUtils.debug("[ShellUtils] Failed to terminate interactive process after timeout: ${terminateErr}")
+            }
+            throw ShellTimeoutException("Interactive shell command execution timed out")
+        }
+    }
 }
