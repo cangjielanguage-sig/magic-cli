@@ -57,14 +57,15 @@ private func executeShellCommand(command: String, app: CliApp): Unit {
     }
     //let items = command.split(" ")  // Simple split by space, does not handle quotes
     //let args = if (items.size > 1) { items[1..] } else { Array<String>() }
-    let (exitCode, stdout, stderr) = ShellUtils.execute([command], workDir: CliConfig.cwd)
-    let output = if (exitCode == 0) {
-        stdout.trimAscii()
-    } else {
-        stderr.trimAscii()
+    InputUtils.lockTerminalInput()
+    InputUtils.exitRawMode()
+    try {
+        let exitCode = ShellUtils.executeInteractive([command], workDir: CliConfig.cwd)
+        LogUtils.info("Shell command exited with code ${exitCode}")
+    } finally {
+        InputUtils.enterRawMode()
+        InputUtils.unlockTerminalInput()
     }
-    LogUtils.info("Shell command exited with code ${exitCode}, output: ${output}")
-    PrintUtils.printShellResult(output)
 }
 
 //-------------------------------------------------------
