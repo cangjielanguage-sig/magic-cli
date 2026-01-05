@@ -93,7 +93,7 @@ protected class ModelTokenLimits {
         ("dashscope:qwen3-coder-flash", 32 * 1024),
 
         // DeepSeek models
-        ("deepseek:deepseek-chat", 32 * 1024),
+        ("deepseek:deepseek-chat", 8 * 1024),
         ("deepseek:deepseek-reasoner", 32 * 1024)
     ])
 
