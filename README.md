@@ -58,30 +58,30 @@ magic-cli/
 2. **配置环境变量**
 
 - 需要先手动设置`MAGIC_PATH`的环境变量，指向 Cangjie Magic 项目根目录：
-   
+
    **Windows (PowerShell):**
    ```powershell
    # 临时设置（仅当前会话）
    $env:MAGIC_PATH = "C:\path\to\CangjieMagic"
-   
+
    # 永久设置（推荐）
    [Environment]::SetEnvironmentVariable("MAGIC_PATH", "C:\path\to\CangjieMagic", "User")
    ```
-   
+
    **Windows (CMD):**
    ```cmd
    # 临时设置（仅当前会话）
    set MAGIC_PATH=C:\path\to\CangjieMagic
-   
+
    # 永久设置（需要管理员权限）
    setx MAGIC_PATH "C:\path\to\CangjieMagic"
    ```
-   
+
    **macOS/Linux:**
    ```bash
    # 临时设置（仅当前会话）
    export MAGIC_PATH="/path/to/CangjieMagic"
-   
+
    # 永久设置 - 添加到 ~/.bashrc 或 ~/.zshrc
    echo 'export MAGIC_PATH="/path/to/CangjieMagic"' >> ~/.bashrc
    source ~/.bashrc
@@ -110,17 +110,17 @@ magic-cli/
 
 4. **运行参数配置**
    Magic-CLI 支持通过 `--run-args` 传递运行参数来定制 Agent 行为：
-   
+
    - **自动执行模式** - 无需用户授权即可执行工具命令：
      ```bash
      cjpm run --name cli --run-args "--auto"
      ```
-   
+
    - **指定生成 Cangjie 代码** - 默认 Agent 生成通用语言代码，如需生成 Cangjie 代码需特别指定：
      ```bash
      cjpm run --name cli --run-args "--language cangjie"
      ```
-   
+
    - **组合使用参数**：
      ```bash
      cjpm run --name cli --run-args "--auto --language cangjie"
@@ -130,7 +130,7 @@ magic-cli/
    - 程序启动后会自动创建 `.magic-cli/` 目录存储配置和历史
    - 输入 `/help` 查看所有可用命令
    - 可创建`.magic-cli/`目录下的 `MAGIC.md` 文件来自定义 AI 行为规则
-   
+
 ### 性能加速（可选推荐）
 
 Magic-CLI 自动使用 [ripgrep](https://github.com/BurntSushi/ripgrep) 来显著提升代码搜索性能，支持自动回退到系统默认工具。
@@ -142,7 +142,7 @@ Magic-CLI 自动使用 [ripgrep](https://github.com/BurntSushi/ripgrep) 来显�
 # 使用 Chocolatey
 choco install ripgrep
 
-# 使用 Scoop  
+# 使用 Scoop
 scoop install ripgrep
 
 # 使用包含的安装脚本（推荐）
@@ -164,7 +164,7 @@ chmod +x scripts/install-ripgrep.sh && ./scripts/install-ripgrep.sh
 sudo apt install ripgrep
 
 # Arch Linux
-sudo pacman -S ripgrep  
+sudo pacman -S ripgrep
 
 # Fedora/RHEL
 sudo dnf install ripgrep
@@ -173,7 +173,7 @@ sudo dnf install ripgrep
 chmod +x scripts/install-ripgrep.sh && ./scripts/install-ripgrep.sh
 ```
 
-> 即使不安装 ripgrep，Magic-CLI 也能正常工作 - 会自动回退到系统的 grep 工具。   
+> 即使不安装 ripgrep，Magic-CLI 也能正常工作 - 会自动回退到系统的 grep 工具。
 
 ## 📋 命令系统
 
@@ -193,7 +193,7 @@ Magic-CLI 提供了丰富的内置命令来管理对话、配置和系统功能�
 Magic-CLI 支持保存和恢复对话会话：
 
 - **`/conversation`** - 列出所有保存的对话
-- **`/conversation list`** - 同上，列出所有对话  
+- **`/conversation list`** - 同上，列出所有对话
 - **`/conversation save <name>`** - 保存当前对话为指定名称
 - **`/conversation resume <name>`** - 恢复指定名称的对话
 - **`/conversation remove <name>`** - 删除指定的对话
@@ -203,7 +203,7 @@ Magic-CLI 支持保存和恢复对话会话：
 🔮 Agent > /conversation save my-project-work
 ✅ Conversation saved as 'my-project-work'
 
-🔮 Agent > /conversation resume my-project-work  
+🔮 Agent > /conversation resume my-project-work
 ✅ Conversation 'my-project-work' resumed successfully!
 
 🔮 Agent > /conversation list
@@ -214,7 +214,7 @@ Magic-CLI 支持保存和恢复对话会话：
 ### MCP 工具管理
 - **`/mcp`** - 显示当前加载的所有 MCP 服务器和工具
 - **`/mcp add <name> <command> [args...]`** - 添加新的 stdio MCP 服务器
-- **`/mcp add-sse <name> <url>`** - 添加新的 SSE MCP 服务器  
+- **`/mcp add-sse <name> <url>`** - 添加新的 SSE MCP 服务器
 - **`/mcp remove <name>`** - 移除指定的 MCP 服务器
 - **支持环境变量配置：**
   ```bash
@@ -293,6 +293,92 @@ Usage: /cmd:commit [your arguments]
 Prompt template: 请基于当前的代码改动生成一个规范的 commit message。要求：$ARGS
 ```
 
+### 自定义 SubAgent
+Magic-CLI 支持创建自定义的专用 AI 助手（SubAgent），每个 SubAgent 都有自己的系统提示、可用工具和参数说明。
+
+#### 创建自定义 SubAgent
+
+**目录结构：**
+```
+.magic-cli/
+└── agents/
+    └── my-agent/
+        └── AGENT.md          # Agent 定义文件（必需）
+        └── *.py, *.cj, etc.  # 辅助脚本（可选）
+```
+
+**AGENT.md 文件格式：**
+```markdown
+---
+name: MyAgent
+description: 我的专用助手描述
+tools: fileRead,fileWrite,grepSearch,shellExecute
+---
+
+你是一个专业的代码分析助手。你的任务是...
+
+# 工作流程
+
+1. 首先读取输入文件（用户会提供文件路径）
+2. 分析代码结构
+3. 将结果写入输出文件（用户会提供输出路径）
+
+# 注意事项
+
+- 保持代码风格一致
+- 添加必要的注释
+```
+
+**元数据字段说明：**
+- `name`（必需）：Agent 名称，用于调用（如 `@MyAgent`）
+- `description`（必需）：Agent 简短描述，显示在帮助信息中
+- `tools`（可选）：逗号分隔的工具列表
+
+**可用工具列表：**
+| 工具名 | 功能 |
+|--------|------|
+| `listDirectory` | 列出目录内容 |
+| `fileRead` | 读取文件内容 |
+| `fileCreate` | 创建新文件 |
+| `fileWrite` | 写入文件内容 |
+| `fileEdit` | 编辑文件 |
+| `shellExecute` | 执行 shell 命令 |
+| `grepSearch` | 搜索文本内容 |
+| `globSearch` | 通配符搜索文件 |
+
+#### 使用 SubAgent
+
+1. **指定 Agent 目录启动**
+```bash
+cjpm run --name cli --run-args "--subagent-dir .magic-cli/agents"
+```
+
+2. **交互式调用 Agent**
+```bash
+# 启动后，直接与 Agent 对话即可
+@MyAgent 请分析 /path/to/input.txt 文件，将结果保存到 /path/to/output.md
+```
+
+3. **查看可用 Agent**
+```bash
+# 输入 @ 后按 Tab 键自动补全
+@<Tab>
+```
+
+#### 高级特性
+
+**递归文档引用**：Agent 可以引用其他文档文件：
+```markdown
+参考 `./advanced_guide.md` 获取更多细节
+```
+Agent 会自动使用 `loadReferenceFile` 工具读取引用的文件。
+
+**多 Agent 目录**：
+```bash
+# 指定多个 Agent 目录
+cjpm run --name cli --run-args "--subagent-dir .magic-cli/agents,/path/to/other/agents"
+```
+
 ## 配置文件说明
 
 | 文件 | 位置 | 说明 |
@@ -310,7 +396,7 @@ Magic-CLI 支持配置主模型和备用模型来确保服务稳定性：
 // src/core/config/cli_config.cj
 public static var model: String = "ark:kimi-k2-250711"  // 主模型
 public static var fallbackModels: Array<String> = [     // 备用模型列表
-    "moonshot:kimi-k2-0905-preview", 
+    "moonshot:kimi-k2-0905-preview",
     "zhipuai:glm-4.5"
 ]
 public static var enableFallback: Bool = true           // 启用模型切换
@@ -357,7 +443,7 @@ func identity<T>(x: T): T {
 🔮 Agent > /mcp
 📡 filesystem (Stdio) - 3 tools:
   • read_file
-  • write_file  
+  • write_file
   • list_directory
 ```
 
