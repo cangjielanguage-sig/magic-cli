@@ -106,8 +106,9 @@ private func grepWithRipgrep(pattern: String, path: Option<String>, include: Opt
 private func grepWithTraditional(pattern: String, path: Option<String>, include: Option<String>): String {
     try {
         let command = if (InfoUtils.os == "windows") {
-            let includeArg = include.map { s => '-Include "${s}"'} ?? ""
-            "Get-ChildItem -Recurse ${includeArg} | Select-String -Pattern \"${pattern}\" | Select-Object Path, LineNumber, Line"
+            let includeArg = include.map { s => "-Include ${s}" } ?? ""
+            let excludeArg = "-Exclude " + String.join(IGNORED_DIR.toArray(), delimiter: ",")
+            "Get-ChildItem -Recurse ${includeArg} ${excludeArg} | Select-String -Pattern \"${pattern}\" | Select-Object Path, LineNumber, Line"
         } else {
             let grepCmd = ArrayList<String>(["grep", '-r', '-n', '-H', '-E'])
             for (dir in IGNORED_DIR) {
@@ -180,10 +181,14 @@ private func parseGrepOutput(rawOutput: String, workingDir: Path): String {
                     Path(items[0])
                 }
             }
+            if (ignored(path)) {
+                return ""
+            }
             let number = items[1]
             let content = items[2]
             return String.join([path.toString(), number, content], delimiter: ":")
         } |>
+        filter { s => !s.isEmpty() } |>
         collectArray
 
     let result = String.join(formattedLines, delimiter: "\n")

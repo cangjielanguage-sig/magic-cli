@@ -30,11 +30,15 @@ private func findRecursive(currentPath: Path, pattern: Regex, results: ArrayList
         let itemName = item.name
         let itemPath = item.path
 
+        if (ignored(itemPath)) {
+            continue
+        }
+
         if (pattern.matches(itemName)) {
             results.add(itemPath.toString())
         }
 
-        if (item.isDirectory() && !ignored(itemPath)) {
+        if (item.isDirectory()) {
             findRecursive(itemPath, pattern, results)
         }
     }

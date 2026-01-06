@@ -25,7 +25,9 @@ protected func listDirectory(path: String): String {
     if (!Path(path).isAbsolute()) {
         return "Directory path must be absolute"
     }
-
+    if (ignored(Path(path))) {
+        return "Directory ${path} is ignored by project configuration."
+    }
     PrintUtils.printTool("List Directory", shortMessage: path)
 
     try {
@@ -62,6 +64,11 @@ protected func listDirectory(path: String): String {
     }
 ]
 protected func fileRead(filePath: String, startLine: Option<Int64>, endLine: Option<Int64>): String {
+    if (ignored(Path(filePath))) {
+        let startInfo = startLine.map { n => " start=${n}" } ?? ""
+        let endInfo = endLine.map { n => " end=${n}" } ?? ""
+        return "<file-content path=${filePath}${startInfo}${endInfo}>\n[NOTE: This file is shielded by project configuration.]\n</file-content>"
+    }
     let start = startLine ?? 1
     let end = endLine.map { n => n.toString() } ?? "EOF"
     let message = "${filePath} (${start}-${end})"

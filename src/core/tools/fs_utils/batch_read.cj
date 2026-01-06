@@ -5,7 +5,7 @@ import magic.jsonable.*
 import magic.log.LogUtils
 
 import std.collection.{map, collectArray, ArrayList, HashMap}
-import std.fs.File
+import std.fs.{File, Path}
 import stdx.encoding.json.*
 
 protected const FILE_BATCH_READ_DESCRIPTION = """
@@ -70,6 +70,9 @@ protected func batchRead(files: Array<ReadFileParam>): Array<Option<String>> {
             let param = files[index]
             let fut = spawn {
                 try {
+                    if (ignored(Path(param.filePath))) {
+                        return (index, "[NOTE: This file is shielded by project configuration.]")
+                    }
                     let content = catRange(param.filePath, param.startLine ?? 1, endLine: param.endLine ?? Int64.Max)
                     let end = param.endLine.map { n => n.toString() } ?? "EOF"
                     let result = "<file-content path=${param.filePath} start=${param.startLine ?? 1} end=${end}>\n${content}\n</file-content>"
