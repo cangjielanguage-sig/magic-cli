@@ -79,7 +79,7 @@ private func tryGlobWithFind(pattern: String, rootPath: String): ArrayList<Strin
                 let trimmed = line.trimAscii()
                 // Convert relative path to absolute
                 let path = Path(rootPath).join(trimmed)
-                if (!trimmed.isEmpty() && exists(path)) {
+                if (!trimmed.isEmpty() && exists(path) && !ignored(path)) {
                     results.add(canonicalize(path).toString())
                 }
             }
