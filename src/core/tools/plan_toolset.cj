@@ -46,7 +46,7 @@ public class PlanToolset {
             this.plan.addSubtask(subtask, todoId)
         }
         if (InputUtils.confirm(parentTask.getOrThrow()) == Confirmation.Deny) {
-            generalTask.getOrThrow().clearSubtasks()
+            parentTask.getOrThrow().clearSubtasks()
             return "User denied the subtasks"
         }
         this.plan.save()
