@@ -91,7 +91,7 @@ protected class InputUtils {
         showTaskTree(task, 0, tasks)
         let footer = "💡 Subtasks have been created. Please confirm if you need to modify the subtasks. ʘ‿ʘ".withColor(Theme.HIGHLIGHT)
 
-        return confirm("Subtasks", "", String.join(tasks.toString(), delimiter: "\n"), footer: footer)
+        return confirm("Subtasks", "", String.join(tasks.toArray(), delimiter: "\n"), footer: footer)
     }
 
     public static func confirm(plan: Plan): Confirmation {
