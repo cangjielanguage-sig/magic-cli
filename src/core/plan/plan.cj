@@ -15,11 +15,11 @@ const INDENT = 2
 protected class Plan <: ToString {
     protected let topLevelTasks: ArrayList<Task>
 
-    init() {
+    protected init() {
         this.topLevelTasks = ArrayList<Task>()
     }
 
-    init(tasks: Array<String>) {
+    protected init(tasks: Array<String>) {
         this.topLevelTasks = ArrayList<Task>()
         for (task in tasks) { 
             this.addTopLevelTask(task)

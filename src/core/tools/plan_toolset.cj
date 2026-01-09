@@ -4,7 +4,7 @@ import magic.dsl.*
 import magic.prelude.*
 import magic.log.LogUtils
 
-import cli.core.plan.Plan
+import cli.core.plan.{ Plan, Task }
 import cli.core.config.CliConfig
 import cli.io.{InputUtils, PrintUtils, Confirmation, WithColor, AnsiColor, Theme}
 import cli.utils.*
@@ -31,7 +31,30 @@ public class PlanToolset {
     }
 
     @tool[
-        description: "Review the current plan and the completion status of each task (TODO/DONE)."
+        description: "Breaks down a parent task into clear and actionable subtasks.",
+        parameters: {
+            todoId: "Id of the parent task that needs to be broken down into subtasks",
+            subtasks: "An array of strings, each item is a clear description of the subtask broken down from the parent task" 
+        }
+    ]
+    public func todoBreakDown(todoId: String, subtasks: Array<String>): String {
+        let parentTask: ?Task = this.plan.getTask(todoId)
+        if (parentTask.isNone()) {
+            return "Error: task with the task id ${todoId} is not found. Please check whether the todoId is correct."
+        }
+        for (subtask in subtasks) {
+            this.plan.addSubtask(subtask, todoId)
+        }
+        if (InputUtils.confirm(parentTask.getOrThrow()) == Confirmation.Deny) {
+            generalTask.getOrThrow().clearSubtasks()
+            return "User denied the subtasks"
+        }
+        this.plan.save()
+        return "Subtasks has been approved by user, ready to start execution."
+    }
+
+    @tool[
+        description: "Review the current plan, the completion status (TODO/DONE), and the task id of each task."
     ]
     public func todoReview(): String {
         if (this.plan.isEmpty()) {
@@ -41,20 +64,21 @@ public class PlanToolset {
     }
 
     @tool[
-        description: "Marks the task at the specified index as completed (DONE) and returns the current TODO List",
-        parameters: { taskIndex: "Index of the task to mark as complete (starting from 1)" }
+        description: "Marks the task with the specific task id as completed (DONE) and returns the current TODO List",
+        parameters: { taskIndex: "Id of the task to mark as complete" }
     ]
-    public func todoMarkComplete(taskIndex: Int64): String {
-        // if (taskIndex < 1 || taskIndex > this.plan.tasks.size) {
-        //     return "Error: Invalid task index ${taskIndex}."
-        // } else if (this.plan.tasks[taskIndex-1].completed) {
-        //     return "Task ${taskIndex} is already completed."
-        // }
-        // this.plan.tasks[taskIndex-1].markAsComplete()
-        // this.plan.save()
-        // PrintUtils.printPlan(this.plan)
-        // PrintUtils.printLine("")
-        // return "Task ${taskIndex} has been completed. Current task list:\n${this.plan}"
-        return ""
+    public func todoMarkComplete(todoId: String): String {
+        let task = plan.getTask(todoId)
+        if (task.isNone()) {
+            return "Error: cannot find the task with task id ${todoId}. Please check whether this task id exists in the plan."
+        }
+        if (task.getOrThrow().completed) {
+            return "Task ${todoId} is already completed."
+        }
+        task.getOrThrow().markAsComplete()
+        plan.save()
+        PrintUtils.printPlan(this.plan)
+        PrintUtils.printLine("")
+        return "Task ${todoId} has been completed. Current task list:\n${this.plan}"
     }
 }
