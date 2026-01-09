@@ -46,7 +46,7 @@ protected class PlainPrinter <: Printer {
 
     public func printPlan(plan: Plan): Unit {
         PrintUtils.printLine("✨ Plan")
-        for (task in plan.tasks) {
+        for (task in plan.topLevelTasks) {
             printTask(task)
         }
     }

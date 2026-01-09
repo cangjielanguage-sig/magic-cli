@@ -7,23 +7,6 @@ import std.fs.OpenMode
 import std.collection.{ArrayList, enumerate, map, collectArray}
 import std.time.DateTime
 
-public func toMarkdown(indentLevel!: Int64 = this.level): String {
-        let descriptionCombo = taskId + " :: " + this.description
-        if (this.completed) {
-            return " " * indentLevel * indent + "${'╰─'.withColor(Theme.MUTED)} ${descriptionCombo.withColor(Theme.SUCCESS).withColor(AnsiColor.STRIKE_THROUGH)}"
-        } else {
-            return " " * indentLevel * indent + "${'╰─'.withColor(AnsiColor.BRIGHT_BLACK)} ${descriptionCombo.withColor(AnsiColor.BOLD)}"
-        }
-    }
-
-    public static func toMarkdownRecursively(taskNode: Task, indentLevel!: Int64 = taskNode.level, indent!: Int64 = taskNode.indent): String {
-        var markdown = taskNode.toMarkdown(indentLevel: indentLevel)
-        for (subtask in taskNode.subtasks) {
-            markdown += "\n" + Task.toMarkdownRecursively(subtask, indentLevel: indentLevel + 1, indent: indent)
-        }
-        return markdown
-    }
-
 /**
  * MarkdownPrinter - Generates clean markdown format for file output
  * Removes ANSI colors and converts box decorations to markdown formatting with colors
@@ -61,7 +44,7 @@ protected class MarkdownPrinter <: Printer {
 
     public func printPlan(plan: Plan): Unit {
         PrintUtils.printLine("✨ Plan")
-        for (task in plan.tasks) {
+        for (task in plan.topLevelTasks) {
             printTask(task)
         }
     }

@@ -76,8 +76,9 @@ protected class InputUtils {
         }
     }
 
+    // TODO: Confirm should be modified for plan
     public static func confirm(plan: Plan): Confirmation {
-        let tasks: Array<String> = plan.tasks |>
+        let tasks: Array<String> = plan.topLevelTasks |>
             map { task =>
                 "${'╰─'.withColor(AnsiColor.BRIGHT_BLACK)} ${task.description.withColor(AnsiColor.BOLD)}"
             } |> collectArray
