@@ -72,16 +72,88 @@ protected class Plan <: ToString {
     }
 }
 
-protected class Task {
-    protected let description: String
-    protected var completed: Bool
+// protected class Task {
+//     protected let description: String
+//     protected var completed: Bool
 
-    public init(description: String) {
+//     public init(description: String) {
+//         this.description = description
+//         this.completed = false
+//     }
+
+//     public func markAsComplete(): Unit {
+//         this.completed = true
+//     }
+// }
+
+protected class Task <: ToString {
+    protected let description: String
+    protected let taskId: String
+    protected let subtasks: ArrayList<Task>
+    protected var completed: Bool
+    protected let level: Int64
+    protected let indent: Int64
+
+    public init(description: String, taskId: String, level: Int64, indent!: Int64 = INDENT) {
         this.description = description
+        this.taskId = taskId
+        this.subtasks = ArrayList<Task>()
         this.completed = false
+        this.level = level
+        this.indent = indent
+    }
+
+    public init(description: String, taskId: String, subtasks: ArrayList<Task>, level: Int64, indent!: Int64 = INDENT) {
+        this.description = description
+        this.taskId = taskId
+        this.subtasks = subtasks
+        this.completed = false
+        this.level = level
+        this.indent = indent
+    }
+
+    public func addSubtask(subtask: Task): Unit {
+        this.subtasks.add(subtask)
     }
 
     public func markAsComplete(): Unit {
         this.completed = true
+    }
+
+    public func clearSubtasks(): Unit {
+        subtasks.clear()
+    }
+
+    public static func fromMarkdown(line: String, level: Int64): Task {
+        // Line must start with "- [ ] " or "- [x] "
+        let trimmedLine = line.trimAscii()
+        let rawDescription = trimmedLine[5..].trimAscii().split(" :: ")
+        let taskId = rawDescription[0]
+        let description = String.join(rawDescription[1..], delimiter: " :: ")
+        let task = Task(description, taskId, level)
+        if (trimmedLine.startsWith("- [x]")) {
+            task.markAsComplete()
+        }
+        return task
+    }
+
+    public static func fromMarkdownRecursively(line: String, subtaskLines: ArrayList<String>, level!: Int64 = 0, indent!: Int64 = INDENT): Task {
+        let rootTask = Task.fromMarkdown(line, level)
+        var co = 0
+        while (co < subtaskLines.size) {
+            let subtaskLine = subtaskLines[co]
+            co += 1
+            let subsubtaskLines = ArrayList<String>()
+            while (co < subtaskLines.size) {
+                if (subtaskLines[co].startsWith(" " * (level + 1) * indent + "-")) {
+                    break
+                }
+                subsubtaskLines.add(subtaskLines[co])
+                co += 1
+            }
+            let subtask = Task.fromMarkdownRecursively(subtaskLine, subsubtaskLines, level: level + 1, indent: indent)
+            rootTask.addSubtask(subtask)
+        }
+        return rootTask
     }
 }

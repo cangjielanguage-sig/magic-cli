@@ -2,10 +2,27 @@ package cli.io
 
 import magic.core.agent.{AsyncAgentResponse, AgentResponse}
 import cli.core.config.CliConfig
-import cli.core.plan.Plan
+import cli.core.plan.{ Plan, Task }
 import std.fs.OpenMode
 import std.collection.{ArrayList, enumerate, map, collectArray}
 import std.time.DateTime
+
+public func toMarkdown(indentLevel!: Int64 = this.level): String {
+        let descriptionCombo = taskId + " :: " + this.description
+        if (this.completed) {
+            return " " * indentLevel * indent + "${'╰─'.withColor(Theme.MUTED)} ${descriptionCombo.withColor(Theme.SUCCESS).withColor(AnsiColor.STRIKE_THROUGH)}"
+        } else {
+            return " " * indentLevel * indent + "${'╰─'.withColor(AnsiColor.BRIGHT_BLACK)} ${descriptionCombo.withColor(AnsiColor.BOLD)}"
+        }
+    }
+
+    public static func toMarkdownRecursively(taskNode: Task, indentLevel!: Int64 = taskNode.level, indent!: Int64 = taskNode.indent): String {
+        var markdown = taskNode.toMarkdown(indentLevel: indentLevel)
+        for (subtask in taskNode.subtasks) {
+            markdown += "\n" + Task.toMarkdownRecursively(subtask, indentLevel: indentLevel + 1, indent: indent)
+        }
+        return markdown
+    }
 
 /**
  * MarkdownPrinter - Generates clean markdown format for file output
@@ -28,14 +45,24 @@ protected class MarkdownPrinter <: Printer {
         print(str, flush: true)
     }
 
+    private func printTask(task: Task, indentLevel!: Int64 = 0, indent!: Int64 = 2): Unit {
+        let descriptionCombo = task.taskId + " :: " + task.description
+        var line: String = ""
+        if (task.completed) {
+            line = " " * indentLevel * indent + "╰─ ✓ ${descriptionCombo}"
+        } else {
+            line = " " * indentLevel * indent + "╰─ □ ${descriptionCombo}"
+        }
+        printLine(line)
+        for (subtask in task.subtasks) {
+            printTask(subtask, indentLevel: indentLevel + 1, indent: indent)
+        }
+    }
+
     public func printPlan(plan: Plan): Unit {
         PrintUtils.printLine("✨ Plan")
         for (task in plan.tasks) {
-            if (task.completed) {
-                printLine("╰─ ✓ ${task.description}")
-            } else {
-                printLine("╰─ □ ${task.description}")
-            }
+            printTask(task)
         }
     }
 

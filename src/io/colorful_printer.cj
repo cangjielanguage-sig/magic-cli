@@ -2,7 +2,7 @@ package cli.io
 
 import magic.core.agent.{AsyncAgentResponse, AgentResponse}
 
-import cli.core.plan.Plan
+import cli.core.plan.{ Plan, Task }
 import cli.core.config.CliConfig
 
 import std.fs.OpenMode
@@ -44,14 +44,24 @@ protected class ColorfulPrinter <: Printer {
         print(str, flush: true)
     }
 
+    private func printTask(task: Task, indentLevel!: Int64 = 0, indent!: Int64 = 2): Unit {
+        let descriptionCombo = task.taskId + " :: " + task.description
+        var line: String = ""
+        if (task.completed) {
+            line = " " * indentLevel * indent + "${'╰─'.withColor(Theme.MUTED)} ${descriptionCombo.withColor(Theme.SUCCESS).withColor(AnsiColor.STRIKE_THROUGH)}"
+        } else {
+            line = " " * indentLevel * indent + "${'╰─'.withColor(AnsiColor.BRIGHT_BLACK)} ${descriptionCombo.withColor(AnsiColor.BOLD)}"
+        }
+        printLine(line)
+        for (subtask in task.subtasks) {
+            printTask(subtask, indentLevel: indentLevel + 1, indent: indent)
+        }
+    }
+
     public func printPlan(plan: Plan): Unit {
         PrintUtils.printLine("✨ Plan")
         for (task in plan.tasks) {
-            if (task.completed) {
-                printLine("${'╰─'.withColor(Theme.MUTED)} ${task.description.withColor(Theme.SUCCESS).withColor(AnsiColor.STRIKE_THROUGH)}")
-            } else {
-                printLine("${'╰─'.withColor(AnsiColor.BRIGHT_BLACK)} ${task.description.withColor(AnsiColor.BOLD)}")
-            }
+            printTask(task)
         }
     }
 
