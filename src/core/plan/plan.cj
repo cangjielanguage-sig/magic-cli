@@ -99,6 +99,24 @@ protected class Plan <: ToString {
         return rsts
     }
 
+    public func getPathFromRootToTask(taskId: String): ?ArrayList<Task> {
+        if (!Task.checkTaskIdFormat(taskId)) {
+            return None
+        }
+        let indices = taskId.split(" ")[1].split(".")
+        var tasks = this.topLevelTasks
+        let path = ArrayList<Task>()
+        for (i in indices) { 
+            let index = Int64.parse(i) - 1
+            if (index < 0 || index >= tasks.size) {
+                return None
+            }
+            path.add(tasks[index])
+            tasks = tasks[index].subtasks
+        }
+        return path
+    }
+
     public func save(): Unit {
         let path = CliConfig.todoFile
         try {

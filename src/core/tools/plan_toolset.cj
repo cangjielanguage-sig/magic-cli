@@ -23,11 +23,12 @@ public class PlanToolset {
     ]
     public func todoCreate(tasks: Array<String>): String {
         this.plan = Plan(tasks)
+        // TODO: why confirm here does not show the task ID?
         if (InputUtils.confirm(this.plan) == Confirmation.Deny) {
             return "User denied the plan"
         }
         this.plan.save()
-        return "Plan has been approved by user, ready to start execution."
+        return "Plan has been approved by user, ready to start execution. The following tasks are created:\n${plan.toString()}"
     }
 
     @tool[
@@ -50,7 +51,7 @@ public class PlanToolset {
             return "User denied the subtasks"
         }
         this.plan.save()
-        return "Subtasks has been approved by user, ready to start execution."
+        return "Subtasks has been approved by user, ready to start execution. The current plan is in the following:\n${plan.toString()}"
     }
 
     @tool[
@@ -64,21 +65,31 @@ public class PlanToolset {
     }
 
     @tool[
-        description: "Marks the task with the specific task id as completed (DONE) and returns the current TODO List",
-        parameters: { taskIndex: "Id of the task to mark as complete" }
+        description: "Marks the task with the specific task id as completed (DONE) and returns the current TODO List. If the task is the last subtask of the parent task, the parent task will also be marked as completed.",
+        parameters: { taskId: "Id of the task to mark as complete" }
     ]
-    public func todoMarkComplete(todoId: String): String {
-        let task = plan.getTask(todoId)
-        if (task.isNone()) {
-            return "Error: cannot find the task with task id ${todoId}. Please check whether this task id exists in the plan."
+    public func taskMarkComplete(taskId: String): String {
+        let tasks = plan.getPathFromRootToTask(taskId)
+        if (tasks.isNone()) {
+            return "Error: cannot find the task with task id ${taskId}. Please check whether this task id exists in the plan."
         }
-        if (task.getOrThrow().completed) {
-            return "Task ${todoId} is already completed."
+        for (i in 0..tasks.getOrThrow().size) {
+            let task = tasks.getOrThrow()[tasks.getOrThrow().size - 1 - i]
+            if (!task.completed) {
+                task.markAsComplete()
+                if (i != tasks.getOrThrow().size - 1) {
+                    let parentTask = tasks.getOrThrow()[tasks.getOrThrow().size - 2 - i]
+                    let lastSubtask = parentTask.subtasks.last
+                    if (lastSubtask.isSome() && task.taskId != lastSubtask.getOrThrow().taskId) {
+                        break
+                    }
+
+                }
+            }
         }
-        task.getOrThrow().markAsComplete()
         plan.save()
         PrintUtils.printPlan(this.plan)
         PrintUtils.printLine("")
-        return "Task ${todoId} has been completed. Current task list:\n${this.plan}"
+        return "Task ${taskId} has been completed. Current task list:\n${this.plan}"
     }
 }
