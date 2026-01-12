@@ -100,7 +100,7 @@ protected class ModelTokenLimits {
         ("deepseek:deepseek-reasoner", 32 * 1024),
 
         // OpenRouter models
-        ("openrouter:qwen/qwen3-coder-30b-a3b-instruct", 32 * 1024)
+        ("openrouter:qwen/qwen3-coder-30b-a3b-instruct", 8 * 1024)
     ])
 
     public static func getOutputLimit(model: String): Int64 {
