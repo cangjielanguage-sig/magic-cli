@@ -38,13 +38,13 @@ public class PlanToolset {
             subtasks: "An array of strings, each item is a clear description of the subtask broken down from the parent task" 
         }
     ]
-    public func todoBreakDown(todoId: String, subtasks: Array<String>): String {
-        let parentTask: ?Task = this.plan.getTask(todoId)
+    public func taskBreakDown(taskId: String, subtasks: Array<String>): String {
+        let parentTask: ?Task = this.plan.getTask(taskId)
         if (parentTask.isNone()) {
-            return "Error: task with the task id ${todoId} is not found. Please check whether the todoId is correct."
+            return "Error: task with the task id ${taskId} is not found. Please check whether the todoId is correct."
         }
         for (subtask in subtasks) {
-            this.plan.addSubtask(subtask, todoId)
+            this.plan.addSubtask(subtask, taskId)
         }
         if (InputUtils.confirm(parentTask.getOrThrow()) == Confirmation.Deny) {
             parentTask.getOrThrow().clearSubtasks()
