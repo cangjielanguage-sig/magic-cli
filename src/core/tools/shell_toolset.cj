@@ -92,26 +92,34 @@ Important:
 private let TOOL_DESCRIPTION = """
 Executes a given bash command in a persistent shell session with optional timeout, ensuring proper handling and security measures.
 
+CRITICAL: Choose the correct execution mode BEFORE executing:
+- Set interactive=true for commands that need user input or prompts (npx, npm init, sudo, code generators, installers)
+- Set interactive=false (default) for commands where you need to read the output (git status, ls, grep, tests, builds)
+- When in doubt, use interactive=true to prevent hanging
+
+Interactive mode (interactive=true):
+- Runs with TTY support, user can provide input
+- Output is printed to terminal but NOT returned to you
+- Use for: npx, npm create, sudo, ssh, project scaffolding, ANY command with "create-" prefix
+
+Non-interactive mode (interactive=false):
+- Output is captured and returned to you for analysis
+- User cannot provide input - command will HANG if it tries to prompt
+- Use for: information queries (git status, ls), builds, tests, file operations
+
 Before executing the command, please follow these steps:
 
 1. Directory Verification:
    - If the command will create new directories or files, first use the LS tool to verify the parent directory exists and is the correct location
-   - For example, before running \"mkdir foo/bar\", first use `listDirectory` to check that \"foo\" exists and is the intended parent directory
+   - For example, before running "mkdir foo/bar", first use `listDirectory` to check that "foo" exists and is the intended parent directory
 
 2. Command Execution:
-   - Always quote file paths that contain spaces with double quotes (e.g., cd \"path with spaces/file.txt\")
-   - Examples of proper quoting:
-     - cd \"/Users/name/My Documents\" (correct)
-     - cd /Users/name/My Documents (incorrect - will fail)
-     - python \"/path/with spaces/script.py\" (correct)
-     - python /path/with spaces/script.py (incorrect - will fail)
+   - Always quote file paths that contain spaces with double quotes (e.g., cd "path with spaces/file.txt")
    - After ensuring proper quoting, execute the command.
-   - Capture the output of the command.
 
 Usage notes:
   - The command argument is required.
   - It is very helpful if you write a clear, concise description of what this command does in 5-10 words.
-  - For commands that need terminal input (sudo/ssh/installers), set interactive=true. Output is printed to the terminal and not captured.
   - If the output exceeds 30000 characters, output will be truncated before being returned to you.
   - VERY IMPORTANT: You MUST avoid using search commands like `find` and `grep`. Instead use ${globSearch.name}, ${grepSearch.name} to search. You MUST avoid read tools like `cat`, `head`, `tail`, and `ls`, and use ${fileRead.name}, ${fileBatchRead.name}, ${listDirectory.name} to read files.
   - When issuing multiple commands, use the ';' or '&&' operator to separate them. DO NOT use newlines (newlines are ok in quoted strings).
