@@ -80,15 +80,8 @@ BOOL isCommonVirtualKey(WORD vkCode)
     }
 }
 
-/**
- * Enters raw input mode.
- * - Disables ICANON (line buffering)
- * - Disables ECHO (character echoing)
- * - Sets VMIN=1, VTIME=0 (return immediately after one byte)
- * - Uses cfmakeraw() for base raw settings, then disables ECHO explicitly
- *
- * @return TRUE on success, FALSE on error (e.g., tcgetattr fails)
- */
+BOOL WINAPI CtrlHandler(DWORD fdwCtrlType);
+
 int enterRaw()
 {
     SetConsoleCP(code_page_id);
@@ -99,7 +92,6 @@ int enterRaw()
         return FALSE;
     }
 
-    // Only modify terminal if not already in raw mode
     if (!flag)
     {
         if (!GetConsoleMode(h_console, &origin_mode))
@@ -115,21 +107,39 @@ int enterRaw()
         {
             return FALSE;
         }
+        if (!SetConsoleCtrlHandler(CtrlHandler, TRUE))
+        {
+            SetConsoleMode(h_console, origin_mode);
+            return FALSE;
+        }
         flag = 1;
     }
     return TRUE;
 }
 
-/**
- * Exits raw mode and restores the original terminal settings.
- * This function is idempotent — calling it multiple times has no side effect.
- */
 void exitRaw()
 {
     if (flag)
     {
         SetConsoleMode(h_console, origin_mode);
+        SetConsoleCtrlHandler(CtrlHandler, FALSE);
         flag = 0;
+    }
+}
+
+BOOL WINAPI CtrlHandler(DWORD fdwCtrlType)
+{
+    switch (fdwCtrlType)
+    {
+    case CTRL_C_EVENT:
+    case CTRL_BREAK_EVENT:
+    case CTRL_CLOSE_EVENT:
+    case CTRL_LOGOFF_EVENT:
+    case CTRL_SHUTDOWN_EVENT:
+        exitRaw();
+        return FALSE;
+    default:
+        return FALSE;
     }
 }
 
