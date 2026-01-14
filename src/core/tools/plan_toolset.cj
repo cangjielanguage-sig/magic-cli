@@ -73,18 +73,26 @@ public class PlanToolset {
         if (tasks.isNone()) {
             return "Error: cannot find the task with task id ${taskId}. Please check whether this task id exists in the plan."
         }
+        let currentTask = tasks.getOrThrow()[tasks.getOrThrow().size - 1]
+        if (currentTask.completed) {
+            return "Task ${taskId} is already completed."
+        }
         for (i in 0..tasks.getOrThrow().size) {
             let task = tasks.getOrThrow()[tasks.getOrThrow().size - 1 - i]
-            if (!task.completed) {
-                task.markAsComplete()
-                if (i != tasks.getOrThrow().size - 1) {
-                    let parentTask = tasks.getOrThrow()[tasks.getOrThrow().size - 2 - i]
-                    let lastSubtask = parentTask.subtasks.last
-                    if (lastSubtask.isSome() && task.taskId != lastSubtask.getOrThrow().taskId) {
+            task.markAsComplete()
+            var parentTaskComplete = true
+            if (i != tasks.getOrThrow().size - 1) {
+                let parentTask = tasks.getOrThrow()[tasks.getOrThrow().size - 2 - i]
+                for (task in parentTask.subtasks) {
+                    if (!task.completed) {
+                        parentTaskComplete = false
                         break
                     }
-
                 }
+                if (!parentTaskComplete) {
+                    break
+                }
+                parentTask.markAsComplete()
             }
         }
         plan.save()
