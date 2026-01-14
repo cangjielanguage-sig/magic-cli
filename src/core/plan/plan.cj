@@ -35,13 +35,13 @@ protected class Plan <: ToString {
 
     private init(tasks: ArrayList<Task>) {
         // Because taskId of each task has a specific format and we cannot assume each input format is correct,
-        // we make this constructor private.
+        // we make this constructor private. Just used for testing.
         this.topLevelTasks = tasks
     }
 
     private init(tasks: Array<Task>) {
         // Because taskId of each task has a specific format and we cannot assume each input format is correct,
-        // we make this constructor private.
+        // we make this constructor private. Just used for testing.
         this.topLevelTasks = ArrayList<Task>(tasks)
     }
 
