@@ -26,7 +26,7 @@ protected class Plan <: ToString {
         }
     }
 
-    init(tasks: ArrayList<String>) {
+    protected init(tasks: ArrayList<String>) {
         this.topLevelTasks = ArrayList<Task>()
         for (task in tasks) { 
             this.addTopLevelTask(task)
@@ -35,13 +35,13 @@ protected class Plan <: ToString {
 
     private init(tasks: ArrayList<Task>) {
         // Because taskId of each task has a specific format and we cannot assume each input format is correct,
-        // we make this constructor private. Just used for testing.
+        // we make this constructor private
         this.topLevelTasks = tasks
     }
 
     private init(tasks: Array<Task>) {
         // Because taskId of each task has a specific format and we cannot assume each input format is correct,
-        // we make this constructor private. Just used for testing.
+        // we make this constructor private
         this.topLevelTasks = ArrayList<Task>(tasks)
     }
 
