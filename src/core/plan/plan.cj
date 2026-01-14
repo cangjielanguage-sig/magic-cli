@@ -7,6 +7,12 @@ import std.collection.ArrayList
 import std.fs.{File, OpenMode, FSException, exists}
 import std.convert.*
 
+/**
+* Task Id of each task is in the The `taskId` is in the following format: `Task l1.l2...ln`, where `l1` is the 1-based index of the
+* top-level task in the overall task list, `l2` is the 1-based index of the second-level subtask within its parent task, and 
+* so on. For example, `Task 2.3.1` refers to the first subtask of the third subtask of the second top-level task.
+*/
+
 const INDENT = 2
 
 /**
