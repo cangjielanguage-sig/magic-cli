@@ -21,7 +21,11 @@ protected class CustomAgentManager {
      */
     private func loadAgents(): Unit {
         for (agentDir in CliConfig.subagentDirs) {
-            if (exists(agentDir)) {
+            if (exists(agentDir)) {  
+                if (!exists(agentDir.join("AGENT.md"))) {
+                    LogUtils.error("AGENT.md not found in Agent directory, skipped: ${agentDir}")
+                    continue
+                }
                 let agent = CustomAgent(agentDir)
                 agents.add(agent.name, agent)
                 CompletionListUtils.registerCompletionItem("@${agent.name}")

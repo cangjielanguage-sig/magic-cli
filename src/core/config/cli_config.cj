@@ -7,7 +7,7 @@ import magic.config.Config
 
 import std.fs.*
 import std.io.readToEnd
-import std.collection.{map, collectArray, ArrayList}
+import std.collection.{map, collectArray, ArrayList, filterMap, collectArrayList}
 import std.time.DateTime
 import std.sort.*
 
@@ -204,11 +204,32 @@ protected class CliConfig {
         }
     }
 
-     /**
+    /**
      * The directories to search for subagents
      */
-    public static var subagentDirs: ArrayList<Path> = ArrayList([CliConfig.dotDir.join("agents")])
+    private static var _subagentDirs: Option<ArrayList<Path>> = None
 
+    public static prop subagentDirs: ArrayList<Path> {
+        get() {
+            if (_subagentDirs.isNone()) {
+                let agentDir = CliConfig.dotDir.join("agents")
+                try {
+                    // read all subdirectories
+                    _subagentDirs = Directory.readFrom(agentDir) |> filterMap {
+                        info: FileInfo => if (info.isDirectory()) {
+                            info.path
+                        } else {
+                            None
+                        }
+                    } |> collectArrayList
+                } catch (ex: Exception) {
+                    LogUtils.error("Failed to load agent dirs from ${agentDir}, error is: ${ex.message}")
+                    _subagentDirs = ArrayList<Path>()
+                }
+            }
+            return _subagentDirs.getOrThrow()
+        }
+    }
     /**
      * The directories to search for commands
      */
