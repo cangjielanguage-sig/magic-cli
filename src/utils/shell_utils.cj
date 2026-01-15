@@ -17,15 +17,18 @@ public class ShellTimeoutException <: Exception {
 }
 
 public class ShellUtils {
-    private static func buildCommandArgs(command: Array<String>, withWrap: Bool): (String, Array<String>) {
+    private static func buildCommandArgs(command: Array<String>, withWrap: Bool, usePowerShellOnWindows: Bool): (String, Array<String>) {
         if (!withWrap) {
             let args: Array<String> = if (command.size > 1) { command[1..] } else { [] }
             return (command[0], args)
         }
-        let cmdArgs = ArrayList<String>()
         if (InfoUtils.os == "windows") {
-            cmdArgs.add("/c")
-            return ("cmd", ["/c", String.join(command, delimiter: " ")])
+            // 如果在windows上，可以指定使用PowerShell，否则默认使用cmd，其他os上则不受这个参数的影响
+            if (usePowerShellOnWindows) {
+                return ("powershell", ["-Command", String.join(command, delimiter: " ")])
+            } else {
+                return ("cmd", ["/c", String.join(command, delimiter: " ")])
+            }
         } else {
             return ("sh", ["-c", String.join(command, delimiter: " ")])
         }
@@ -34,8 +37,9 @@ public class ShellUtils {
     public static func execute(command: Array<String>,
                                timeout!: Option<Duration> = None,
                                workDir!: Option<Path> = None,
-                               withWrap!: Bool = true): (Int64, String, String) {
-        let (cmd, cmdArgs) = buildCommandArgs(command, withWrap)
+                               withWrap!: Bool = true,
+                               usePowerShellOnWindows!: Bool = false): (Int64, String, String) {
+        let (cmd, cmdArgs) = buildCommandArgs(command, withWrap, usePowerShellOnWindows)
 
         let process = launch(
             cmd,
@@ -103,8 +107,9 @@ public class ShellUtils {
     public static func executeInteractive(command: Array<String>,
                                           timeout!: Option<Duration> = None,
                                           workDir!: Option<Path> = None,
-                                          withWrap!: Bool = true): Int64 {
-        let (cmd, cmdArgs) = buildCommandArgs(command, withWrap)
+                                          withWrap!: Bool = true,
+                                          usePowerShellOnWindows!: Bool = false): Int64 {
+        let (cmd, cmdArgs) = buildCommandArgs(command, withWrap, usePowerShellOnWindows)
 
         let process = launch(
             cmd,

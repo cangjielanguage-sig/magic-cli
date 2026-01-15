@@ -124,7 +124,7 @@ private func grepWithTraditional(pattern: String, path: Option<String>, include:
         LogUtils.debug("[Run command] ${command}")
 
         let workingDir = path.map { s => Path(s) } ?? CliConfig.cwd
-        let (exitCode, stdout, stderr) = ShellUtils.execute([command],  workDir: workingDir)
+        let (exitCode, stdout, stderr) = ShellUtils.execute([command],  workDir: workingDir, usePowerShellOnWindows: true)
 
         if (exitCode == 0) {
             let outString = stdout.trimAscii()
