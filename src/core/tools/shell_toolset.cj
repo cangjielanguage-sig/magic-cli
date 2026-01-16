@@ -89,7 +89,7 @@ Important:
 - View comments on a Github PR: gh api repos/foo/bar/pulls/123/comments
 """
 
-private let TOOL_DESCRIPTION = """
+private let COMMON_GUIDELINES = """
 Executes a given bash command in a persistent shell session with optional timeout, ensuring proper handling and security measures.
 
 CRITICAL: Choose the correct execution mode BEFORE executing:
@@ -114,7 +114,7 @@ Before executing the command, please follow these steps:
    - For example, before running "mkdir foo/bar", first use `listDirectory` to check that "foo" exists and is the intended parent directory
 
 2. Command Execution:
-   - Always quote file paths that contain spaces with double quotes (e.g., cd "path with spaces/file.txt")
+   - Always quote file paths that contain spaces with double quotes (e.g., cd \"path with spaces/file.txt\")
    - After ensuring proper quoting, execute the command.
 
 Usage notes:
@@ -122,15 +122,70 @@ Usage notes:
   - It is very helpful if you write a clear, concise description of what this command does in 5-10 words.
   - If the output exceeds 30000 characters, output will be truncated before being returned to you.
   - VERY IMPORTANT: You MUST avoid using search commands like `find` and `grep`. Instead use ${globSearch.name}, ${grepSearch.name} to search. You MUST avoid read tools like `cat`, `head`, `tail`, and `ls`, and use ${fileRead.name}, ${fileBatchRead.name}, ${listDirectory.name} to read files.
-  - When issuing multiple commands, use the ';' or '&&' operator to separate them. DO NOT use newlines (newlines are ok in quoted strings).
   - Try to maintain your current working directory throughout the session by using absolute paths and avoiding usage of `cd`. You may use `cd` if the User explicitly requests it.
-    <good-example>
-    pytest /foo/bar/tests
-    </good-example>
-    <bad-example>
-    cd /foo/bar && pytest tests
-    </bad-example>
 """
+
+// Bash-specific guidelines (for Linux/macOS)
+private let BASH_SPECIFIC = """
+
+## Bash Shell Specifics:
+  - Use standard Unix commands (ls, grep, sed, awk, etc.)
+  - When issuing multiple commands, use the ';' or '&&' operator to separate them. DO NOT use newlines (newlines are ok in quoted strings).
+  - Path separator is forward slash (/)
+  - Examples:
+    - cd \"/Users/name/My Documents\" (correct)
+    - cd /Users/name/My Documents (incorrect - will fail)
+    - python \"/path/with spaces/script.py\" (correct)
+    - python /path/with spaces/script.py (incorrect - will fail)
+  <good-example>
+  pytest /foo/bar/tests
+  </good-example>
+  <bad-example>
+  cd /foo/bar && pytest tests
+  </bad-example>
+"""
+
+// PowerShell-specific guidelines (for Windows)
+private let POWERSHELL_SPECIFIC = """
+
+## Windows PowerShell Specifics:
+  - Use PowerShell cmdlets (Get-ChildItem, Copy-Item, Remove-Item, etc.)
+  - Path separator is backslash (\\) but forward slash (/) works in most cases
+  - Use semicolon (;) to chain commands
+  - Environment variables: use $env:VAR syntax (e.g., $env:USERPROFILE, $env:PATH)
+  - String quotes: use single quotes for literals, double quotes for expansion
+  - PowerShell supports pipes (|) and powerful object manipulation
+  - Examples:
+    - cd \"C:\\Program Files\\MyApp\" (correct)
+    - Set-Location \"C:\\Program Files\\MyApp\" (PowerShell native)
+    - Get-ChildItem -Path . -Recurse -Filter *.txt (find all txt files)
+    - $env:USERNAME (get username)
+    - (Get-Content file.txt) -replace 'old','new' | Set-Content file.txt (replace text)
+  - Common cmdlets:
+    - Get-ChildItem (alias: dir, ls): list directory contents
+    - Set-Location (alias: cd): change directory
+    - Copy-Item (alias: copy, cp): copy files
+    - Move-Item (alias: move, mv): move files
+    - Remove-Item (alias: del, rm): delete files
+    - Get-Content (alias: cat, type): display file contents
+    - New-Item: create files/directories
+  - PowerShell is case-insensitive but cmdlets use PascalCase by convention
+  <good-example>
+  python \"C:\\My Scripts\\test.py\"
+  Get-ChildItem -Path \"C:\\Projects\" -Recurse
+  </good-example>
+  <bad-example>
+  cd C:\\My Scripts; python test.py
+  </bad-example>
+"""
+
+// Generate tool description based on OS
+private let specificGuidelines = if (InfoUtils.os == "windows") {
+    POWERSHELL_SPECIFIC
+} else {
+    BASH_SPECIFIC
+}
+private let TOOL_DESCRIPTION = COMMON_GUIDELINES + specificGuidelines
 
 @tool[
     description: "${TOOL_DESCRIPTION}",
@@ -153,7 +208,11 @@ protected func shellExecute(path: String, command: String, description: Option<S
             InputUtils.lockTerminalInput()
             InputUtils.exitRawMode()
             try {
-                let exitCode = ShellUtils.executeInteractive([command], workDir: Path(path))
+                let exitCode = ShellUtils.executeInteractive(
+                    [command],
+                    workDir: Path(path),
+                    usePowerShellOnWindows: true
+                )
                 return "Interactive command finished with exit code ${exitCode}."
             } finally {
                 InputUtils.enterRawMode()
@@ -164,7 +223,8 @@ protected func shellExecute(path: String, command: String, description: Option<S
             let (exitCode, stdout, stderr) = ShellUtils.execute(
                 [command],
                 workDir: Path(path),
-                timeout: Duration.second * 180
+                timeout: Duration.second * 180,
+                usePowerShellOnWindows: true
             )
 
             if (exitCode == 0) {
