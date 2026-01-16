@@ -15,7 +15,7 @@
   target-dir = ""
   src-dir = ""
   output-type = "executable"
-  compile-option = "-Woff unused --static-libs --static-std --static --cfg \"ohos=false,enable_tree_sitter=true\""
+  compile-option = "-Woff unused --static-libs --static-std --static --cfg \"ohos=false,enable_tree_sitter=true,enable_cl100k_tokenizer=true\""
   override-compile-option = ""
   link-option = ""
 

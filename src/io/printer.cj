@@ -2,7 +2,7 @@ package cli.io
 
 import magic.core.agent.{AsyncAgentResponse, AgentResponse}
 
-import cli.core.plan.Plan
+import cli.core.plan.{ Plan, Task }
 import cli.core.config.CliConfig
 
 import std.fs.OpenMode

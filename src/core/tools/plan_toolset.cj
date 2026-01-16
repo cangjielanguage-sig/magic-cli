@@ -4,7 +4,7 @@ import magic.dsl.*
 import magic.prelude.*
 import magic.log.LogUtils
 
-import cli.core.plan.Plan
+import cli.core.plan.{ Plan, Task }
 import cli.core.config.CliConfig
 import cli.io.{InputUtils, PrintUtils, Confirmation, WithColor, AnsiColor, Theme}
 import cli.utils.*
@@ -23,15 +23,39 @@ public class PlanToolset {
     ]
     public func todoCreate(tasks: Array<String>): String {
         this.plan = Plan(tasks)
+        // TODO: why confirm here does not show the task ID?
         if (InputUtils.confirm(this.plan) == Confirmation.Deny) {
             return "User denied the plan"
         }
         this.plan.save()
-        return "Plan has been approved by user, ready to start execution."
+        return "Plan has been approved by user, ready to start execution. The following tasks are created:\n${plan.toString()}"
     }
 
     @tool[
-        description: "Review the current plan and the completion status of each task (TODO/DONE)."
+        description: "Breaks down a parent task into clear and actionable subtasks.",
+        parameters: {
+            todoId: "Id of the parent task that needs to be broken down into subtasks",
+            subtasks: "An array of strings, each item is a clear description of the subtask broken down from the parent task" 
+        }
+    ]
+    public func taskBreakDown(taskId: String, subtasks: Array<String>): String {
+        let parentTask: ?Task = this.plan.getTask(taskId)
+        if (parentTask.isNone()) {
+            return "Error: task with the task id ${taskId} is not found. Please check whether the todoId is correct."
+        }
+        for (subtask in subtasks) {
+            this.plan.addSubtask(subtask, taskId)
+        }
+        if (InputUtils.confirm(parentTask.getOrThrow()) == Confirmation.Deny) {
+            parentTask.getOrThrow().clearSubtasks()
+            return "User denied the subtasks"
+        }
+        this.plan.save()
+        return "Subtasks has been approved by user, ready to start execution. The current plan is in the following:\n${plan.toString()}"
+    }
+
+    @tool[
+        description: "Review the current plan, the completion status (TODO/DONE), and the task id of each task."
     ]
     public func todoReview(): String {
         if (this.plan.isEmpty()) {
@@ -41,19 +65,39 @@ public class PlanToolset {
     }
 
     @tool[
-        description: "Marks the task at the specified index as completed (DONE) and returns the current TODO List",
-        parameters: { taskIndex: "Index of the task to mark as complete (starting from 1)" }
+        description: "Marks the task with the specific task id as completed (DONE) and returns the current TODO List. If the task is the last subtask of the parent task, the parent task will also be marked as completed.",
+        parameters: { taskId: "Id of the task to mark as complete" }
     ]
-    public func todoMarkComplete(taskIndex: Int64): String {
-        if (taskIndex < 1 || taskIndex > this.plan.tasks.size) {
-            return "Error: Invalid task index ${taskIndex}."
-        } else if (this.plan.tasks[taskIndex-1].completed) {
-            return "Task ${taskIndex} is already completed."
+    public func taskMarkComplete(taskId: String): String {
+        let tasks = plan.getPathFromRootToTask(taskId)
+        if (tasks.isNone()) {
+            return "Error: cannot find the task with task id ${taskId}. Please check whether this task id exists in the plan."
         }
-        this.plan.tasks[taskIndex-1].markAsComplete()
-        this.plan.save()
+        let currentTask = tasks.getOrThrow()[tasks.getOrThrow().size - 1]
+        if (currentTask.completed) {
+            return "Task ${taskId} is already completed."
+        }
+        for (i in 0..tasks.getOrThrow().size) {
+            let task = tasks.getOrThrow()[tasks.getOrThrow().size - 1 - i]
+            task.markAsComplete()
+            var parentTaskComplete = true
+            if (i != tasks.getOrThrow().size - 1) {
+                let parentTask = tasks.getOrThrow()[tasks.getOrThrow().size - 2 - i]
+                for (task in parentTask.subtasks) {
+                    if (!task.completed) {
+                        parentTaskComplete = false
+                        break
+                    }
+                }
+                if (!parentTaskComplete) {
+                    break
+                }
+                parentTask.markAsComplete()
+            }
+        }
+        plan.save()
         PrintUtils.printPlan(this.plan)
         PrintUtils.printLine("")
-        return "Task ${taskIndex} has been completed. Current task list:\n${this.plan}"
+        return "Task ${taskId} has been completed. Current task list:\n${this.plan}"
     }
 }

@@ -4,12 +4,13 @@ import magic.log.LogUtils
 import magic.core.tool.ToolException
 
 import cli.core.config.CliConfig
-import cli.core.plan.Plan
+import cli.core.plan.{ Plan, Task }
 
 import std.collection.{map, enumerate, collectArray}
 import std.time.DateTime
 import std.sync.AtomicBool
 import std.deriving.Derive
+import std.collection.ArrayList
 
 @Derive[ToString, Equatable]
 protected enum Confirmation {
@@ -76,14 +77,30 @@ protected class InputUtils {
         }
     }
 
-    public static func confirm(plan: Plan): Confirmation {
-        let tasks: Array<String> = plan.tasks |>
-            map { task =>
-                "${'╰─'.withColor(AnsiColor.BRIGHT_BLACK)} ${task.description.withColor(AnsiColor.BOLD)}"
-            } |> collectArray
-        let footer = "💡 Plan has been created. Please confirm if you need to modify the plan. ʘ‿ʘ".withColor(Theme.HIGHLIGHT)
+    private static func showTaskTree(task: Task, indentLevel: Int64, outputTaskStringList: ArrayList<String>, indent!: Int64 = 2): Unit {
+        let descriptionCombo = task.taskId + " :: " + task.description
+        outputTaskStringList.add(" " * indentLevel * indent + "${'╰─'.withColor(AnsiColor.BRIGHT_BLACK)} ${descriptionCombo.withColor(AnsiColor.BOLD)}")
 
-        return confirm("Plan", "", String.join(tasks, delimiter: "\n"), footer: footer)
+        for (subtask in task.subtasks) {
+            showTaskTree(subtask, indentLevel + 1, outputTaskStringList, indent: indent)
+        }
+    }
+
+    public static func confirm(task: Task) {
+        let tasks = ArrayList<String>()
+        showTaskTree(task, 0, tasks)
+        let footer = "💡 Subtasks have been created. Please confirm if you need to modify the subtasks. ʘ‿ʘ".withColor(Theme.HIGHLIGHT)
+
+        return confirm("Subtasks", "", String.join(tasks.toArray(), delimiter: "\n"), footer: footer)
+    }
+
+    public static func confirm(plan: Plan): Confirmation {
+        let tasks = ArrayList<String>()
+        for (task in plan.topLevelTasks) {
+            showTaskTree(task, 0, tasks)
+        }
+        let footer = "💡 Plan has been created. Please confirm if you need to modify the plan. ʘ‿ʘ".withColor(Theme.HIGHLIGHT)
+        return confirm("Plan", "", String.join(tasks.toArray(), delimiter: "\n"), footer: footer)
     }
 
     public static func confirm(title: String, shortMessage: String, longMessage: String, footer!: Option<String> = None): Confirmation {

@@ -51,7 +51,10 @@ protected class ModelTokenLimits {
         ("google:gemini-2.5-flash-preview", 1024 * 1024),
         ("google:gemini-2.5-flash", 1024 * 1024),
         ("google:gemini-2.5-flash-lite", 1024 * 1024),
-        ("google:gemini-2.0-flash", 1024 * 1024)
+        ("google:gemini-2.0-flash", 1024 * 1024),
+
+        // OpenRouter models
+        ("openrouter:qwen/qwen3-coder-30b-a3b-instruct", 32 * 1024)
     ])
 
     public static func getInputLimit(model: String): Int64 {
@@ -94,7 +97,10 @@ protected class ModelTokenLimits {
 
         // DeepSeek models
         ("deepseek:deepseek-chat", 8 * 1024),
-        ("deepseek:deepseek-reasoner", 32 * 1024)
+        ("deepseek:deepseek-reasoner", 32 * 1024),
+
+        // OpenRouter models
+        ("openrouter:qwen/qwen3-coder-30b-a3b-instruct", 8 * 1024)
     ])
 
     public static func getOutputLimit(model: String): Int64 {
