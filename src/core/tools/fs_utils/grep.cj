@@ -59,7 +59,6 @@ private func getRipgrepPath(): Option<String> {
     } catch (e: Exception) {
         // Command not found, continue to fallback
     }
-
     return None
 }
 
@@ -69,16 +68,17 @@ private func getRipgrepPath(): Option<String> {
 private func grepWithRipgrep(pattern: String, path: Option<String>, include: Option<String>, rgPath: String): String {
     try {
         let rgCmd = ArrayList<String>([rgPath, "--line-number", "--with-filename", "--no-heading"])
-        for (dir in IGNORED_DIR) {
-            rgCmd.add("--glob='!${dir}'")
-        }
 
         // Add glob pattern if specified
         if (let Some(includePattern) <- include) {
             rgCmd.add("--glob='${includePattern}'")
         }
 
-        rgCmd.add("'${pattern}'")
+        for (dir in IGNORED_DIR) {
+            rgCmd.add("--glob='!**/${dir}/**'")
+        }
+
+        rgCmd.add("${pattern}")
 
         // Add search path (default to current directory)
         let searchPath = path ?? "."
@@ -87,7 +87,7 @@ private func grepWithRipgrep(pattern: String, path: Option<String>, include: Opt
         let command = String.join(rgCmd.toArray(), delimiter: " ")
         LogUtils.debug("[Run command] ${command}")
 
-        let (exitCode, stdOut, stdErr) = ShellUtils.execute(rgCmd.toArray(), workDir: CliConfig.cwd)
+        let (exitCode, stdOut, stdErr) = ShellUtils.execute(rgCmd.toArray(), workDir: CliConfig.cwd, usePowerShellOnWindows: true)
 
         LogUtils.debug("Status: ${exitCode}")
         if (exitCode == 0) {
