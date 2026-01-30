@@ -99,6 +99,36 @@ private func splitLine(line: String, width: Int64): Array<String> {
 }
 
 /**
+ * Wrap plain text for input display without borders or padding.
+ * Preserves empty lines and respects ANSI escape sequences for width.
+ *
+ * @param content The text content to wrap
+ * @param width Maximum display width for each line (default: 100)
+ * @return Wrapped content as a single string joined by newlines
+ */
+protected func wrapInput(content: String,
+                         width!: Int64 = DEFAULT_WIDTH): String {
+    let resultLines = ArrayList<String>()
+    let rawLines = content.split("\n")
+
+    if (rawLines.isEmpty()) {
+        return ""
+    }
+
+    for (line in rawLines) {
+        if (line.isEmpty()) {
+            // Preserve empty lines for accurate cursor positioning
+            resultLines.add("")
+            continue
+        }
+        for (subLine in splitLine(line, width)) {
+            resultLines.add(subLine)
+        }
+    }
+    return String.join(resultLines.toArray(), delimiter: '\n')
+}
+
+/**
  * Create a bordered text box containing the given content
  * @param content The text content to display in the box
  * @param width The width of the box in display characters (default: 100)
@@ -275,13 +305,13 @@ protected func wrapOptionList(options: Array<String>, selectedIndex: Int64): Str
 }
 
 /**
- * Calculate the cursor position within a wrapped and bordered text box
+ * Calculate the cursor position within wrapped input text
  * This is a critical function for readline_2 that determines where to position
  * the terminal cursor based on the logical cursor position in the input text
  *
  * The function handles:
  * - Converting logical cursor position to visual position within wrapped lines
- * - Accounting for box borders and padding characters
+ * - Accounting for wrapping width and prompt prefix
  * - Handling ANSI escape sequences that don't contribute to display width
  * - Adjusting for prefix text (like prompts)
  *
@@ -292,11 +322,9 @@ protected func wrapOptionList(options: Array<String>, selectedIndex: Int64): Str
  */
 func calculateCursorPos(inputState: InputState,
                         displayContext: DisplayContext): (Int64, Int64) {
-    let boxColor = AnsiColor.BRIGHT_BLACK
     // Use original text for cursor calculation (without color codes)
-    // Remove the top and bottom border lines, keep only content lines
     let text = inputState.getText()
-    let wrappedContent= wrapBox("${displayContext.prompt}${text}", withBorder: false)
+    let wrappedContent = wrapInput("${displayContext.prompt}${text}")
 
     let numOfReturnBeforeCursor = text.toRuneArray()[0..inputState.cursor] |>
         filter { rune => rune == r'\n' || rune == r'\r' } |>
@@ -310,7 +338,7 @@ func calculateCursorPos(inputState: InputState,
 
     // Process each content line to find cursor position
     for (i in 0..lines.size) {
-        let line = lines[i].replace(PAD, '')  // Remove padding characters
+        let line = lines[i]
         let lineRunes = removeAnsiEscape(line).toRuneArray()  // Remove ANSI sequences for width calculation
         let lineWidth = displayWidthOf(lineRunes)
         widthList.add(lineWidth)
@@ -327,8 +355,8 @@ func calculateCursorPos(inputState: InputState,
 
     // Find the row and column coordinates
     let (row, col) = findCoordinates(widthList, cursorWidth)
-    // Adjust for the left border width plus one space
-    return (row, col + displayWidthOf(VERTICAL_BORDER.withColor(boxColor)) + 1)
+    // Adjust for 1-based cursor column positioning
+    return (row, col + 1)
 }
 
 /**

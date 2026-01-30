@@ -585,7 +585,7 @@ public class Readline {
 
     /**
      * Render the current state following the original redraw pattern
-     * Uses existing drawing functions and box style with proper positioning
+     * Uses borderless wrapped input with proper positioning
      * Different colors are used in shell mode
      */
     private func render(
@@ -598,8 +598,7 @@ public class Readline {
         let currentText = inputState.getText()
         let isShellMode = inputState.isShellMode()
 
-        // Use different colors for shell mode
-        let boxColor = if (isShellMode) { AnsiColor.BRIGHT_YELLOW } else { AnsiColor.BRIGHT_BLACK }
+        let useInputBoxBorder = false
         let textColor = if (isShellMode) { AnsiColor.BRIGHT_GREEN } else { "" }
 
         // Apply colors to both prompt and text in shell mode
@@ -615,7 +614,11 @@ public class Readline {
             currentText
         }
 
-        var wrappedContent = wrapBox("${displayPrompt}${displayText}", boxColor: boxColor)
+        var wrappedContent = if (useInputBoxBorder) {
+            wrapBox("${displayPrompt}${displayText}")
+        } else {
+            wrapInput("${displayPrompt}${displayText}")
+        }
 
         // Append footnote if set
         if (let Some(footnote) <- this.footnote) {
@@ -631,9 +634,11 @@ public class Readline {
         )
 
         // Clear previous render (similar to original redraw logic)
-        if (!isFirst && displayContext.lastRenderedLines > 0) {
-            // Move up based on previous cursor position + 1
-            moveCursor(displayContext.lastRenderedLines, direction: Direction.Up)
+        if (!isFirst) {
+            if (displayContext.lastRenderedLines > 0) {
+                // Move up based on previous cursor position
+                moveCursor(displayContext.lastRenderedLines, direction: Direction.Up)
+            }
             moveCursor(col: 0)
             clearScreen(mode: ClearMode.AfterCursorScreen)
         }
@@ -659,27 +664,28 @@ public class Readline {
 
         // Move cursor to correct position (following original pattern)
         let totalLines = wrappedContent.lines().count()
-        let linesToMoveUp = totalLines - cursorRow - 2  // -2 like in original
+        let borderOffset = if (useInputBoxBorder) { 2 } else { 1 }
+        let linesToMoveUp = totalLines - cursorRow - borderOffset
         if (linesToMoveUp > 0) {
             moveCursor(linesToMoveUp, direction: Direction.Up)
         }
         moveCursor(col: cursorCol)
 
         // Store cursor row for next cycle (not total lines)
-        displayContext.lastRenderedLines = cursorRow + 1
+        let topOffset = if (useInputBoxBorder) { 1 } else { 0 }
+        displayContext.lastRenderedLines = cursorRow + topOffset
     }
 
     /**
      * Final render when input is complete (similar to DrawPhase.Last)
-     * Positions cursor at the bottom of the input box
+     * Positions cursor at the bottom of the input area
      * Uses shell mode colors if active
      */
     private func renderFinal(inputState: InputState, displayContext: DisplayContext) {
         let currentText = inputState.getText()
         let isShellMode = inputState.isShellMode()
 
-        // Use different colors for shell mode
-        let boxColor = if (isShellMode) { AnsiColor.BRIGHT_YELLOW } else { AnsiColor.BRIGHT_BLACK }
+        let useInputBoxBorder = false
         let textColor = if (isShellMode) { AnsiColor.BRIGHT_GREEN } else { "" }
 
         // Apply colors to both prompt and text in shell mode
@@ -695,14 +701,18 @@ public class Readline {
             currentText
         }
 
-        let wrappedContent = wrapBox("${displayPrompt}${displayText}", boxColor: boxColor)
+        let wrappedContent = if (useInputBoxBorder) {
+            wrapBox("${displayPrompt}${displayText}")
+        } else {
+            wrapInput("${displayPrompt}${displayText}")
+        }
 
         // Clear previous render
         if (displayContext.lastRenderedLines > 0) {
             moveCursor(displayContext.lastRenderedLines, direction: Direction.Up)
-            moveCursor(col: 0)
-            clearScreen(mode: ClearMode.AfterCursorScreen)
         }
+        moveCursor(col: 0)
+        clearScreen(mode: ClearMode.AfterCursorScreen)
 
         // Print the final content
         PrintUtils.printString(wrappedContent)
