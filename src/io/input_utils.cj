@@ -78,7 +78,7 @@ protected class InputUtils {
     }
 
     private static func showTaskTree(task: Task, indentLevel: Int64, outputTaskStringList: ArrayList<String>, indent!: Int64 = 2): Unit {
-        let descriptionCombo = task.taskId + " :: " + task.description
+        let descriptionCombo = task.description
         outputTaskStringList.add(" " * indentLevel * indent + "${'╰─'.withColor(AnsiColor.BRIGHT_BLACK)} ${descriptionCombo.withColor(AnsiColor.BOLD)}")
 
         for (subtask in task.subtasks) {

@@ -31,7 +31,7 @@ protected class PlainPrinter <: Printer {
     }
 
     private func printTask(task: Task, indentLevel!: Int64 = 0, indent!: Int64 = 2): Unit {
-        let descriptionCombo = task.taskId + " :: " + task.description
+        let descriptionCombo = task.description
         var line: String = ""
         if (task.completed) {
             line = " " * indentLevel * indent + "╰─ ✓ ${descriptionCombo}"
