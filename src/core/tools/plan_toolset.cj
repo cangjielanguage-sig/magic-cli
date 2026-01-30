@@ -23,7 +23,6 @@ public class PlanToolset {
     ]
     public func todoCreate(tasks: Array<String>): String {
         this.plan = Plan(tasks)
-        // TODO: why confirm here does not show the task ID?
         if (InputUtils.confirm(this.plan) == Confirmation.Deny) {
             return "User denied the plan"
         }

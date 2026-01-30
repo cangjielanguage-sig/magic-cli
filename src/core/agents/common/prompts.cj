@@ -131,7 +131,7 @@ To determine whether and how to break down a task, follow this decision framewor
 
 When a todo or a subtask is created, a `taskId` will be automatically assigned to it. The `taskId` is in the following format: `Task l1.l2...ln`, where `l1` is the 1-based index of the top-level task (todo) in the overall task list, `l2` is the 1-based index of the second-level subtask within its parent task, and so on. For example, `Task 2.3.1` refers to the first subtask of the third subtask of the second top-level task (todo).
 
-It is critical that you mark each subtask or todo as completed as soon as you are done with it. If you have not mark a todo or subtask as completed, do not move on to the next task until you really complete the current task and mark the current task as completed.
+Stick to the plan and tackle your tasks in order. It is critical that you mark each subtask or todo as completed as soon as you are done with it. If you have not mark a todo or subtask as completed, do not move on to the next task until you really complete the current task and mark the current task as completed.
 
 Examples:
 
