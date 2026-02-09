@@ -98,6 +98,19 @@ protected class CliConfig {
     }
 
     /**
+     * The archived snapshots for compacted conversations
+     */
+    public static prop conversationArchiveDir: Path {
+        get() {
+            let path = CliConfig.dotDir.join("conversation-archives")
+            if (!exists(path)) {
+                Directory.create(path, recursive: true)
+            }
+            return path
+        }
+    }
+
+    /**
      * User Rules Config
      */
     public static prop magicMarkdownPath: Path {

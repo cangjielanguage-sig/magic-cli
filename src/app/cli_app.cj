@@ -48,7 +48,7 @@ protected class CliApp {
             PrintUtils.printProcedureFailure("MCP Loading", failure: "Failed to load MCP servers, continuing without MCP tools")
         }
 
-        this.conversationManager = ConversationManager(Compactor())
+        this.conversationManager = ConversationManager(FileContextCompactor())
         this.customCommandManager = CustomCommandManager()
         this.customAgentManager = CustomAgentManager()
         this.tokenStatusManager = TokenStatusManager()

@@ -6,7 +6,7 @@ import magic.log.LogUtils
 
 import cli.io.PrintUtils
 import cli.core.config.CliConfig
-import cli.core.agents.Compactor
+import cli.core.agents.CliConversationCompactor
 
 import std.fs.{exists, Directory, Path, remove, FSException}
 import std.collection.*
@@ -19,9 +19,9 @@ protected class ConversationManager {
     public static let AUTO_SAVE_NAME = "last-conversation"
 
     protected let conversation = Conversation()
-    private let compactor: Compactor
+    private let compactor: CliConversationCompactor
 
-    public init(compactor: Compactor) {
+    public init(compactor: CliConversationCompactor) {
         this.compactor = compactor
     }
 
