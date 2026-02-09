@@ -13,8 +13,6 @@ import cli.core.model.CliModelManager
 import cli.core.model.ModelTokenLimits
 import cli.utils.buildTokenizer
 
-import std.fs.{canonicalize, Path}
-
 private let COMPACT_CONTEXT_PROMPT = """
 You are the component that summarizes internal chat history into a given structure.
 
@@ -88,7 +86,12 @@ const COMPACT_TOKEN_THRESHOLD = 0.7
 // The last 30% of the conversation will be preserved during compact
 const COMPACT_PRESERVE_THRESHOLD = 0.3
 
-public class Compactor <: ConversationCompactor {
+// This is a temporary interface that will be integrated into CangjieMagic later.
+public interface CliConversationCompactor <: ConversationCompactor {
+    func calculateCompactIndex(conversation: Conversation): Option<Int64>
+}
+
+public class Compactor <: CliConversationCompactor {
 
     private let tokenizer: Tokenizer
 
