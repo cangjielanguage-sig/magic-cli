@@ -51,8 +51,6 @@
   output-type = "executable"
 [package.package-configuration."magic.examples.mcp_client"]
   output-type = "executable"
-[package.package-configuration."magic.examples.mini_rag"]
-  output-type = "executable"
 [package.package-configuration."magic.examples.magic_agent"]
   output-type = "executable"
 
