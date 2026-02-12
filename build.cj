@@ -33,6 +33,22 @@ func checkStaticLinking(): Bool {
     }
 }
 
+func checkTreeSitterEnabled(): Bool {
+    try {
+        let toml = String.fromUtf8(File.readFrom("./cjpm.toml"))
+        let normalized = toml.replace(" ", "").replace("\t", "")
+        if (normalized.contains("enable_tree_sitter=true")) {
+            return true
+        }
+        if (normalized.contains("enable_tree_sitter=false")) {
+            return false
+        }
+        return true
+    } catch (e: FSException) {
+        return true
+    }
+}
+
 func compileStaticLib(sourceFile: String, libFile: String): Bool {
     let objectFile = sourceFile.replace(".c", ".o")
     if (launch("gcc", ["-c", "-Wall", "-Werror", sourceFile, "-o", objectFile]).wait() != 0) {
@@ -235,8 +251,13 @@ func stagePreBuild(): Int64 {
     }
 
     let staticLib = checkStaticLinking()
-    println("OS: ${OS}, ARCH: ${ARCH}, Static Link: ${staticLib}")
-    return buildFFI(staticLib) | buildSignatureExtractorFFI(staticLib)
+    let treeSitterEnabled = checkTreeSitterEnabled()
+    let signatureStatus = if (treeSitterEnabled) {
+        buildSignatureExtractorFFI(staticLib)
+    } else {
+        0
+    }
+    return buildFFI(staticLib) | signatureStatus
 }
 
 main(): Int64 {
