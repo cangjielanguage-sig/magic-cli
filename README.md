@@ -9,7 +9,7 @@
 - 📚 **文档检索** - 内置 RAG 系统，可查询 Cangjie 官方文档和代码示例
 - 🗂️ **上下文管理** - 智能对话压缩，保持长期会话效率
 - 💾 **对话持久化** - 支持保存和恢复对话会话，项目切换无缝衔接
-- 📝 **用户记忆** - 通过 MAGIC.md 文件自定义项目规则和上下文
+- 📝 **用户记忆** - 通过 AGENTS.md 文件自定义项目规则和上下文
 - ⚡ **自定义命令** - 支持用户定义 prompt 模板，固化常用工作流程
 - 🔄 **模型容错** - 智能模型切换，主模型失败时自动使用备用模型，确保服务连续性
 - 🚀 **一键构建** - 自动化项目构建和依赖管理
@@ -129,7 +129,7 @@ magic-cli/
 5. **首次使用提示**
    - 程序启动后会自动创建 `.magic-cli/` 目录存储配置和历史
    - 输入 `/help` 查看所有可用命令
-   - 可创建`.magic-cli/`目录下的 `MAGIC.md` 文件来自定义 AI 行为规则
+   - 可在项目根目录创建 `AGENTS.md` 文件来自定义 AI 行为规则
 
 ### 性能加速（可选推荐）
 
@@ -244,14 +244,15 @@ Magic-CLI 支持保存和恢复对话会话：
   ```
 
 ### 记忆管理
-- **`/memory`** - 查看当前目录下 MAGIC.md 文件的内容
+- **`/memory`** - 查看当前目录下 AGENTS.md 文件的内容
 
-MAGIC.md 是用户自定义规则文件，可以包含项目相关的上下文、编码规范或特殊指令。AI 会在处理请求时参考这些规则。
+AGENTS.md 是用户自定义规则文件，可以包含项目相关的上下文、编码规范或特殊指令。AI 会在处理请求时参考这些规则。
+该文件建议遵循 [agents.md 标准](https://agents.md/) 组织内容。
 
 **使用示例：**
 ```bash
 🔮 Agent > /memory
-📝 Current MAGIC.md content:
+📝 Current AGENTS.md content:
 ## 项目规范
 - 使用 4 空格缩进
 - 函数命名使用 camelCase
@@ -384,7 +385,7 @@ cjpm run --name cli --run-args "--subagent-dir .magic-cli/agents,/path/to/other/
 | 文件 | 位置 | 说明 |
 |------|------|------|
 | `.env` | 项目根目录 | 环境变量配置（API 密钥等）|
-| `MAGIC.md` | `.magic-cli/` | 用户自定义规则和上下文|
+| `AGENTS.md` | 项目根目录 | 用户自定义规则和上下文|
 | `settings.json` | `.magic-cli/` | MCP 服务器配置 |
 | `*.history` | `.magic-cli/conversation-history/` | 保存的对话记录 |
 

@@ -96,16 +96,16 @@ private func executeCommand(input: String, app: CliApp): Option<Bool> {
         case "/memory" | "memory" =>
             let userRules = CliConfig.userRules
             if (userRules.isEmpty()) {
-                PrintUtils.printLine("📝 No MAGIC.md file found in current directory")
-                PrintUtils.printLine("Create a MAGIC.md file in your project to set custom rules and app for Magic-cli to use.")
+                PrintUtils.printLine("📝 No AGENTS.md file found in current directory")
+                PrintUtils.printLine("Create an AGENTS.md file in your project root to set custom rules and context for Magic-cli.")
             } else {
-                PrintUtils.printLine("📝 Current MAGIC.md content:")
+                PrintUtils.printLine("📝 Current AGENTS.md content:")
                 PrintUtils.printLine(userRules)
             }
             return true
 
         case "/init" | "init" =>
-            initMagicFile()
+            initAgentsFile()
             return true
 
         case "/status" | "status" =>
