@@ -112,6 +112,10 @@ private func executeCommand(input: String, app: CliApp): Option<Bool> {
             app.tokenStatusManager.printStatus()
             return true
 
+        case "/models" | "models" =>
+            handleModelsCommand(app)
+            return true
+
        case _input where _input.startsWith("/mcp") =>
             app.mcpManager.handleCommand(input.split(" "), app.agent)
             return true

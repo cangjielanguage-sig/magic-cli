@@ -49,6 +49,15 @@ protected class InputUtils {
         }
     }
 
+    public static func getUserInputOrCancel(prompt!: Option<String> = None, withBox!: Bool = true): Option<String> {
+        isRequestingUserInput.store(true)
+        try {
+            return readline.readlineWithCancel(prompt ?? buildPrompt("🔮"), withBox: withBox)
+        } finally {
+            isRequestingUserInput.store(false)
+        }
+    }
+
     public static func isRequestingInput(): Bool {
         return isRequestingUserInput.load()
     }

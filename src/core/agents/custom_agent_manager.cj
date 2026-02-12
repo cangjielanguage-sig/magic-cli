@@ -57,6 +57,6 @@ protected class CustomAgentManager {
             PrintUtils.printLine("  • ${name.withColor(Theme.current.highlight)} - ${agent.description}")
         }
         PrintUtils.printLine("")
-        PrintUtils.printLine("Usage: /<agent-name> [arguments] <question in natural language>\n")
+        PrintUtils.printLine("Usage: @<agent-name> [arguments] <question in natural language>\n")
     }
 }
