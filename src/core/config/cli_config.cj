@@ -18,6 +18,7 @@ protected class CliConfig {
     public static const version = "0.1.3"
 
     private static const DOT_DIR_NAME = ".magic-cli"
+    private static const AGENTS_FILE_NAME = "AGENTS.md"
 
     private static var _dotDir: Option<Path> = None
 
@@ -113,9 +114,9 @@ protected class CliConfig {
     /**
      * User Rules Config
      */
-    public static prop magicMarkdownPath: Path {
+    public static prop agentsMarkdownPath: Path {
         get() {
-            CliConfig.cwd.join("MAGIC.md")
+            CliConfig.cwd.join(AGENTS_FILE_NAME)
         }
     }
 
@@ -208,12 +209,10 @@ protected class CliConfig {
 
     public static prop userRules: String {
         get() {
-            let ruleFile = magicMarkdownPath
-            if (exists(ruleFile)) {
-                String.fromUtf8(readToEnd(File(ruleFile, OpenMode.Read)))
-            } else {
-                ""
+            if (exists(agentsMarkdownPath)) {
+                return String.fromUtf8(readToEnd(File(agentsMarkdownPath, OpenMode.Read)))
             }
+            return ""
         }
     }
 
