@@ -83,6 +83,16 @@ protected class CliModelManager {
     // Session-level successful model memory (resets on restart)
     protected static var lastAvailableModel: Option<ChatModel> = None
 
+    /**
+     * Reset runtime caches so model changes take effect immediately.
+     */
+    protected static func resetRuntimeState(): Unit {
+        _model = None
+        _fastModel = None
+        _fallbackModels = []
+        lastAvailableModel = None
+    }
+
     protected static func getAllModels(): Array<ChatModel> {
         let models = ArrayList<ChatModel>()
         if (let Some(model) <- lastAvailableModel) {

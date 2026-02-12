@@ -9,6 +9,7 @@ import std.collection.ArrayList
     * Commands without subcommands have empty array
     */
 protected let BUILTIN_COMMANDS: ArrayList<(String, String, Array<String>)> = ArrayList([
+    ("models", "Configure provider and main model", []),
     ("help", "Show this help message", []),
     ("clear", "Clear conversation history", []),
     ("compact", "Compact the conversation history", []),

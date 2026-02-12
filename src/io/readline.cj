@@ -272,6 +272,8 @@ private func clearPreviousRender(lines: Int64) {
     }
 }
 
+private let READLINE_CANCEL_SENTINEL = "MAGIC_CLI_READLINE_ESC_CANCELLED"
+
 /**
  * Enhanced Readline implementation with improved UI and completion
  */
@@ -377,7 +379,8 @@ public class Readline {
         rune: Rune,
         inputState: InputState,
         completionState: CompletionState,
-        displayContext: DisplayContext
+        displayContext: DisplayContext,
+        cancelOnEsc!: Bool = false
     ): Option<String> {
         match (rune) {
             case r'\r' | r'\n' => // Enter
@@ -561,6 +564,9 @@ public class Readline {
                 return None
 
             case r'\u{1B}' => // ESC
+                if (cancelOnEsc) {
+                    return READLINE_CANCEL_SENTINEL
+                }
                 return None // Could be used to cancel completion or exit
 
             case _ => // Regular character
@@ -724,7 +730,7 @@ public class Readline {
     /**
      * Main readline function
      */
-    public func readline(prompt: String): Option<String> {
+    private func readlineInternal(prompt: String, cancelOnEsc!: Bool = false): Option<String> {
         try {
             // RawInputUtils.rawEnter()
 
@@ -743,9 +749,20 @@ public class Readline {
                     return None // EOF
                 }
 
-                let result = this.handleInput(rune, inputState, completionState, displayContext)
+                let result = this.handleInput(
+                    rune,
+                    inputState,
+                    completionState,
+                    displayContext,
+                    cancelOnEsc: cancelOnEsc
+                )
 
                 if (let Some(line) <- result) {
+                    if (cancelOnEsc && line == READLINE_CANCEL_SENTINEL) {
+                        inputState.clear()
+                        this.renderFinal(inputState, displayContext)
+                        return None
+                    }
                     // Final render to position cursor at bottom of input box (like DrawPhase.Last)
                     this.renderFinal(inputState, displayContext)
                     return line
@@ -759,6 +776,14 @@ public class Readline {
         } finally {
             // RawInputUtils.rawExit()
         }
+    }
+
+    public func readline(prompt: String): Option<String> {
+        return this.readlineInternal(prompt)
+    }
+
+    public func readlineWithCancel(prompt: String): Option<String> {
+        return this.readlineInternal(prompt, cancelOnEsc: true)
     }
 
     /**
@@ -775,6 +800,14 @@ public class Readline {
     public func readline(prompt: String, withBox!: Bool): Option<String> {
         if (withBox) {
             return this.readline(prompt)
+        } else {
+            return this.simpleReadLine(prompt)
+        }
+    }
+
+    public func readlineWithCancel(prompt: String, withBox!: Bool): Option<String> {
+        if (withBox) {
+            return this.readlineWithCancel(prompt)
         } else {
             return this.simpleReadLine(prompt)
         }
