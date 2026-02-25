@@ -12,6 +12,7 @@ import cli.core.config.CliConfig
 
 import std.collection.{map, collectArray, fold}
 import std.fs.{Path, File, Directory, remove, exists, FSException}
+import std.regex.Regex
 
 //----------------------------------------------------------------------------------
 // Read only tools
@@ -328,23 +329,23 @@ public class FSToolset {
         try {
             // Load the original file content
             let oldFileContent = String.fromUtf8(File.readFrom(filePath))
-
-            // Apply each edit sequentially
-            var currFileContent = oldFileContent
+            //Regex to normalize the line ending style to the file style to avoid failure due to CRLF/LF
+            let regex = Regex(#"\r?\n"#)
+            // Apply each edit sequentially 
+            let useCRLF = oldFileContent.contains("\r\n")
+            var currFileContent = regex.replaceAll(oldFileContent, "\n")
             for (edit in edits) {
-                let oldContent = edit.oldContent
-                let newContent = edit.newContent
+                var oldContent = regex.replaceAll(edit.oldContent, "\n")
+                var newContent = regex.replaceAll(edit.newContent, "\n")
                 if (!currFileContent.contains(oldContent)) {
-                    let hint = checkLineEndingMismatch(oldContent, currFileContent)
-                    PrintUtils.printToolFailure(
-                        "${toolName} (${filePath})",
-                        failure: "File does not contain the specified content. ${hint}"
-                    )
-                    return "Failed to edit. File ${filePath} does not contain the specified content '${oldContent}'. ${hint}"
+                    return "Failed to edit. File ${filePath} does not contain the specified content '${oldContent}'."
                 }
                 currFileContent = currFileContent.replace(oldContent, newContent)
             }
-
+            //Normalize the line ending style to the file style to avoid failure due to CRLF/LF
+            if(useCRLF) {
+                currFileContent = currFileContent.replace("\n", "\r\n")
+            }
             // Check if the content has changed
             let newFileContent = currFileContent
             if (oldFileContent == newFileContent) {
@@ -361,7 +362,7 @@ public class FSToolset {
             }
             // Write the modified content to the file
             File.writeTo(filePath, newFileContent.toArray())
-            return "File ${filePath} content modified successfully"
+            return "File ${filePath} content modified successfully."
         } catch (ex: FSException) {
             return "File path error or file is not readable/writable"
         } catch (ex: IllegalArgumentException) {
@@ -369,16 +370,4 @@ public class FSToolset {
         }
     }
 
-    /**
-    * Check if line ending mismatch exists between oldContent and fileContent
-    * Returns hint information without modifying content
-    */
-    private static func checkLineEndingMismatch(oldContent: String, fileContent: String): String {
-        if (fileContent.contains("\r\n") && !oldContent.contains("\r\n")) {
-            return "File uses Windows line endings (CRLF), but your content uses Unix (LF). Consider using \\r\\n instead of \\n."
-        } else if (!fileContent.contains("\r\n") && oldContent.contains("\r\n")) {
-            return "File uses Unix line endings (LF), but your content uses Windows (CRLF). Consider using \\n instead of \\r\\n."
-        }
-        return ""
-    }
 }
