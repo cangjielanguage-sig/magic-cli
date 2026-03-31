@@ -462,6 +462,11 @@ func identity<T>(x: T): T {
 
 本项目采用 [MIT 许可证](LICENSE) 开源。
 
+## 🔐 隐私与协议
+
+- **隐私声明**：[PRIVACY.md](./PRIVACY.md)
+- **用户协议**：[TERMS.md](./TERMS.md)
+
 ## 🙋‍♂️ 支持
 
 - 📖 [项目文档](docs/)

@@ -41,8 +41,22 @@ func printHelp(): Unit {
     PrintUtils.printLine("  --default-model-output-limit <limit>  Set the default output token limit for the model (default: 32 * 1024)")
     PrintUtils.printLine("  --disable-model-tool-call   Disable the model tool call (default: false)")
     PrintUtils.printLine("  --enable-lsp-tool    Enable LSP tools (default: false)")
+    PrintUtils.printLine("  --privacy          Print the Privacy Notice and exit")
+    PrintUtils.printLine("  --terms            Print the Terms of Service and exit")
     PrintUtils.printLine("  --version, -v        Print the version of magic-cli")
     PrintUtils.printLine("  --help, -h           Print this help message")
+}
+
+func printDocOrHint(title: String, pathStr: String): Unit {
+    if (exists(pathStr)) {
+        let content = readFile(Path(pathStr))
+        PrintUtils.printLine(content)
+    } else {
+        PrintUtils.printLine(title)
+        PrintUtils.printLine("")
+        PrintUtils.printLine("未在当前工作目录找到 `${pathStr}`。")
+        PrintUtils.printLine("如果你是从源码仓库运行，请在仓库根目录执行该命令；或直接打开该文件查看。")
+    }
 }
 
 /**
@@ -56,6 +70,8 @@ func parseArgsAndSetConfig(args: Array<String>): ParseArgsResult {
         Long("fallback-models", RequiredValue),
         Long("collect-data", NoValue),
         Long("sandbox", NoValue),
+        Long("privacy", NoValue),
+        Long("terms", NoValue),
         Full("language", r"l", RequiredValue),
         Long("subagent-dir", RequiredValue),
         Long("command-dir",  RequiredValue),
@@ -83,6 +99,14 @@ func parseArgsAndSetConfig(args: Array<String>): ParseArgsResult {
     }
     if (result.options.contains("version") || result.options.contains("v")) {
         PrintUtils.printLine(CliConfig.version)
+        return ParseArgsResult.Exit
+    }
+    if (result.options.contains("privacy")) {
+        printDocOrHint("Magic-CLI 隐私声明（Privacy Notice）", "./PRIVACY.md")
+        return ParseArgsResult.Exit
+    }
+    if (result.options.contains("terms")) {
+        printDocOrHint("Magic-CLI 用户协议（Terms of Service）", "./TERMS.md")
         return ParseArgsResult.Exit
     }
 
