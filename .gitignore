@@ -25,6 +25,7 @@ build-script-cache/
 .idea/
 *.swp
 *.swo
+.trae/
 
 # OS files
 .DS_Store
