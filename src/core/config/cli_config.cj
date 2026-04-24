@@ -112,6 +112,19 @@ protected class CliConfig {
     }
 
     /**
+     * The root path to store project skills
+     */
+    public static prop skillRoot: Path {
+        get() {
+            let path = CliConfig.dotDir.join("skills")
+            if (!exists(path)) {
+                Directory.create(path, recursive: true)
+            }
+            return path
+        }
+    }
+
+    /**
      * User Rules Config
      */
     public static prop agentsMarkdownPath: Path {

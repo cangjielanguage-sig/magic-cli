@@ -34,7 +34,8 @@ IMPORTANT: You must NEVER generate or guess URLs for the user unless you are con
         AgentAsTool(ReviewerAgent(), mode: SubAgentMode.WithContext),
         AgentAsTool(TestGeneratorAgent(), mode: SubAgentMode.WithContext),
         AgentAsTool(RefactoringAgent(), mode: SubAgentMode.WithContext)
-    ]
+    ],
+    skillRoot: CliConfig.skillRoot
 ]
 public class GeneralCodeAgent {
     @prompt(
