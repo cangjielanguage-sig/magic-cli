@@ -40,6 +40,11 @@ struct LSPResult <: Jsonable<LSPResult> {
     redef public static func getTypeSchema(): TypeSchema {
         TypeSchema.Obj([])
     }
+
+    // TODO: this is just a placeholder. Complete this later
+    public func validate(): ConstraintValidation {
+        ConstraintValidation.Pass    
+    }
 }
 
 /**
