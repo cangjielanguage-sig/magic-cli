@@ -43,3 +43,7 @@ test_examples/
 # External modules
 CangjieMagic/
 cj-lsp/
+
+claude.md
+.claude/
+design-docs/
