@@ -34,7 +34,7 @@ Thumbs.db
 # Temporary files
 *.tmp
 *.temp
-todo.md
+.magic-cli/todo.md
 
 # Test files
 test/
@@ -45,5 +45,4 @@ CangjieMagic/
 cj-lsp/
 
 claude.md
-.claude/
-design-docs/
+.claude/settings.local.json
