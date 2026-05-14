@@ -1,7 +1,7 @@
 package cli.app
 
 import magic.log.LogUtils
-import magic.core.agent.Agent
+import magic.core.agent.{Agent, AgentRequest, AsyncAgentResponse}
 import magic.core.model.ChatModel
 
 import cli.core.mcp.MCPConfigManager
@@ -17,7 +17,7 @@ import std.fs.{Path, exists, Directory, canonicalize}
 import std.collection.HashMap
 import std.sync.{Mutex, AtomicOptionReference}
 
-protected class CliApp {
+public class CliApp {
     private let mutex = Mutex()
     protected let agent: Agent
     protected let thinkIndicator = AtomicOptionReference<StatusIndicator>()
@@ -55,6 +55,19 @@ protected class CliApp {
 
         // Initialize event handlers and callbacks
         registerHooks(this)
+    }
+
+    public prop mainAgent: Agent {
+        get() { return this.agent }
+    }
+
+    public func runRecordableTask(prompt: String): AsyncAgentResponse {
+        PrintUtils.resetSubAgent()
+        let asyncResponse = this.agent.asyncChat(
+            AgentRequest(prompt, conversation: this.conversationManager.conversation)
+        )
+        let _ = asyncResponse.content  // block until done
+        return asyncResponse
     }
 
     func startThinkIndicator(message: String) {

@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(MAGIC_PATH=\"D:/projects/CangjieMagic\" cjpm build -i)",
+      "PowerShell(cjpm build *)",
+      "WebSearch",
+      "mcp__context7__resolve-library-id",
+      "mcp__context7__query-docs"
+    ]
+  }
+}

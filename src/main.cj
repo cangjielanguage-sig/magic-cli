@@ -3,7 +3,8 @@ package cli
 import magic.config.Config
 import magic.log.LogUtils
 
-import cli.core.config.CliConfig
+import cli.core.config.{CliConfig, ReplayMode}
+import cli.replay.ReplayRunner
 import cli.io.{InputUtils, PrintUtils}
 import cli.app.CliApp
 import cli.sandbox.startSandbox
@@ -50,6 +51,18 @@ func cliMain(args: Array<String>): Int64 {
 
     // Initialize the app context
     let app = CliApp()
+
+    // Handle record/replay modes before normal interactive/non-interactive flow
+    match (CliConfig.replayMode) {
+        case ReplayMode.Record =>
+            ReplayRunner.record(app, CliConfig.nonInteractivePrompt)
+            return 0
+        case ReplayMode.Replay =>
+            ReplayRunner.replay(app, CliConfig.traceName)
+            return 0
+        case ReplayMode.None => ()
+    }
+
     if (CliConfig.nonInteractive) {
         app.startNonInteractive(CliConfig.nonInteractivePrompt)
         return 0

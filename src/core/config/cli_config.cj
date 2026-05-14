@@ -11,6 +11,12 @@ import std.collection.{map, collectArray, ArrayList, filterMap, collectArrayList
 import std.time.DateTime
 import std.sort.*
 
+public enum ReplayMode {
+    | None
+    | Record
+    | Replay
+}
+
 protected class CliConfig {
     /**
      * The version of Magic Cli
@@ -244,7 +250,7 @@ protected class CliConfig {
                         info: FileInfo => if (info.isDirectory()) {
                             info.path
                         } else {
-                            None
+                            None<Path>
                         }
                     } |> collectArrayList
                 } catch (ex: Exception) {
@@ -285,6 +291,29 @@ protected class CliConfig {
      * Whether to enable LSP tools
      */
     public static var enableLSPTool: Bool = false
+
+    /**
+     * Replay mode: None | Record | Replay
+     */
+    public static var replayMode: ReplayMode = ReplayMode.None
+
+    /**
+     * Name of the trace to record or replay (default: "last")
+     */
+    public static var traceName: String = "last"
+
+    /**
+     * Directory for storing trace files
+     */
+    public static prop traceDir: Path {
+        get() {
+            let path = CliConfig.dotDir.join("traces")
+            if (!exists(path)) {
+                Directory.create(path, recursive: true)
+            }
+            return path
+        }
+    }
 
     public static func toString(): String {
         let strBuilder = StringBuilder()

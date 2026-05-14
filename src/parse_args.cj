@@ -5,7 +5,7 @@ import magic.log.LogUtils
 import magic.utils.readFile
 import magic.model.ModelManager
 
-import cli.core.config.{CliConfig, CliSettingManager}
+import cli.core.config.{CliConfig, CliSettingManager, ReplayMode}
 import cli.io.PrintUtils
 import cli.core.model.ModelTokenLimits
 
@@ -41,6 +41,8 @@ func printHelp(): Unit {
     PrintUtils.printLine("  --default-model-output-limit <limit>  Set the default output token limit for the model (default: 32 * 1024)")
     PrintUtils.printLine("  --disable-model-tool-call   Disable the model tool call (default: false)")
     PrintUtils.printLine("  --enable-lsp-tool    Enable LSP tools (default: false)")
+    PrintUtils.printLine("  --mode <mode>        Set the run mode: record | replay")
+    PrintUtils.printLine("  --trace-name <name>  Name of the trace to record/replay (default: last)")
     PrintUtils.printLine("  --version, -v        Print the version of magic-cli")
     PrintUtils.printLine("  --help, -h           Print this help message")
 }
@@ -69,7 +71,9 @@ func parseArgsAndSetConfig(args: Array<String>): ParseArgsResult {
         Long("default-model-input-limit", RequiredValue),
         Long("default-model-output-limit", RequiredValue),
         Long("disable-model-tool-call", NoValue),
-        Long("enable-lsp-tool", NoValue)
+        Long("enable-lsp-tool", NoValue),
+        Long("mode", RequiredValue),
+        Long("trace-name", RequiredValue)
     ]
     let result = try {
         parseArguments(args, argSpecs)
@@ -261,6 +265,24 @@ func parseArgsAndSetConfig(args: Array<String>): ParseArgsResult {
 
     if (result.options.contains("enable-lsp-tool")) {
         CliConfig.enableLSPTool = true
+    }
+
+    if (let Some(mode) <- result.options.get("mode")) {
+        match (mode.toAsciiLower().trimAscii()) {
+            case "record" =>
+                CliConfig.replayMode = ReplayMode.Record
+                CliConfig.auto = true
+                CliConfig.nonInteractive = true
+            case "replay" =>
+                CliConfig.replayMode = ReplayMode.Replay
+            case _ =>
+                PrintUtils.printLine("Unknown mode '${mode}'. Valid modes: record, replay")
+                return ParseArgsResult.Exit
+        }
+    }
+
+    if (let Some(name) <- result.options.get("trace-name")) {
+        CliConfig.traceName = name.trimAscii()
     }
 
     // Save the settings if any change

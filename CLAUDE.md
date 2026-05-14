@@ -4,6 +4,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 This project implements a code agent application named Magic CLI, written in the Cangjie programming language.
 
+## Cangjie Language Reference
+
+When unsure about Cangjie standard library APIs (std.fs, std.collection, stdx.encoding.json, etc.), use the context7 MCP tool to look up the documentation. The Cangjie language docs are available via context7.
+
 ## Build and Run
 
 ```bash
