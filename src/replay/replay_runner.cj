@@ -41,8 +41,10 @@ public class ReplayRunner {
         PrintUtils.printLine("[record] Trace saved → ${path}")
     }
 
-    // Replay a recorded trace: validate each tool result and report divergence.
-    // Does NOT run the agent live — it only re-executes tools.
+    // Dry-run replay: re-execute each recorded tool call and report where results diverge.
+    // Does NOT resume live model calls at the divergence point (Stage 1 only).
+    // NOTE: Tool calls with side effects (file writes, shell commands) ARE re-executed.
+    // Start from a clean environment to avoid state pollution between runs.
     public static func replay(app: CliApp, traceName: String): Unit {
         // Load trace
         let traceOpt = TraceStore.load(traceName)
@@ -61,10 +63,23 @@ public class ReplayRunner {
         // Validate each tool step
         let result = Replayer.validate(trace, app.mainAgent)
 
+        // Count skipped steps (sub-agents) for accurate summary
+        var skippedCount: Int64 = 0
+        for ((_, _, r) in result.stepResults) {
+            match (r) {
+                case StepResult.Skipped(_) => skippedCount++
+                case _ => ()
+            }
+        }
+
         // Print summary
         PrintUtils.printLine("")
         if (result.allCached) {
-            PrintUtils.printLine("[replay] Result: all ${trace.steps.size} step(s) cache-hit — no divergence detected")
+            if (skippedCount > 0) {
+                PrintUtils.printLine("[replay] Result: all checked step(s) cache-hit — ${skippedCount} sub-agent step(s) skipped (sub-agent changes not detected)")
+            } else {
+                PrintUtils.printLine("[replay] Result: all ${trace.steps.size} step(s) cache-hit — no divergence detected")
+            }
         } else if (result.systemPromptChanged) {
             PrintUtils.printLine("[replay] Result: system prompt changed — full re-run needed")
         } else if (let Some(idx) <- result.firstDivergenceIndex) {

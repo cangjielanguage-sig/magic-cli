@@ -20,12 +20,25 @@ public func computeHash(s: String): String {
 
 // Extract the text between <tagName>...</tagName>.
 // Returns None if the open tag is not found.
+// Uses the LAST occurrence of the close tag so that tool results containing
+// the close tag string (e.g., from reading HTML/XML files) are not truncated.
 public func extractTagContent(content: String, tagName: String): Option<String> {
     let open = "<${tagName}>"
     let close = "</${tagName}>"
     if (let Some(start) <- content.indexOf(open, 0)) {
         let contentStart = start + open.size
-        if (let Some(end) <- content.indexOf(close, contentStart)) {
+        // Find the last occurrence of the close tag
+        var lastEnd: Option<Int64> = None
+        var searchFrom = contentStart
+        while (true) {
+            if (let Some(pos) <- content.indexOf(close, searchFrom)) {
+                lastEnd = Some(pos)
+                searchFrom = pos + 1
+            } else {
+                break
+            }
+        }
+        if (let Some(end) <- lastEnd) {
             return content[contentStart..end].trimAscii()
         }
         // No close tag — take everything after the open tag

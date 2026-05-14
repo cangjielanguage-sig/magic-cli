@@ -337,6 +337,13 @@ protected class CliConfig {
         strBuilder.append("  subagentDirs: ${CliConfig.subagentDirs}\n")
         strBuilder.append("  commandDirs: ${CliConfig.commandDirs}\n")
         strBuilder.append("  enableLSPTool: ${CliConfig.enableLSPTool}\n")
+        let replayModeStr = match (CliConfig.replayMode) {
+            case ReplayMode.None => "None"
+            case ReplayMode.Record => "Record"
+            case ReplayMode.Replay => "Replay"
+        }
+        strBuilder.append("  replayMode: ${replayModeStr}\n")
+        strBuilder.append("  traceName: ${CliConfig.traceName}\n")
         return strBuilder.toString()
     }
 

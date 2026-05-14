@@ -4,7 +4,7 @@ import magic.log.LogUtils
 
 import cli.core.config.CliConfig
 
-import std.fs.{Path, File, exists, Directory, remove}
+import std.fs.{Path, File, exists, Directory}
 import stdx.encoding.json.JsonValue
 
 public class TraceStore {

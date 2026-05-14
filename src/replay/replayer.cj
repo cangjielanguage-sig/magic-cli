@@ -39,8 +39,12 @@ public struct ReplayResult {
     }
 }
 
-// Replays a recorded trace by re-executing each tool call and comparing result hashes.
-// Does NOT make model calls. Reports where the trajectory diverges.
+// Dry-run validator: re-executes each recorded tool call and compares result hashes.
+// Reports where the trajectory diverges from the recording.
+//
+// NOTE: This is Stage 1 (validation only). It does NOT resume live model calls from
+// the divergence point. That is the full incremental replay described in design.md §5
+// and is HIGH priority future work — see todo.md "Go Live from Divergence".
 public class Replayer {
     public static func validate(trace: AgentTrace, agent: Agent): ReplayResult {
         // Check system prompt
