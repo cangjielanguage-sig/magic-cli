@@ -5,7 +5,16 @@
       "PowerShell(cjpm build *)",
       "WebSearch",
       "mcp__context7__resolve-library-id",
-      "mcp__context7__query-docs"
+      "mcp__context7__query-docs",
+      "PowerShell(cjpm run *)",
+      "Bash(cjpm build *)",
+      "PowerShell($env:MAGIC_PATH; Get-ChildItem D:\\\\projects\\\\CangjieMagic -ErrorAction SilentlyContinue | Select-Object -First 5)",
+      "PowerShell(New-Item *)",
+      "Bash(git add *)",
+      "Bash(git commit -m ' *)",
+      "Bash(git show *)",
+      "Bash(git ls-tree *)",
+      "Bash(git commit *)"
     ]
   }
 }
