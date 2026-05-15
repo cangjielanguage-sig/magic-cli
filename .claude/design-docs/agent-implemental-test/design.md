@@ -462,11 +462,13 @@ Multi-turn sessions (where the user sends multiple prompts in sequence) are out 
 
 This is the entire core. The implementation is small because most of the work happens in mechanisms that already exist (tool dispatch, conversation history management) — the replay layer just wraps them.
 
-**Stage 2 — multi-agent (AgentAsTool).**
-- In this project, the only multi-agent mechanism is `AgentAsTool(...)`, which wraps a sub-agent as a tool of the parent agent. The sub-agent has its own tool loop and its own trace.
-- Extend trace recording to be hierarchical: a sub-agent call at the parent level contains a nested trace of the sub-agent's own steps.
-- On replay, when re-executing a sub-agent call, recursively replay the sub-agent's inner trace. The parent still compares only the final result hash; the inner replay provides the efficiency savings within the sub-agent's own steps.
-- Divergence propagation: if the sub-agent's replay diverges internally, the final result may differ, which causes divergence at the parent level too.
+**Stage 2 — multi-agent (AgentAsTool). ✓ Implemented.**
+- Sub-agent calls are now fully validated rather than skipped.
+- `ToolStepRecord` gains a `subTrace: Option<AgentTrace>` field. During recording, a `SubAgentEndEvent` handler in `replay_runner.cj` collects `(ChatRound, Agent)` pairs in call order; `Recorder.extract` recursively builds a nested `AgentTrace` per sub-agent step and embeds it as `subTrace`.
+- `AgentAsTool` gained a `public prop innerAgent: Agent` to expose the wrapped sub-agent to the replayer.
+- On replay, `Replayer.validateStep` for `isSubAgentCall=true` steps: casts the tool to `AgentAsTool`, retrieves `innerAgent`, and calls `Replayer.validate(subTrace, innerAgent)` recursively. Returns `CacheHit` if the sub-trace validates clean, or `Diverged("sub-agent diverged at step N")` if any internal step diverges.
+- Old Stage 1 traces (no `subTrace` field) fall back to `Skipped` with a prompt to re-record — backward compatible.
+- Test D (ExplorerAgent) confirms: changes to files read inside the sub-agent are now detected and propagated to the parent as `DIVERGED`.
 
 **Stage 3 — user-judged divergence exemptions.**
 

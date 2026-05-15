@@ -69,9 +69,9 @@ public struct ToolStepRecord {
     public let toolArgsJson: String   // JSON-encoded arguments object
     public let toolResult: String     // full raw text returned by the tool (pre-compaction)
     public let toolResultHash: String // double polynomial hash of normalize(toolResult)
-    public let isSubAgentCall: Bool   // true if this step is an AgentAsTool invocation
-    // Stage 2: add modelOutput: String (full assistant message, needed for live resume)
-    // Stage 2: add subTrace: Option<AgentTrace> (nested trace for sub-agent steps)
+    public let isSubAgentCall: Bool          // true if this step is an AgentAsTool invocation
+    public let subTrace: Option<AgentTrace>  // nested trace for sub-agent steps; None for regular tools
+    // Go Live (future): add modelOutput: String (full assistant message, needed for live resume)
 }
 
 // The complete trace for one agent run (one task prompt → tool loop → final answer).
@@ -138,7 +138,7 @@ The Magic DSL's tool-loop records each model output and tool result in a `ChatRo
 
 **Fix**: `Recorder.buildRecord` re-invokes each tool directly using the recorded args to obtain the pre-compaction raw result. This makes the recorder and replayer symmetric — both hash `normalize(tool.invoke(args).content)`. For tools that cannot be safely re-invoked (sub-agents, or tools whose side effects have already been applied), the recorder falls back to the observed content from `chatRound.steps`.
 
-**Sub-agent steps** (Stage 2): When a step is an `AgentAsTool` call, set `isSubAgentCall=true` and skip re-invocation to avoid expensive model calls. In Stage 2, we will recursively extract a sub-trace from the sub-agent's `AsyncAgentResponse` using `SubAgentEndEvent` from `hooks.cj`.
+**Sub-agent steps** (Stage 2, implemented): When a step is an `AgentAsTool` call, `isSubAgentCall` is set to `true` and re-invocation is skipped. Before `runRecordableTask` is called in `replay_runner.cj`, a `SubAgentEndEvent` handler collects `(ChatRound, Agent)` pairs in the order sub-agents complete. `Recorder.extract` iterates over parent steps; for each `AgentAsTool` step, it consumes the next collected capture and recursively calls itself to build a nested `AgentTrace`, stored as `step.subTrace`. Old Stage 1 traces (no `subTrace` key) are backward-compatible: `fromJsonValue` returns `None` for the missing key, and the replayer falls back to `Skipped` with a prompt to re-record.
 
 ### System prompt hash
 
@@ -203,19 +203,15 @@ For sub-agent steps (`isSubAgentCall == true`): recursively call `Replayer.run(s
 
 ---
 
-## 8. Multi-Agent Handling (Stage 2)
+## 8. Multi-Agent Handling (Stage 2) — Implemented
 
 In this project, sub-agents appear as `AgentAsTool(SubAgent(), mode: SubAgentMode.WithContext)` in the parent's tools list. From the parent tool-loop's perspective, the sub-agent is just a tool that takes a question string and returns a string.
 
-**During recording**: When the parent's tool-loop calls a sub-agent tool, we hook into `SubAgentEndEvent` (already fired by `hooks.cj`) to get the sub-agent's `AsyncAgentResponse`. We recursively call `Recorder.extract` to build a nested `AgentTrace` and attach it as `step.subTrace`.
+**During recording**: A `SubAgentEndEvent` handler is registered in `replay_runner.cj` before the task runs. Each time a sub-agent completes, the handler appends `(evt.agentResponse.execution.chatRound, evt.agent)` to a list. Sub-agents in this project run sequentially (not in parallel), so the list is in the same order as the parent tool-loop steps. `Recorder.extract` iterates parent steps; for each step where the tool is an `AgentAsTool`, it consumes the next `(ChatRound, Agent)` pair and calls itself recursively to produce the nested `AgentTrace`, stored as `step.subTrace`. `AgentAsTool` exposes a `public prop innerAgent: Agent` (added to the CangjieMagic library) that gives the replayer access to the sub-agent's `Agent` instance.
 
-**During replay**: When we reach a step with `isSubAgentCall == true`, we:
-1. Find the matching sub-agent instance from `agent.toolManager`
-2. Call `Replayer.run(step.subTrace!, subAgent)` recursively
-3. Get the replay's final result
-4. Compare its hash to `step.toolResultHash`
+**During replay**: When `Replayer.validateStep` encounters a step with `isSubAgentCall=true` and a `Some(subTrace)`, it casts the tool to `AgentAsTool` (via `t as AgentAsTool`, which returns `Option<AgentAsTool>` in Cangjie), retrieves `innerAgent`, then calls `Replayer.validate(subTrace, innerAgent)` recursively. If the sub-replay returns `allCached`, the parent step is `CacheHit`. If the sub-replay detects `systemPromptChanged` or a divergence at step N, the parent step is `Diverged("sub-agent system prompt changed")` or `Diverged("sub-agent diverged at step N")` respectively. Old Stage 1 traces (no `subTrace` field) fall back to `Skipped("no sub-trace -- re-record to enable Stage 2 validation")`.
 
-Divergence inside a sub-agent's trace means the sub-agent's final output may differ, which causes divergence at the parent level — exactly as the design doc prescribes.
+Divergence inside a sub-agent's trace propagates upward to the parent level, enabling full recursive change detection across the agent call tree.
 
 The DAG structure from the design doc maps onto this as a call tree rather than a general DAG. Sub-agents in this project are not shared across parallel invocations (each `AgentAsTool(SubAgent())` call creates a fresh sub-agent instance), so the DAG is effectively a tree.
 
@@ -272,8 +268,8 @@ Record and replay modes print structured output so the user can see what's happe
 ```
 [record] Task: "fix the bug in foo.cj"
 [record] Trace name: my-task
-[record] Captured 3 tool step(s)
-[record] Trace saved → .magic-cli/traces/my-task.json
+[record] Captured 3 tool step(s) (1 sub-agent with nested trace)
+[record] Trace saved -> .magic-cli/traces/my-task.json
 ```
 
 ```
@@ -287,7 +283,7 @@ Record and replay modes print structured output so the user can see what's happe
 [replay] step 1: DIVERGED   (fileBatchRead)
 [replay] step 2: cache hit  (shellExecute)
 
-[replay] Result: first divergence at step 1 — re-run from that step onward
+[replay] Result: first divergence at step 1 -- re-run from that step onward
 ```
 
 Note: Step-by-step byte counts and per-step hash values are not printed in the current implementation — only the cache-hit / DIVERGED / skipped status. Live resumption from the divergence point is not yet implemented (see todo.md [HIGH]).
@@ -303,3 +299,4 @@ Note: Step-by-step byte counts and per-step hash values are not printed in the c
 | Are `steps: MessageList` entries structured or raw text? | High — needed to extract tool calls for recording | **Resolved** — entries are `Message` objects with `.role` and `.content`. With `enableModelToolCall=true`: no XML tags, role is the discriminator. See §6. |
 | Does `agent.toolManager` expose a way to invoke a tool by name with JSON args? | High — needed for re-execution in recorder and replayer | **Resolved** — `agent.toolManager.findTool(name)` returns `Option<Tool>`; `tool.invoke(args).content` invokes it. Args are deserialized from JSON via `JsonValue.fromStr(argsJson).asObject().getFields()`. |
 | LLM compaction of tool results — does `ChatRound.steps` store raw or compacted results? | High — if compacted, recorder and replayer hash different things | **Resolved** — steps store the compacted form. Fix: recorder re-invokes the tool directly to get the raw result. See §6. |
+| Sub-agent `ChatRound` + `Agent` available from `SubAgentEndEvent`? | High — needed for Stage 2 recursive capture | **Resolved** — `SubAgentEndEvent` provides `evt.agentResponse.execution.chatRound` and `evt.agent`; `AgentAsTool.innerAgent` (new prop, added to CangjieMagic) exposes the wrapped sub-agent instance to the replayer. |

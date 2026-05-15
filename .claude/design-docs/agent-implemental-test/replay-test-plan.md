@@ -69,8 +69,8 @@ The scripts add `src/replay/dummy_test.cj`, run replay, then remove it on exit (
 ## Test C — Sub-agent Capture and Replay (ReviewerAgent)
 
 ### Purpose
-Verify that sub-agent calls are correctly captured in the trace (`isSubAgentCall=true`) and
-correctly skipped during Stage 1 replay.
+Verify that sub-agent calls are captured in the trace with an embedded `subTrace` and are
+recursively validated (not skipped) during Stage 2 replay.
 
 ### Run
 ```bash
@@ -83,32 +83,30 @@ ReviewerAgent — giving a mix of one regular tool step and one sub-agent step.
 
 **Expected output (record):**
 ```
-[record] Captured 2 tool step(s)
+[record] Captured 2 tool step(s) (1 sub-agent with nested trace)
 ```
 
 **Expected output (replay):**
 ```
 [replay] step 0: cache hit  (listDirectory)
-[replay] step 1: skipped    (ReviewerAgent) — sub-agent — skipped to avoid model calls
-[replay] Result: all checked step(s) cache-hit — 1 sub-agent step(s) skipped (sub-agent changes not detected)
+[replay] step 1: cache hit  (ReviewerAgent)
+[replay] Result: all 2 step(s) cache-hit -- no divergence detected
 ```
 
 ### Pass criteria
-- Trace file has at least one step with `"isSubAgentCall": true` (checked by the script)
-- Regular steps show `cache hit`
-- Sub-agent step shows `skipped (sub-agent)`
-- Summary mentions `sub-agent step(s) skipped`
+- Trace file has at least one step with `"isSubAgentCall": true` and a `"subTrace"` field (checked by the script)
+- All steps (including ReviewerAgent) show `cache hit`
+- Summary reports `all N step(s) cache-hit`
 
 ---
 
-## Test D — Stage 1 Limitation: Sub-agent Changes Not Detected (ExplorerAgent)
+## Test D — Stage 2 Positive: Sub-agent Internal Changes Are Detected (ExplorerAgent)
 
 ### Purpose
-Intentional negative test. Records a task delegated entirely to ExplorerAgent, then modifies
-a file that ExplorerAgent would have read, then replays. Stage 1 skips sub-agent steps, so
-**no divergence is reported** — even though the environment changed.
-
-This confirms the Stage 1 limitation and motivates Stage 2 (nested sub-agent trace recording).
+Verify that Stage 2 recursive validation propagates divergence from inside a sub-agent to
+the parent. Records a task delegated entirely to ExplorerAgent, modifies a file that
+ExplorerAgent read, then replays. The sub-agent's internal `fileBatchRead` step diverges,
+which causes the parent `ExplorerAgent` step to report `DIVERGED`.
 
 ### Run
 ```bash
@@ -120,23 +118,28 @@ Prompt (`tests/replay/prompt-d.txt`): asks ExplorerAgent to explain the `src/rep
 The script appends a sentinel comment to `replayer.cj` between record and replay, then removes
 it in cleanup (`trap EXIT` / `try/finally`).
 
+**Expected output (record):**
+```
+[record] Captured 1 tool step(s) (1 sub-agent with nested trace)
+```
+
 **Expected output (replay, after modifying replayer.cj):**
 ```
-[replay] step 0: skipped    (ExplorerAgent) — sub-agent — skipped to avoid model calls
-[replay] Result: all checked step(s) cache-hit — 1 sub-agent step(s) skipped (sub-agent changes not detected)
+[replay] step 0: DIVERGED   (ExplorerAgent)
+[replay] Result: first divergence at step 0 -- re-run from that step onward
 ```
 
 ### Pass criteria
-- Replay reports no divergence despite `replayer.cj` having changed
-- Summary says `sub-agent changes not detected`
-- This is the **expected** (passing) outcome — it confirms Stage 1 behaves as designed
+- Trace file contains a `"subTrace"` field (checked by the script)
+- Replay reports `DIVERGED` for the ExplorerAgent step
+- Summary reports first divergence at step 0
+- The divergence is caused by the sentinel change inside the sub-agent's nested trace
 
 ---
 
 ## What We Are NOT Testing Here
 
 - Live resumption from divergence (deferred — see todo.md [HIGH] item)
-- Sub-agent nested trace recording and validation (Stage 2)
 - System prompt change detection (harder to trigger without rebuilding)
 - Multi-turn sessions
 

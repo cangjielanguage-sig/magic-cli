@@ -1,18 +1,25 @@
 # Open Questions / Future Work
 
-## [HIGH] Go Live from Divergence (Stage 1 completion)
+## [DONE] Stage 2 — Recursive Sub-Agent Trace Recording and Validation
 
-**Problem:** The current `--mode replay` is a dry-run validator only. It re-executes tool calls and reports WHERE the trajectory diverges, but does not resume live model calls from that point. This means the user must manually re-run the full task after identifying the divergence step. The core incremental value — skipping unchanged early steps and resuming from the divergence — is not yet delivered.
+`ToolStepRecord.subTrace: Option<AgentTrace>` is recorded via `SubAgentEndEvent` + recursive `Recorder.extract`. `Replayer.validate` recurses into `subTrace` using `AgentAsTool.innerAgent`. Backward-compatible with Stage 1 traces (missing `subTrace` key → `Skipped`). Confirmed by Tests C and D (Test D now detects divergence from a file change inside ExplorerAgent).
 
-**What the design requires (design.md §5):** At divergence, reconstruct the conversation history from recorded model outputs + re-executed tool results, then call `asyncChat(conversation: history)` to continue live from that step. This requires storing `modelOutput` in each `ToolStepRecord`.
+---
 
-**Implementation sketch:**
-- Add `modelOutput: String` to `ToolStepRecord` (the full assistant message text including `<thought>` and `<action>` blocks)
-- In `Recorder.buildRecord`, store `msg.content` as `modelOutput` (the raw assistant message before tag extraction)
-- Add `Replayer.replayLive(trace, agent)` that builds `conversation_so_far` from recorded model outputs + re-executed results, detects divergence, then calls `agent.asyncChat(conversation: conversation_so_far)` to resume
-- Verify that `asyncChat(conversation: X)` supports a pre-built mid-run history (see architecture.md §7 Approach A vs B)
+## [HIGH] Go Live from Divergence
 
-**Current workaround:** After `--mode replay` identifies the divergence step, manually run the full task with `--prompt`. Not a blocker for initial testing but limits the feature's value.
+**Full design**: `go-live-design.md`
+
+**Problem:** The current `--mode replay` is a dry-run validator only. It re-executes tool calls and reports WHERE the trajectory diverges, but does not resume live model calls from that point. The core incremental value — skipping unchanged early steps and resuming from the divergence — is not yet delivered.
+
+**Key design decisions (see go-live-design.md for full detail):**
+- Add `modelOutput: String` to `ToolStepRecord` — the raw assistant message needed to reconstruct conversation history
+- `Replayer.replayLive`: walk steps, accumulate `(modelOutput, actualResult)` history; at divergence, call `go_live(agent, history)`
+- Sub-agent divergence: Phase 1 = Option A (re-run sub-agent from scratch, compare output); Phase 2 = Option B (recursive live replay from sub-agent's own divergence point)
+- Parallel sub-agents: forward design with `roundIndex` grouping (implement when Magic CLI adds parallel tool-call support)
+- Critical prerequisite: prototype `asyncChat(conversation: prebuiltHistory)` — Approach A; fall back to manual tool-loop (Approach B) if unsupported
+
+**Current workaround:** After `--mode replay` identifies the divergence step, manually re-run the full task with `--prompt`.
 
 ---
 
