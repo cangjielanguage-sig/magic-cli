@@ -48,6 +48,7 @@ public func extractTagContent(content: String, tagName: String): Option<String> 
 }
 
 // One recorded tool call and its result.
+// For sub-agent calls, subTrace holds the nested trace (Stage 2); None means old Stage-1 trace.
 public struct ToolStepRecord {
     public let index: Int64
     public let toolName: String
@@ -55,6 +56,7 @@ public struct ToolStepRecord {
     public let toolResult: String     // full text returned by the tool
     public let toolResultHash: String // hash of toolResult for fast comparison
     public let isSubAgentCall: Bool
+    public let subTrace: Option<AgentTrace>  // nested sub-agent trace (Stage 2)
 
     public init(
         index!: Int64,
@@ -62,7 +64,8 @@ public struct ToolStepRecord {
         toolArgsJson!: String,
         toolResult!: String,
         toolResultHash!: String,
-        isSubAgentCall!: Bool
+        isSubAgentCall!: Bool,
+        subTrace!: Option<AgentTrace> = None
     ) {
         this.index = index
         this.toolName = toolName
@@ -70,6 +73,7 @@ public struct ToolStepRecord {
         this.toolResult = toolResult
         this.toolResultHash = toolResultHash
         this.isSubAgentCall = isSubAgentCall
+        this.subTrace = subTrace
     }
 
     public func toJsonValue(): JsonValue {
@@ -80,6 +84,9 @@ public struct ToolStepRecord {
         jo.put("toolResult", JsonString(toolResult))
         jo.put("toolResultHash", JsonString(toolResultHash))
         jo.put("isSubAgentCall", JsonBool(isSubAgentCall))
+        if (let Some(t) <- subTrace) {
+            jo.put("subTrace", t.toJsonValue())
+        }
         return jo
     }
 
@@ -90,13 +97,22 @@ public struct ToolStepRecord {
         let toolResult = jsonGetString(json, "toolResult").getOrDefault { "" }
         let toolResultHash = jsonGetString(json, "toolResultHash").getOrDefault { "" }
         let isSubAgentCall = jsonGetBool(json, "isSubAgentCall").getOrDefault { false }
+        let subTrace: Option<AgentTrace> = if (let Some(v) <- jsonGetValue(json, "subTrace")) {
+            match (v.kind()) {
+                case JsonKind.JsObject => Some(AgentTrace.fromJsonValue(v))
+                case _ => None
+            }
+        } else {
+            None
+        }
         return ToolStepRecord(
             index: index,
             toolName: toolName,
             toolArgsJson: toolArgsJson,
             toolResult: toolResult,
             toolResultHash: toolResultHash,
-            isSubAgentCall: isSubAgentCall
+            isSubAgentCall: isSubAgentCall,
+            subTrace: subTrace
         )
     }
 }

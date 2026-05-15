@@ -18,15 +18,21 @@ import stdx.encoding.json.JsonValue
 // With enableModelToolCall=false (text mode), the observation is wrapped in
 // <observation>...</observation> and the action is a ```json...``` markdown block.
 // Both formats are handled by trying tag extraction first and falling back to raw content.
+//
+// subCaptures: (ChatRound, Agent) pairs collected by SubAgentEndEvent handlers, in the
+// same order as the sub-agent calls appear in chatRound. Each sub-agent step consumes
+// one entry and embeds a recursively extracted AgentTrace (Stage 2).
 public class Recorder {
     public static func extract(
         chatRound: ChatRound,
         taskPrompt: String,
-        agent: Agent
+        agent: Agent,
+        subCaptures!: ArrayList<(ChatRound, Agent)> = ArrayList<(ChatRound, Agent)>()
     ): AgentTrace {
         let systemPromptHash = computeHash(agent.systemPrompt)
         let records = ArrayList<ToolStepRecord>()
         var stepIndex: Int64 = 0
+        var subCaptureIdx: Int64 = 0
 
         var pendingAction: Option<String> = None
 
@@ -43,7 +49,12 @@ public class Recorder {
                 // Observation step: try XML tag first (text mode), then use raw content (tool-call mode)
                 let obsContent = extractTagContent(content, "observation") ?? content.trimAscii()
                 if (let Some(actionJson) <- pendingAction) {
-                    if (let Some(record) <- buildRecord(stepIndex, actionJson, obsContent, agent)) {
+                    // Consume the next sub-capture if this action is a sub-agent call
+                    let subCapOpt = peekSubCapture(actionJson, agent, subCaptures, subCaptureIdx)
+                    if (subCapOpt.isSome()) {
+                        subCaptureIdx++
+                    }
+                    if (let Some(record) <- buildRecord(stepIndex, actionJson, obsContent, agent, subCapOpt)) {
                         records.add(record)
                         stepIndex++
                     }
@@ -55,7 +66,7 @@ public class Recorder {
 
         // Warn about orphaned action (action with no following observation)
         if (let Some(_) <- pendingAction) {
-            LogUtils.error("[record] Orphaned action at end of chatRound — step dropped")
+            LogUtils.error("[record] Orphaned action at end of chatRound -- step dropped")
         }
 
         let recordedAt = DateTime.now().format("yyyy-MM-dd'T'HH:mm:ss")
@@ -68,13 +79,38 @@ public class Recorder {
         )
     }
 
+    // Returns the next sub-capture entry if the action targets a sub-agent tool,
+    // without advancing the index (caller increments after confirming isSome).
+    private static func peekSubCapture(
+        actionJson: String,
+        agent: Agent,
+        subCaptures: ArrayList<(ChatRound, Agent)>,
+        idx: Int64
+    ): Option<(ChatRound, Agent)> {
+        try {
+            let cleanJson = stripCodeFences(actionJson)
+            let parsed = JsonValue.fromStr(cleanJson)
+            let toolName = jsonGetString(parsed, "name").getOrDefault { "" }
+            if (toolName.isEmpty()) { return None }
+            if (let Some(t) <- agent.toolManager.findTool(toolName)) {
+                if (t is AgentAsTool && idx < subCaptures.size) {
+                    return subCaptures[idx]
+                }
+            }
+        } catch (_: Exception) { }
+        return None
+    }
+
     // Parse one action+observation pair into a ToolStepRecord.
     // Strips ```json...``` code fences before JSON parsing (text mode wraps JSON in fences).
+    // subCapture: if this is a sub-agent step, contains the sub-agent's ChatRound and Agent
+    // for recursive sub-trace extraction (Stage 2).
     private static func buildRecord(
         index: Int64,
         actionJson: String,
         obsContent: String,
-        agent: Agent
+        agent: Agent,
+        subCapture: Option<(ChatRound, Agent)>
     ): Option<ToolStepRecord> {
         try {
             let cleanJson = stripCodeFences(actionJson)
@@ -118,6 +154,16 @@ public class Recorder {
                 }
             }
 
+            // For sub-agent steps, recursively extract the nested trace (Stage 2).
+            var subTrace: Option<AgentTrace> = None
+            if (isSubAgent) {
+                if (let Some((subRound, subAgent)) <- subCapture) {
+                    subTrace = Some(Recorder.extract(subRound, "", subAgent))
+                } else {
+                    LogUtils.debug("[record] step ${index}: sub-agent '${toolName}' -- no capture, Stage 1 fallback")
+                }
+            }
+
             let hash = computeHash(ToolResultNormalizer.normalize(toolName, rawResult))
             return ToolStepRecord(
                 index: index,
@@ -125,7 +171,8 @@ public class Recorder {
                 toolArgsJson: argsJson,
                 toolResult: rawResult,
                 toolResultHash: hash,
-                isSubAgentCall: isSubAgent
+                isSubAgentCall: isSubAgent,
+                subTrace: subTrace
             )
         } catch (ex: Exception) {
             LogUtils.error("[record] step ${index}: failed to parse action '${actionJson}': ${ex.message}")
@@ -133,7 +180,7 @@ public class Recorder {
         }
     }
 
-    // Strip ```lang ... ``` code fences — text mode wraps the action JSON in markdown fences.
+    // Strip ```lang ... ``` code fences -- text mode wraps the action JSON in markdown fences.
     private static func stripCodeFences(s: String): String {
         let trimmed = s.trimAscii()
         if (trimmed.startsWith("```")) {

@@ -1,6 +1,7 @@
 package cli.replay
 
 import magic.core.agent.Agent
+import magic.tool.AgentAsTool
 import magic.log.LogUtils
 
 import cli.io.PrintUtils
@@ -11,8 +12,8 @@ import stdx.encoding.json.JsonValue
 // Result of replaying a single step.
 public enum StepResult {
     | CacheHit
-    | Diverged(String)  // carries the actual result
-    | Skipped(String)   // reason (e.g. "sub-agent", "tool not found")
+    | Diverged(String)  // carries the actual result or divergence description
+    | Skipped(String)   // reason (e.g. "no sub-trace -- re-record to enable Stage 2")
     | Error(String)
 }
 
@@ -40,11 +41,12 @@ public struct ReplayResult {
 }
 
 // Dry-run validator: re-executes each recorded tool call and compares result hashes.
+// Sub-agent steps with embedded sub-traces are validated recursively (Stage 2).
 // Reports where the trajectory diverges from the recording.
 //
-// NOTE: This is Stage 1 (validation only). It does NOT resume live model calls from
-// the divergence point. That is the full incremental replay described in design.md §5
-// and is HIGH priority future work -- see todo.md "Go Live from Divergence".
+// NOTE: Stage 2 validates sub-agent internal steps but does NOT resume live model
+// calls from the divergence point. That is the full incremental replay described
+// in design.md and is HIGH priority future work -- see todo.md "Go Live from Divergence".
 public class Replayer {
     public static func validate(trace: AgentTrace, agent: Agent): ReplayResult {
         // Check system prompt
@@ -92,9 +94,30 @@ public class Replayer {
     }
 
     private static func validateStep(step: ToolStepRecord, agent: Agent): StepResult {
-        // Skip sub-agent re-execution to avoid expensive model calls
         if (step.isSubAgentCall) {
-            return StepResult.Skipped("sub-agent -- skipped to avoid model calls")
+            // Stage 2: recursively validate the nested sub-agent trace.
+            if (let Some(subTrace) <- step.subTrace) {
+                if (let Some(t) <- agent.toolManager.findTool(step.toolName)) {
+                    if (let Some(aat) <- (t as AgentAsTool)) {
+                        let subResult = Replayer.validate(subTrace, aat.innerAgent)
+                        if (subResult.allCached) {
+                            return StepResult.CacheHit
+                        } else if (subResult.systemPromptChanged) {
+                            return StepResult.Diverged("sub-agent system prompt changed")
+                        } else {
+                            let idx = subResult.firstDivergenceIndex.getOrDefault { 0 }
+                            return StepResult.Diverged("sub-agent diverged at step ${idx}")
+                        }
+                    } else {
+                        return StepResult.Error("'${step.toolName}' is not an AgentAsTool")
+                    }
+                } else {
+                    return StepResult.Error("sub-agent tool '${step.toolName}' not found")
+                }
+            } else {
+                // No sub-trace: recorded with Stage 1 (pre-Stage 2) -- fall back to skip.
+                return StepResult.Skipped("no sub-trace -- re-record to enable Stage 2 validation")
+            }
         }
 
         // Look up tool

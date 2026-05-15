@@ -1,10 +1,15 @@
 package cli.replay
 
+import magic.core.agent.Agent
+import magic.core.message.ChatRound
+import magic.interaction.*
 import magic.log.LogUtils
 
 import cli.app.CliApp
 import cli.core.config.CliConfig
 import cli.io.PrintUtils
+
+import std.collection.ArrayList
 
 // Entry point for --mode record and --mode replay.
 public class ReplayRunner {
@@ -20,6 +25,14 @@ public class ReplayRunner {
         PrintUtils.printLine("[record] Task: \"${taskPrompt}\"")
         PrintUtils.printLine("[record] Trace name: ${traceName}")
 
+        // Collect sub-agent (ChatRound, Agent) pairs in call order via SubAgentEndEvent.
+        // These are used by Recorder to embed nested sub-traces (Stage 2).
+        let subCaptures = ArrayList<(ChatRound, Agent)>()
+        EventHandlerManager.global.addHandler { evt: SubAgentEndEvent =>
+            let subRound = evt.agentResponse.execution.chatRound
+            subCaptures.add((subRound, evt.agent))
+        }
+
         // Run the agent and get the response
         let response = app.runRecordableTask(taskPrompt)
 
@@ -31,18 +44,23 @@ public class ReplayRunner {
 
         // Extract the trace from the completed chat round
         let chatRound = response.execution.chatRound
-        let trace = Recorder.extract(chatRound, taskPrompt, app.mainAgent)
+        let trace = Recorder.extract(chatRound, taskPrompt, app.mainAgent, subCaptures: subCaptures)
 
-        PrintUtils.printLine("[record] Captured ${trace.steps.size} tool step(s)")
+        var subAgentCount: Int64 = 0
+        for (step in trace.steps) {
+            if (step.subTrace.isSome()) { subAgentCount++ }
+        }
+        PrintUtils.printLine("[record] Captured ${trace.steps.size} tool step(s) (${subAgentCount} sub-agent with nested trace)")
 
         // Save to disk
         TraceStore.save(trace, traceName)
         let path = TraceStore.tracePath(traceName)
-        PrintUtils.printLine("[record] Trace saved → ${path}")
+        PrintUtils.printLine("[record] Trace saved -> ${path}")
     }
 
     // Dry-run replay: re-execute each recorded tool call and report where results diverge.
-    // Does NOT resume live model calls at the divergence point (Stage 1 only).
+    // Sub-agent steps with embedded sub-traces are validated recursively (Stage 2).
+    // Sub-agent steps without sub-traces (Stage 1 traces) are skipped with a warning.
     // NOTE: Tool calls with side effects (file writes, shell commands) ARE re-executed.
     // Start from a clean environment to avoid state pollution between runs.
     public static func replay(app: CliApp, traceName: String): Unit {
@@ -63,7 +81,7 @@ public class ReplayRunner {
         // Validate each tool step
         let result = Replayer.validate(trace, app.mainAgent)
 
-        // Count skipped steps (sub-agents) for accurate summary
+        // Count skipped steps (Stage 1 sub-agent steps without sub-trace)
         var skippedCount: Int64 = 0
         for ((_, _, r) in result.stepResults) {
             match (r) {
@@ -76,14 +94,14 @@ public class ReplayRunner {
         PrintUtils.printLine("")
         if (result.allCached) {
             if (skippedCount > 0) {
-                PrintUtils.printLine("[replay] Result: all checked step(s) cache-hit — ${skippedCount} sub-agent step(s) skipped (sub-agent changes not detected)")
+                PrintUtils.printLine("[replay] Result: all checked step(s) cache-hit -- ${skippedCount} sub-agent step(s) skipped (re-record to enable Stage 2 validation)")
             } else {
-                PrintUtils.printLine("[replay] Result: all ${trace.steps.size} step(s) cache-hit — no divergence detected")
+                PrintUtils.printLine("[replay] Result: all ${trace.steps.size} step(s) cache-hit -- no divergence detected")
             }
         } else if (result.systemPromptChanged) {
-            PrintUtils.printLine("[replay] Result: system prompt changed — full re-run needed")
+            PrintUtils.printLine("[replay] Result: system prompt changed -- full re-run needed")
         } else if (let Some(idx) <- result.firstDivergenceIndex) {
-            PrintUtils.printLine("[replay] Result: first divergence at step ${idx} — re-run from that step onward")
+            PrintUtils.printLine("[replay] Result: first divergence at step ${idx} -- re-run from that step onward")
         }
     }
 }
