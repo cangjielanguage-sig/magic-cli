@@ -468,18 +468,37 @@ This is the entire core. The implementation is small because most of the work ha
 - On replay, when re-executing a sub-agent call, recursively replay the sub-agent's inner trace. The parent still compares only the final result hash; the inner replay provides the efficiency savings within the sub-agent's own steps.
 - Divergence propagation: if the sub-agent's replay diverges internally, the final result may differ, which causes divergence at the parent level too.
 
-**Stage 3 — sandboxed reset (v1).**
+**Stage 3 — user-judged divergence exemptions.**
+
+Even with a clean environment (Stage 4 below), some tool results change on every run for reasons that have nothing to do with the user's edit: elapsed time in a benchmark, minor disk-activity noise in a stat call, a randomly-assigned port number. These are *external* non-determinism — not caused by the replay mechanism itself — so the normalizer deliberately does not suppress them (see `result-normalizer-design.md`, Category 2). They show up as DIVERGED, the user inspects the diff and judges them irrelevant, and must do so again on the next replay.
+
+Stage 3 closes this loop with a permission mechanism that mirrors Claude Code's "always allow this tool" flow:
+
+- When a step is reported as DIVERGED, the runner prompts the user interactively before continuing:  
+  `Step N (listDirectory) diverged — only disk free space changed. Treat this as noise in future replays? [y/N]`
+- If the user accepts, the exemption is persisted to `.magic-cli/replay-exemptions.json`, keyed by `(toolName, divergencePattern)` (where the pattern describes the class of difference, not a specific value).
+- On subsequent replays, a DIVERGED step is checked against the exemptions file before being reported. A matching exemption downgrades it to a silent cache hit.
+- The user is only asked once per divergence pattern. Thereafter, the judgment is applied automatically — the same UX as Claude Code's tool-permission memory.
+
+Important constraints:
+- Exemptions are user-owned and editable. The system never grants an exemption on its own.
+- An exemption is pattern-matched, not value-matched — it covers all future instances of the same class of change (e.g., "disk free space line in listDirectory"), not just the specific value seen during the first judgment.
+- The DIVERGED status is always logged, even for exempted steps. Exemptions affect whether the replay *stops and reports* divergence, not whether it *detects* it.
+- Exemptions do not override the normalizer — they are a complementary, user-controlled layer on top of it.
+
+This mechanism is appropriate at Stage 3 (after multi-agent coverage in Stage 2) because: the more steps a replay covers, the more noise sources accumulate, and the more valuable it is to amortize the user's judgment across runs. Sandboxed reset (Stage 4) reduces environment noise but cannot eliminate external non-determinism entirely; exemptions remain useful after Stage 4.
+
+**Stage 4 — sandboxed reset (v1).**
 - Move to container-based execution.
 - Eliminates the silent-corruption failure mode from skipped manual resets.
 
-**Stage 4 — optional enrichments.**
+**Stage 5 — optional enrichments.**
 - Diagnostic output explaining *why* a divergence occurred (which file changed, which tool drifted).
 - Caching of cross-iteration metadata to speed up rapid edit cycles.
-- User annotations for "this change shouldn't invalidate" overrides (advisory only — see notes on soundness below).
 
 ---
 
-## 11. A Note on Soundness
+## 12. A Note on Soundness
 
 The design's correctness rests on the two facts in section 2 being literally true:
 
@@ -496,13 +515,13 @@ Future work could explore tightening "which changes should actually invalidate a
 
 - **Counterfactual ablation.** At a step marked divergent, swap the changed content back to its original value and re-call the model once. If the output is the same, the change didn't actually affect this step, and the cache can be recovered. This is causally sound because it really runs the model; the cost is one extra model call, so it fits best as an on-demand operation — the user explicitly asks the system to "confirm" whether a given divergence is real.
 - **Judge subagent.** Use a separate model as a judge that looks at the changed content and the step's model output, and decides whether the change influenced the decision. Much cheaper than ablation, but it's another model making an inference, so it can be wrong. Use it only as a *diagnostic signal* to surface to the user, never as a direct cache decision. A natural pairing is to use the judge to rank candidate divergences and feed the most suspicious ones to ablation.
-- **User annotations.** Let users record durable rules like "edits to file X never affect steps that haven't viewed it," and have the system honor them when narrowing invalidations. This puts judgment in the hands of the person who knows the system best, rather than letting the runner guess.
+- **User-judged exemptions.** Let users record durable judgments about divergence patterns they've inspected and decided are noise (see Stage 3 in the roadmap). This puts judgment in the hands of the person who knows the task best, without requiring the system to guess. The bar for an exemption is that the user has actually seen the diff and decided it's irrelevant — not that the diff looks small.
 
 These are optimizations, not core mechanisms. The current design works correctly without them; introducing any of them requires keeping the same bar — no silent corruption.
 
 ---
 
-## 12. Summary
+## 13. Summary
 
 The design follows from two facts:
 

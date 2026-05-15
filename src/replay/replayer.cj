@@ -119,7 +119,7 @@ public class Replayer {
         }
 
         // Compare
-        let actualHash = computeHash(actualResult)
+        let actualHash = computeHash(ToolResultNormalizer.normalize(step.toolName, actualResult))
         if (actualHash == step.toolResultHash) {
             return StepResult.CacheHit
         } else {
