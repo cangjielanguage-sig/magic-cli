@@ -44,13 +44,13 @@ public struct ReplayResult {
 //
 // NOTE: This is Stage 1 (validation only). It does NOT resume live model calls from
 // the divergence point. That is the full incremental replay described in design.md §5
-// and is HIGH priority future work — see todo.md "Go Live from Divergence".
+// and is HIGH priority future work -- see todo.md "Go Live from Divergence".
 public class Replayer {
     public static func validate(trace: AgentTrace, agent: Agent): ReplayResult {
         // Check system prompt
         let currentHash = computeHash(agent.systemPrompt)
         if (currentHash != trace.systemPromptHash) {
-            PrintUtils.printLine("[replay] System prompt changed — all steps would diverge from step 0")
+            PrintUtils.printLine("[replay] System prompt changed -- all steps would diverge from step 0")
             return ReplayResult(
                 systemPromptChanged: true,
                 firstDivergenceIndex: Some(0),
@@ -75,9 +75,9 @@ public class Replayer {
                         firstDivergence = Some(step.index)
                     }
                 case StepResult.Skipped(reason) =>
-                    PrintUtils.printLine("[replay] step ${step.index}: skipped    (${step.toolName}) — ${reason}")
+                    PrintUtils.printLine("[replay] step ${step.index}: skipped    (${step.toolName}) -- ${reason}")
                 case StepResult.Error(msg) =>
-                    PrintUtils.printLine("[replay] step ${step.index}: error      (${step.toolName}) — ${msg}")
+                    PrintUtils.printLine("[replay] step ${step.index}: error      (${step.toolName}) -- ${msg}")
                     if (firstDivergence.isNone()) {
                         firstDivergence = Some(step.index)
                     }
@@ -94,7 +94,7 @@ public class Replayer {
     private static func validateStep(step: ToolStepRecord, agent: Agent): StepResult {
         // Skip sub-agent re-execution to avoid expensive model calls
         if (step.isSubAgentCall) {
-            return StepResult.Skipped("sub-agent — skipped to avoid model calls")
+            return StepResult.Skipped("sub-agent -- skipped to avoid model calls")
         }
 
         // Look up tool
