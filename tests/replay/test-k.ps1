@@ -16,6 +16,8 @@ Write-Host "Scenario : 4 skills loaded in order; naming-guide.md (skill 3) gains
 Write-Host "Expected : skills 1-2 cache-hit; skill 3 DIVERGED; go-live applies updated rules."
 Write-Host ""
 
+# Pre-test restore: undo any leftover mutation from a previously interrupted run.
+git checkout -- $skillFile 2>$null
 $originalSkill = [System.IO.File]::ReadAllText((Resolve-Path $skillFile).Path)
 
 try {

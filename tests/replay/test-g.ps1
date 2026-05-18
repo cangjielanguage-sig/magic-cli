@@ -17,6 +17,8 @@ Write-Host "Scenario : agent reads skill file then reviews code; skill body gain
 Write-Host "Expected : step 0 (skill read) DIVERGED; go-live applies updated rules."
 Write-Host ""
 
+# Pre-test restore: undo any leftover mutation from a previously interrupted run.
+git checkout -- $skillFile 2>$null
 $originalSkill = [System.IO.File]::ReadAllText((Resolve-Path $skillFile).Path)
 
 try {

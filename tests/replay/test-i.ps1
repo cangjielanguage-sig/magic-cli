@@ -15,6 +15,8 @@ Write-Host "Scenario : agent runs line-stats.ps1; script is modified to add byte
 Write-Host "Expected : tool result DIVERGED; go-live re-runs updated script."
 Write-Host ""
 
+# Pre-test restore: undo any leftover mutation from a previously interrupted run.
+git checkout -- $toolScript 2>$null
 $originalScript = [System.IO.File]::ReadAllText((Resolve-Path $toolScript).Path)
 
 try {
@@ -37,7 +39,8 @@ Get-ChildItem src\replay\*.cj | ForEach-Object {
     "$($_.Name): $lines lines, $bytes bytes"
 } | Sort-Object
 '@
-    Set-Content -Path $toolScript -Value $mutatedScript -Encoding utf8
+    $utf8NoBom = [System.Text.UTF8Encoding]::new($false)
+    [System.IO.File]::WriteAllText((Resolve-Path $toolScript).Path, $mutatedScript, $utf8NoBom)
 
     # ── Phase 2: Replay ───────────────────────────────────────────────────────
     Write-Host ""

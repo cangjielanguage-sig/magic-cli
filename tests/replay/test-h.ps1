@@ -17,6 +17,8 @@ Write-Host "Scenario : record task with current AGENTS.md; append sentinel line;
 Write-Host "Expected : 'System prompt changed' reported; zero cache-hits; full re-run."
 Write-Host ""
 
+# Pre-test restore: undo any leftover mutation from a previously interrupted run.
+git checkout -- $agentsMd 2>$null
 $originalAgentsMd = [System.IO.File]::ReadAllText((Resolve-Path $agentsMd).Path)
 
 try {

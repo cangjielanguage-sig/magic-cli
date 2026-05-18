@@ -16,6 +16,8 @@ Write-Host "Scenario : record 4-file analysis, modify the last file (trace_store
 Write-Host "Expected : first N-1 steps cache-hit, last step DIVERGED, go-live produces answer."
 Write-Host ""
 
+# Pre-test restore: undo any leftover mutation from a previously interrupted run.
+git checkout -- $mutatedFile 2>$null
 $originalMutated = [System.IO.File]::ReadAllText((Resolve-Path $mutatedFile).Path)
 
 try {

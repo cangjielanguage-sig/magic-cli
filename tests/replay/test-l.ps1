@@ -16,6 +16,8 @@ Write-Host "Scenario : 4 skills loaded in order; complexity-limits.md (skill 4) 
 Write-Host "Expected : skills 1-3 cache-hit; skill 4 DIVERGED; go-live applies updated rules."
 Write-Host ""
 
+# Pre-test restore: undo any leftover mutation from a previously interrupted run.
+git checkout -- $skillFile 2>$null
 $originalSkill = [System.IO.File]::ReadAllText((Resolve-Path $skillFile).Path)
 
 try {
