@@ -24,9 +24,9 @@ The savings vs. a full re-run are proportional to how many early steps cache-hit
 
 ---
 
-## 2. Required Data Structure Addition
+## 2. Required Data Structure Additions
 
-The current `ToolStepRecord` is missing two fields needed for go-live:
+Two structures need new fields for go-live. The current `ToolStepRecord` is missing:
 
 ```cangjie
 public struct ToolStepRecord {
@@ -64,6 +64,9 @@ invocation.
 `toolResult` (raw, re-invoked) continues to be used for hash comparison -- both recorder
 and replayer re-invoke the tool to get the pre-compaction result, keeping them symmetric.
 `toolResultObserved` is used only when building the conversation history for go-live.
+
+**`AgentTrace` requires no new fields for conversation-level compaction** — see §6.3 for
+why `CompactionEvent` is not needed in the current single-task scope.
 
 ---
 
@@ -426,32 +429,24 @@ trace stores both fields; go-live uses `toolResultObserved`, hashing uses `toolR
 
 #### Conversation-Level Compaction (`FileContextCompactor`)
 
-When the *total conversation* grows beyond the context window, the Magic DSL's
-`FileContextCompactor` summarizes the oldest messages into a compact block. The model
-at step k may have been reasoning over a compacted earlier context, not the full history.
+`FileContextCompactor` summarizes completed `ChatRound` objects — it fires AFTER a full
+chat round has been added to the conversation, not during the execution of a chat round.
+A `--mode record` run is a single task = one fresh chat round from an empty conversation.
+There are no prior rounds to compact, so `FileContextCompactor` is a no-op for the current
+single-task scope. `chatRound.steps` always contains the full uncompacted step messages.
 
-**Impact on go-live**: When we reconstruct the pre-built history, we always include all
-steps 0..k-1 verbatim (using `toolResultObserved` for each). This gives the model MORE
-context than it had at the divergence point if compaction had already occurred during the
-original run. The reconstructed context is richer, not impoverished -- the model's
-decision quality at the divergence point is at least as good as the original.
+**No `CompactionEvent` needed for now.** The per-result compaction (handled by
+`toolResultObserved`) is the only compaction that affects `chatRound.steps`.
 
-**Known limitation**: The go-live run will not replicate the *exact* context the model had
-during the original run if conversation-level compaction occurred. This is acceptable and
-intentional: we cannot replay the LLM-based compaction exactly, and a richer context is
-strictly better for the live phase. The only risk is context window overflow.
-
-**Context window overflow guard**: Before calling `go_live(agent, history)`, check whether
-the estimated token count of `history` exceeds the model's context window minus a safety
-margin (e.g., 20%). If it does, apply a deterministic compaction to the earliest messages
-in `history` -- for example, keep only `toolResultObserved` truncated to a fixed length
-for old steps, or drop the oldest steps entirely. This is a rare edge case: it only occurs
-when the pre-built history alone exceeds the window, which requires many steps with large
-(but below-threshold) tool results. Log a warning when this guard fires.
+**Future scope — multi-turn sessions**: If replay is extended to multi-turn sessions
+(where earlier turns may have been compacted before the divergent turn runs), a
+`CompactionEvent` structure would be required to record which rounds were summarized and
+what summary text was produced, so go-live reconstruction can inject the same summary
+rather than the full verbatim earlier turns. This is deferred to that future milestone.
 
 **Compaction during the live phase**: Once `go_live(agent, history)` is running, context
-compaction is handled transparently by the DSL's `FileContextCompactor`, exactly as during
-a normal run. No special handling needed.
+compaction is handled transparently by the DSL's `FileContextCompactor`. No special
+handling needed — the DSL takes over from here.
 
 #### Summary: Which Field for Which Purpose
 
@@ -592,22 +587,7 @@ Actually: step 0 has `step.modelOutput` (the model's first decision). We still a
 plus the new result to history. Then go live from step 1 onward. The model sees the new
 step-0 result as context.
 
-### 9.4 Pre-Built History Exceeds Context Window
-
-If the cache-hit steps 0..k-1 produce a history whose estimated token count exceeds the
-model's context window minus a safety margin (20%):
-- Log a warning: `[replay] WARNING: pre-built history is large (estimated N tokens) -- compacting oldest steps`
-- Deterministically truncate the oldest `toolResultObserved` values (not `modelOutput`) to
-  a maximum length (e.g., 500 chars + "...[truncated for context window]")
-- If still too large after truncation, drop the oldest steps entirely (keeping the most
-  recent k steps that fit)
-- Go live with the compacted history
-
-This is a last resort. The model sees less historical context than ideal, but the live run
-can still complete correctly. The divergence step's immediate context (the step just before
-it) is always preserved.
-
-### 9.5 Trace Has No modelOutput (Old Stage 1/2 Traces)
+### 9.4 Trace Has No modelOutput (Old Stage 1/2 Traces)
 
 Old traces recorded before `modelOutput` was added will have an empty string for
 `modelOutput`. If go-live is attempted with an old trace:
@@ -616,7 +596,7 @@ Old traces recorded before `modelOutput` was added will have an empty string for
 - Action: warn the user that the trace must be re-recorded to enable go-live, then fall
   back to dry-run validation (report divergence but don't resume live).
 
-### 9.6 Parallel Sub-Agent with Partial Failure
+### 9.5 Parallel Sub-Agent with Partial Failure
 
 One sub-agent errors, the other succeeds. See §5.5 — treat the errored sub-agent as
 DIVERGED, include error result in history, continue with the successful sub-agent's result.
@@ -632,12 +612,15 @@ DIVERGED, include error result in history, continue with the successful sub-agen
   to Approach B before any other implementation.
 
 **Changes:**
-1. Add `modelOutput: String` to `ToolStepRecord`; update `init`, `toJsonValue`,
-   `fromJsonValue` (empty string default for old traces — backward compatible).
-2. Update `Recorder.buildRecord` to capture the assistant message preceding each tool call.
-3. Implement `Replayer.replayLive(trace, agent)` per §3.
-4. Update `ReplayRunner.replay()` to call `replayLive` instead of (or alongside) `validate`.
-5. Update output format per §8.
+1. Add `modelOutput: String` and `toolResultObserved: String` to `ToolStepRecord`; update
+   `init`, `toJsonValue`, `fromJsonValue` (empty string defaults — backward compatible).
+2. Add `compactionEvents: Array<CompactionEvent>` to `AgentTrace`; update serialization
+   (empty array default — backward compatible).
+3. Update `Recorder.buildRecord` to capture `modelOutput` and `toolResultObserved` from
+   `chatRound.steps`. ✓ Done (committed f72f6ed).
+4. Implement `Replayer.replayLive(trace, agent)` per §3.
+6. Update `ReplayRunner.replay()` to call `replayLive` instead of (or alongside) `validate`.
+7. Update output format per §8.
 
 **Test**: Run Test A in go-live mode (no divergence expected — should print "all cache-hit").
 Run Test B in go-live mode (divergence at step 0 — should go live and complete the task).
@@ -683,8 +666,8 @@ just parent trace).
 | toolResultObserved field | Add to ToolStepRecord | Per-result compaction: model saw the compacted version, not the raw |
 | History reconstruction | Use toolResultObserved | Avoids context window overflow; matches what model originally saw |
 | Hash comparison | Use toolResult (raw) | Symmetric with replayer re-invocation; compaction is LLM non-deterministic |
-| Conversation-level compaction replay | Accept imprecision; use full history | Cannot replay LLM-based summaries; richer context is better for live phase |
-| Pre-built history overflow | Deterministic truncation + warning | Last resort; preserve most-recent steps, truncate oldest |
+| Conversation-level compaction replay | Not needed for single-task scope | FileContextCompactor fires after a round completes; single-task record runs have no prior rounds to compact |
+| Pre-built history overflow | Not a concern; detect model-switch and error | toolResultObserved matches original context size; only model-switch between record and replay can break this |
 | asyncChat injection | Prototype Approach A first | Simpler; fall back to Approach B if unsupported |
 | Sub-agent strategy Phase 1 | Option A (re-run from scratch) | Simple, no sub-trace modelOutput needed |
 | Sub-agent strategy Phase 2 | Option B (recursive live replay) | Maximally reuses cache |
