@@ -6,20 +6,23 @@
 
 ---
 
-## [HIGH] Go Live from Divergence
+## [DONE] Go Live from Divergence (Stage 3)
 
 **Full design**: `go-live-design.md`
 
-**Problem:** The current `--mode replay` is a dry-run validator only. It re-executes tool calls and reports WHERE the trajectory diverges, but does not resume live model calls from that point. The core incremental value — skipping unchanged early steps and resuming from the divergence — is not yet delivered.
+`Replayer.replayLive` walks the recorded trace, feeding cache-hit steps into a `MessageList` history (using `modelOutput` + `toolResultObserved`). At the first divergence it calls `goLive(agent, history, startStep)` — a manual tool loop that calls `agent.model.create`, invokes each tool the model selects, and continues until a final answer. Sub-agent divergence causes go-live at the outer level (sub-agent re-runs from scratch). Pre-Stage-3 traces (missing `modelOutput`) fall back to dry-run.
 
-**Key design decisions (see go-live-design.md for full detail):**
-- Add `modelOutput: String` to `ToolStepRecord` — the raw assistant message needed to reconstruct conversation history
-- `Replayer.replayLive`: walk steps, accumulate `(modelOutput, actualResult)` history; at divergence, call `go_live(agent, history)`
-- Sub-agent divergence: Phase 1 = Option A (re-run sub-agent from scratch, compare output); Phase 2 = Option B (recursive live replay from sub-agent's own divergence point)
-- Parallel sub-agents: forward design with `roundIndex` grouping (implement when Magic CLI adds parallel tool-call support)
-- Critical prerequisite: prototype `asyncChat(conversation: prebuiltHistory)` — Approach A; fall back to manual tool-loop (Approach B) if unsupported
+---
 
-**Current workaround:** After `--mode replay` identifies the divergence step, manually re-run the full task with `--prompt`.
+## [LOW] Recursive Go-Live Inside a Sub-Agent
+
+**Problem:** When a sub-agent step diverges, `replayLive` currently goes live at the **outer** level — the sub-agent re-runs entirely from scratch. If the sub-agent had 20 cache-hit internal steps before diverging at step 21, all 20 re-executions are wasted.
+
+**Desired behavior:** At sub-agent divergence, recurse into `goLive` for the sub-agent using its own recorded history up to the inner divergence point, just as the outer agent does.
+
+**Why it's deferred:** Requires passing a `goLive`-capable context into `validateStep` (currently returns a plain `StepResult`). The sub-agent's history reconstruction also needs its `taskPrompt` (currently stored as `""` for sub-agents in `Recorder.extract`). Both are solvable but add non-trivial complexity.
+
+**Related:** Parallel sub-agents would need `roundIndex` grouping (forward-designed in `go-live-design.md`); implement when Magic CLI adds parallel tool-call support.
 
 ---
 

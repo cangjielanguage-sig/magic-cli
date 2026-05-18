@@ -14,7 +14,21 @@
       "Bash(git commit -m ' *)",
       "Bash(git show *)",
       "Bash(git ls-tree *)",
-      "Bash(git commit *)"
+      "Bash(git commit *)",
+      "Bash(Get-ChildItem *)",
+      "Bash(ls -la \"D:\\\\\\\\projects\\\\\\\\magic-cli\\\\\\\\src\\\\\\\\core\\\\\\\\agents\\\\\\\\\")",
+      "Bash(ls *)",
+      "Bash(find \"D:\\\\\\\\projects\\\\\\\\magic-cli\\\\\\\\.magic-cli\" -type f)",
+      "Bash(find *)",
+      "Bash(grep -r \"SYSTEM_PROMPT_SUFFIX\" \"D:\\\\\\\\projects\\\\\\\\magic-cli\\\\\\\\src\")",
+      "Bash(grep -i \"agent\" \"D:\\\\\\\\projects\\\\\\\\magic-cli\\\\\\\\src\\\\\\\\core\\\\\\\\agents\\\\\\\\subagents\" -r --include=\"*.cj\")",
+      "Bash(grep *)",
+      "PowerShell(cd D:\\\\projects\\\\magic-cli; $env:MAGIC_PATH = \"D:\\\\projects\\\\CangjieMagic\"; .\\\\tests\\\\replay\\\\test-c.ps1 2>&1)",
+      "PowerShell(cd D:\\\\projects\\\\magic-cli; $env:MAGIC_PATH = \"D:\\\\projects\\\\CangjieMagic\"; .\\\\tests\\\\replay\\\\test-d.ps1 2>&1)",
+      "PowerShell($env:MAGIC_PATH = \"D:\\\\projects\\\\CangjieMagic\"; Set-Location D:\\\\projects\\\\magic-cli; .\\\\tests\\\\replay\\\\test-a.ps1 2>&1)",
+      "PowerShell($env:MAGIC_PATH = \"D:\\\\projects\\\\CangjieMagic\"; Set-Location D:\\\\projects\\\\magic-cli; .\\\\tests\\\\replay\\\\test-b.ps1 2>&1)",
+      "PowerShell($env:MAGIC_PATH = \"D:\\\\projects\\\\CangjieMagic\"; Set-Location D:\\\\projects\\\\magic-cli; .\\\\tests\\\\replay\\\\test-c.ps1 2>&1)",
+      "PowerShell($env:MAGIC_PATH = \"D:\\\\projects\\\\CangjieMagic\"; Set-Location D:\\\\projects\\\\magic-cli; .\\\\tests\\\\replay\\\\test-d.ps1 2>&1)"
     ]
   }
 }
