@@ -28,9 +28,9 @@
 
 ## System Prompt Stability
 
-**Validated in Test H (2026-05-18):** AGENTS.md injection into the system prompt works correctly — appending a sentinel line to AGENTS.md causes the system prompt hash to differ, which triggers an immediate full re-run before any tool call. Zero false negatives. This confirms the strict byte-equality approach is sound for intentional system prompt changes.
+**Partially validated in Test H (2026-05-18):** AGENTS.md injection into the system prompt works correctly — appending a sentinel line to AGENTS.md causes the system prompt hash to differ, which triggers an immediate full re-run before any tool call. Zero false negatives. However, this only validates the detection side. The false-positive risk (hash shifting due to unintentional dynamic content) is not triggered here because **magic-cli's system prompt is static** — it does not inject current date, environment variables, or other runtime-dynamic content. The strict byte-equality approach is safe for magic-cli as-is, but would need revisiting for agents with genuinely dynamic system prompts.
 
-**Remaining concern:** The hash can shift between runs even when no intentional change was made (e.g., AGENTS.md auto-updated by another tool, or current date injected). In that case the user pays for a full re-run unnecessarily.
+**Remaining concern:** The hash can shift between runs even when no intentional change was made (e.g., AGENTS.md auto-updated by another tool, or current date injected by the framework). In that case the user pays for a full re-run unnecessarily.
 
 **Current treatment:** For the initial implementation, treat the system prompt as static and use strict byte equality for the hash comparison.
 
