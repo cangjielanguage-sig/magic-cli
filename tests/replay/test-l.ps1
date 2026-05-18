@@ -54,9 +54,7 @@ try {
     # ── Parse & evaluate ──────────────────────────────────────────────────────
     $replayStr  = $replayOutput -join "`n"
     $cacheHits  = @($replayOutput | Where-Object { $_ -match "\[replay\] step \d+: cache hit" }).Count
-    $headerLine = $replayOutput | Where-Object { $_ -match "\[replay\] Steps: (\d+)" } | Select-Object -First 1
-    $totalSteps = if ($headerLine -and $headerLine -match "\[replay\] Steps: (\d+)") { [int]$Matches[1] } else {
-                      @($replayOutput | Where-Object { $_ -match "\[replay\] step \d+:" }).Count }
+    $totalSteps = @($replayOutput | Where-Object { $_ -match "\[replay\] step \d+:" }).Count
     $hasDiverge = $replayStr -match "\[replay\] step \d+: DIVERGED"
     $hasGoLive  = $replayStr -match "\[replay\] (Going live|go-live step)"
     $speedup    = if ($t_replay -gt 0) { [math]::Round($t_fresh / $t_replay, 1) } else { 999 }

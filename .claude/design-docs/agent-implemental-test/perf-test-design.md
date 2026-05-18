@@ -318,19 +318,33 @@ positions in the load sequence shows how divergence position affects cache effic
 | 4 | `complexity-limits.md` | Complexity limits (line count, nesting depth, SRP) |
 
 **Shared task prompt** (`prompt-k.txt`):
+
+The prompt is structured as a **phased review pipeline** — each phase loads its own skill
+right before applying it. This induces naturally sequential skill reads without any artificial
+"do not batch" instruction. In real practice this is how a multi-criteria review workflow
+would be written: load the naming rules when you are about to do the naming pass, not all
+upfront.
+
 ```
-You are performing a multi-criteria code review of src/replay/recorder.cj.
+Perform a structured code review of src/replay/recorder.cj across four review phases.
 
-Load your review criteria by reading each skill file below using a SEPARATE tool call
-for each, in this exact order — do NOT batch them:
-1. src/replay/skills/code-reviewer.md
-2. src/replay/skills/doc-advisor.md
-3. src/replay/skills/naming-guide.md
-4. src/replay/skills/complexity-limits.md
+For each phase, first read the skill file to load that phase's rules, then apply those
+rules to recorder.cj and list all violations found. Complete each phase before starting
+the next.
 
-After all four skill files are loaded, read src/replay/recorder.cj.
-Produce a review report with findings grouped by skill. For each skill list any rule
-violations with the rule number. If no violations write "No issues found."
+Phase 1 — Code Quality
+Skill: src/replay/skills/code-reviewer.md
+
+Phase 2 — Documentation
+Skill: src/replay/skills/doc-advisor.md
+
+Phase 3 — Naming Conventions
+Skill: src/replay/skills/naming-guide.md
+
+Phase 4 — Complexity
+Skill: src/replay/skills/complexity-limits.md
+
+Present findings phase by phase. If a phase finds no violations write "No issues found."
 ```
 
 ---
