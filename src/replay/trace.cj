@@ -49,12 +49,29 @@ public func extractTagContent(content: String, tagName: String): Option<String> 
 
 // One recorded tool call and its result.
 // For sub-agent calls, subTrace holds the nested trace (Stage 2); None means old Stage-1 trace.
+//
+// Two representations of the tool result are stored:
+//   toolResult         -- raw pre-compaction result, obtained by re-invoking the tool.
+//                         Used for hash comparison (symmetric with replayer re-invocation).
+//   toolResultObserved -- raw msg.content of the User message in chatRound.steps.
+//                         May be an LLM-compacted summary when the raw result exceeded
+//                         toolResultCompactThreshold. This is exactly what the model saw.
+//                         Used to reconstruct conversation history for go-live.
+//
+// modelOutput -- raw msg.content of the Assistant message in chatRound.steps.
+//   This is the model's tool-call decision in the format the DSL stores it:
+//     tool-call mode: {"name":..., "arguments":...}
+//     text mode:      <thought>...</thought><action>```json...```</action>
+//   Used to reconstruct the assistant turn in the conversation history for go-live.
+//   Defaults to "" for traces recorded before Stage 3 (go-live not possible on old traces).
 public struct ToolStepRecord {
     public let index: Int64
     public let toolName: String
-    public let toolArgsJson: String   // JSON string of the arguments object
-    public let toolResult: String     // full text returned by the tool
-    public let toolResultHash: String // hash of toolResult for fast comparison
+    public let toolArgsJson: String        // JSON string of the arguments object
+    public let toolResult: String          // raw pre-compaction result (for hashing)
+    public let toolResultHash: String      // hash of normalize(toolResult) for fast comparison
+    public let toolResultObserved: String  // what the model actually saw (for go-live history)
+    public let modelOutput: String         // raw assistant message (for go-live history)
     public let isSubAgentCall: Bool
     public let subTrace: Option<AgentTrace>  // nested sub-agent trace (Stage 2)
 
@@ -64,6 +81,8 @@ public struct ToolStepRecord {
         toolArgsJson!: String,
         toolResult!: String,
         toolResultHash!: String,
+        toolResultObserved!: String = "",
+        modelOutput!: String = "",
         isSubAgentCall!: Bool,
         subTrace!: Option<AgentTrace> = None
     ) {
@@ -72,6 +91,8 @@ public struct ToolStepRecord {
         this.toolArgsJson = toolArgsJson
         this.toolResult = toolResult
         this.toolResultHash = toolResultHash
+        this.toolResultObserved = toolResultObserved
+        this.modelOutput = modelOutput
         this.isSubAgentCall = isSubAgentCall
         this.subTrace = subTrace
     }
@@ -83,6 +104,8 @@ public struct ToolStepRecord {
         jo.put("toolArgsJson", JsonString(toolArgsJson))
         jo.put("toolResult", JsonString(toolResult))
         jo.put("toolResultHash", JsonString(toolResultHash))
+        jo.put("toolResultObserved", JsonString(toolResultObserved))
+        jo.put("modelOutput", JsonString(modelOutput))
         jo.put("isSubAgentCall", JsonBool(isSubAgentCall))
         if (let Some(t) <- subTrace) {
             jo.put("subTrace", t.toJsonValue())
@@ -96,6 +119,8 @@ public struct ToolStepRecord {
         let toolArgsJson = jsonGetString(json, "toolArgsJson").getOrDefault { "{}" }
         let toolResult = jsonGetString(json, "toolResult").getOrDefault { "" }
         let toolResultHash = jsonGetString(json, "toolResultHash").getOrDefault { "" }
+        let toolResultObserved = jsonGetString(json, "toolResultObserved").getOrDefault { "" }
+        let modelOutput = jsonGetString(json, "modelOutput").getOrDefault { "" }
         let isSubAgentCall = jsonGetBool(json, "isSubAgentCall").getOrDefault { false }
         let subTrace: Option<AgentTrace> = if (let Some(v) <- jsonGetValue(json, "subTrace")) {
             match (v.kind()) {
@@ -111,6 +136,8 @@ public struct ToolStepRecord {
             toolArgsJson: toolArgsJson,
             toolResult: toolResult,
             toolResultHash: toolResultHash,
+            toolResultObserved: toolResultObserved,
+            modelOutput: modelOutput,
             isSubAgentCall: isSubAgentCall,
             subTrace: subTrace
         )

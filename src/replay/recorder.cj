@@ -35,30 +35,36 @@ public class Recorder {
         var subCaptureIdx: Int64 = 0
 
         var pendingAction: Option<String> = None
+        var pendingModelOutput: Option<String> = None
 
         for (msg in chatRound.steps) {
             let content = msg.content
 
             if (msg.role == MessageRole.Assistant) {
-                // Action step: try XML tag first (text mode), then use raw content (tool-call mode)
+                // Action step: try XML tag first (text mode), then use raw content (tool-call mode).
+                // Store raw msg.content as modelOutput for go-live history reconstruction.
                 let actionContent = extractTagContent(content, "action") ?? content.trimAscii()
                 if (!actionContent.isEmpty()) {
                     pendingAction = actionContent
+                    pendingModelOutput = content  // raw message, including any tags
                 }
             } else if (msg.role == MessageRole.User) {
-                // Observation step: try XML tag first (text mode), then use raw content (tool-call mode)
+                // Observation step: extract content for hashing/parsing; keep raw msg.content
+                // as toolResultObserved for go-live history reconstruction.
                 let obsContent = extractTagContent(content, "observation") ?? content.trimAscii()
                 if (let Some(actionJson) <- pendingAction) {
+                    let rawModelOutput = pendingModelOutput.getOrDefault { actionJson }
                     // Consume the next sub-capture if this action is a sub-agent call
                     let subCapOpt = peekSubCapture(actionJson, agent, subCaptures, subCaptureIdx)
                     if (subCapOpt.isSome()) {
                         subCaptureIdx++
                     }
-                    if (let Some(record) <- buildRecord(stepIndex, actionJson, obsContent, agent, subCapOpt)) {
+                    if (let Some(record) <- buildRecord(stepIndex, actionJson, obsContent, content, rawModelOutput, agent, subCapOpt)) {
                         records.add(record)
                         stepIndex++
                     }
                     pendingAction = None
+                    pendingModelOutput = None
                 }
             }
             // System messages and other roles are skipped
@@ -103,12 +109,17 @@ public class Recorder {
 
     // Parse one action+observation pair into a ToolStepRecord.
     // Strips ```json...``` code fences before JSON parsing (text mode wraps JSON in fences).
+    // obsContent:    extracted text between <observation> tags (or raw), used for re-invoke fallback.
+    // rawObsContent: the raw msg.content of the User message, stored as toolResultObserved.
+    // rawModelOutput: the raw msg.content of the Assistant message, stored as modelOutput.
     // subCapture: if this is a sub-agent step, contains the sub-agent's ChatRound and Agent
     // for recursive sub-trace extraction (Stage 2).
     private static func buildRecord(
         index: Int64,
         actionJson: String,
         obsContent: String,
+        rawObsContent: String,
+        rawModelOutput: String,
         agent: Agent,
         subCapture: Option<(ChatRound, Agent)>
     ): Option<ToolStepRecord> {
@@ -171,6 +182,8 @@ public class Recorder {
                 toolArgsJson: argsJson,
                 toolResult: rawResult,
                 toolResultHash: hash,
+                toolResultObserved: rawObsContent,
+                modelOutput: rawModelOutput,
                 isSubAgentCall: isSubAgent,
                 subTrace: subTrace
             )
