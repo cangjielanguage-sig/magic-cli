@@ -454,13 +454,11 @@ Multi-turn sessions (where the user sends multiple prompts in sequence) are out 
 
 ## 11. Implementation Roadmap
 
-**Stage 1 — minimum viable system, single agent.**
+**Stage 1 — minimum viable system, single agent. ✓ Implemented.**
 - Record traces with system prompt hash, tool calls, tool results, result hashes.
-- Implement replay with the re-execute-and-check loop.
+- Implement replay with the re-execute-and-check loop (dry-run validator).
 - Manual environment reset (v0).
 - Entry point: separate CLI mode (`--mode record` / `--mode replay`).
-
-This is the entire core. The implementation is small because most of the work happens in mechanisms that already exist (tool dispatch, conversation history management) — the replay layer just wraps them.
 
 **Stage 2 — multi-agent (AgentAsTool). ✓ Implemented.**
 - Sub-agent calls are now fully validated rather than skipped.
@@ -470,31 +468,25 @@ This is the entire core. The implementation is small because most of the work ha
 - Old Stage 1 traces (no `subTrace` field) fall back to `Skipped` with a prompt to re-record — backward compatible.
 - Test D (ExplorerAgent) confirms: changes to files read inside the sub-agent are now detected and propagated to the parent as `DIVERGED`.
 
-**Stage 3 — user-judged divergence exemptions.**
+**Stage 3 — go-live from divergence. ✓ Implemented.**
+- `Replayer.replayLive` replaces the dry-run-only `validate` as the main replay entry point.
+- `ToolStepRecord` gains `modelOutput: String` (raw assistant message for history reconstruction) and `toolResultObserved: String` (what the model actually saw, possibly LLM-compacted). Old traces with empty `modelOutput` fall back to dry-run automatically.
+- Cache-hit steps feed `(modelOutput, toolResultObserved)` pairs into a `MessageList` conversation history. At the first divergence, `goLive` is called with the reconstructed history.
+- `goLive` implements a manual tool-loop (Approach B): calls `agent.model.create(ChatRequest(history, tools))`, invokes each tool the model selects, appends to history, repeats until the model produces a final answer.
+- Sub-agent divergence triggers go-live at the **outer** level — the parent model re-invokes the sub-agent tool, which runs from scratch. Recursive go-live inside sub-agents (Option B from `go-live-design.md`) is deferred.
+- See `go-live-design.md` for full design rationale.
 
-Even with a clean environment (Stage 4 below), some tool results change on every run for reasons that have nothing to do with the user's edit: elapsed time in a benchmark, minor disk-activity noise in a stat call, a randomly-assigned port number. These are *external* non-determinism — not caused by the replay mechanism itself — so the normalizer deliberately does not suppress them (see `result-normalizer-design.md`, Category 2). They show up as DIVERGED, the user inspects the diff and judges them irrelevant, and must do so again on the next replay.
+**Stage 4 — user-judged divergence exemptions.**
 
-Stage 3 closes this loop with a permission mechanism that mirrors Claude Code's "always allow this tool" flow:
+Even with a clean environment, some tool results change on every run for reasons unrelated to the user's edit: elapsed time, minor disk-activity noise, randomly-assigned port numbers. These are *external* non-determinism reported as DIVERGED — the user must inspect the diff and judge them irrelevant on each replay.
 
-- When a step is reported as DIVERGED, the runner prompts the user interactively before continuing:  
-  `Step N (listDirectory) diverged — only disk free space changed. Treat this as noise in future replays? [y/N]`
-- If the user accepts, the exemption is persisted to `.magic-cli/replay-exemptions.json`, keyed by `(toolName, divergencePattern)` (where the pattern describes the class of difference, not a specific value).
-- On subsequent replays, a DIVERGED step is checked against the exemptions file before being reported. A matching exemption downgrades it to a silent cache hit.
-- The user is only asked once per divergence pattern. Thereafter, the judgment is applied automatically — the same UX as Claude Code's tool-permission memory.
+Stage 4 closes this loop with a permission mechanism mirroring Claude Code's "always allow this tool" flow. See `todo.md [MEDIUM]` for the full specification.
 
-Important constraints:
-- Exemptions are user-owned and editable. The system never grants an exemption on its own.
-- An exemption is pattern-matched, not value-matched — it covers all future instances of the same class of change (e.g., "disk free space line in listDirectory"), not just the specific value seen during the first judgment.
-- The DIVERGED status is always logged, even for exempted steps. Exemptions affect whether the replay *stops and reports* divergence, not whether it *detects* it.
-- Exemptions do not override the normalizer — they are a complementary, user-controlled layer on top of it.
-
-This mechanism is appropriate at Stage 3 (after multi-agent coverage in Stage 2) because: the more steps a replay covers, the more noise sources accumulate, and the more valuable it is to amortize the user's judgment across runs. Sandboxed reset (Stage 4) reduces environment noise but cannot eliminate external non-determinism entirely; exemptions remain useful after Stage 4.
-
-**Stage 4 — sandboxed reset (v1).**
+**Stage 5 — sandboxed reset (v1).**
 - Move to container-based execution.
 - Eliminates the silent-corruption failure mode from skipped manual resets.
 
-**Stage 5 — optional enrichments.**
+**Stage 6 — optional enrichments.**
 - Diagnostic output explaining *why* a divergence occurred (which file changed, which tool drifted).
 - Caching of cross-iteration metadata to speed up rapid edit cycles.
 

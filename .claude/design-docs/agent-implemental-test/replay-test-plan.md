@@ -55,14 +55,18 @@ The scripts add `src/replay/dummy_test.cj`, run replay, then remove it on exit (
 ```
 [replay] System prompt: unchanged
 [replay] step 0: DIVERGED   (listDirectory)
-[replay] step 1: cache hit  (fileBatchRead)
-[replay] Result: first divergence at step 0 — re-run from that step onward
+[replay] Going live from step 0
+
+[replay] go-live step 0: <tool calls...>
+[replay] go-live: agent finished
+
+<agent's final answer, listing files including dummy_test.cj>
 ```
 
 ### Pass criteria
 - Step 0 (`listDirectory`) shows `DIVERGED` — the new file appears in the listing
-- Step 1 (`fileBatchRead`) still shows `cache hit` — file contents are unchanged
-- Summary reports first divergence at step 0
+- Go-live triggers from step 0 and the agent produces a final answer that includes `dummy_test.cj`
+- Note: with go-live, steps after the divergence point are no longer individually dry-run checked — the live model takes over from step 0 onward
 
 ---
 
@@ -126,22 +130,29 @@ it in cleanup (`trap EXIT` / `try/finally`).
 **Expected output (replay, after modifying replayer.cj):**
 ```
 [replay] step 0: DIVERGED   (ExplorerAgent)
-[replay] Result: first divergence at step 0 -- re-run from that step onward
+[replay] Going live from step 0
+
+[replay] go-live step 0: ExplorerAgent
+[replay] go-live step 1: ExplorerAgent
+[replay] go-live: agent finished
+
+<agent's final answer>
 ```
 
 ### Pass criteria
 - Trace file contains a `"subTrace"` field (checked by the script)
-- Replay reports `DIVERGED` for the ExplorerAgent step
-- Summary reports first divergence at step 0
+- Replay reports `DIVERGED` for the ExplorerAgent step (divergence propagated from inside the sub-trace)
+- Go-live triggers from step 0; the parent model re-invokes ExplorerAgent (which re-runs from scratch)
+- Agent produces a final answer
 - The divergence is caused by the sentinel change inside the sub-agent's nested trace
 
 ---
 
 ## What We Are NOT Testing Here
 
-- Live resumption from divergence (deferred — see todo.md [HIGH] item)
 - System prompt change detection (harder to trigger without rebuilding)
 - Multi-turn sessions
+- Recursive go-live inside a sub-agent (deferred — see todo.md [LOW] item)
 
 ---
 

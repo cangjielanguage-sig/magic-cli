@@ -1,7 +1,7 @@
 # Go Live from Divergence — Design
 
 **Date**: 2026-05-15
-**Status**: Design only — not yet implemented
+**Status**: Phase 1 implemented (single-agent go-live + Option C sub-agent handling). Recursive sub-agent go-live (Option B / Phase 3) deferred — see `todo.md [LOW]`.
 **Prerequisite**: Stage 1 (single-agent dry-run validator) and Stage 2 (recursive sub-agent
 validation) are complete. This document designs Stage 3: actually resuming live model execution
 from the divergence point rather than just reporting where divergence occurred.
@@ -223,14 +223,21 @@ output would have been the same. The parent model pays full cost from step i.
 
 ### 4.2 Recommendation
 
-**Phase 1 implementation**: Option A. Sub-agent runs as a black box. Simple, gets the
-feature working end-to-end.
+**Phase 1 implementation (current)**: Option C. When a sub-agent step diverges,
+`replayLive` triggers `goLive` at the outer (parent) level immediately. The parent model
+re-invokes the sub-agent tool, which runs entirely from scratch. This is the simplest
+implementation — no sub-agent re-run logic or output comparison needed.
 
-**Phase 2 upgrade**: Option B. Requires `modelOutput` capture at sub-trace level and
-asyncChat history injection. Worth implementing once Phase 1 is validated.
+**Phase 2 upgrade** (future): Option A. Re-run the sub-agent from scratch after divergence,
+compare final output to `step.toolResultHash`; if unchanged, the parent step is a cache-hit.
 
-Option C is not recommended — it gives up parent-level caching, which is the whole point
-for tasks where sub-agents dominate the cost.
+**Phase 3 upgrade** (future): Option B. Recursive go-live within the sub-agent using its own
+recorded history. Requires `modelOutput` at sub-trace level and a way to inject pre-built
+history. See `todo.md [LOW]` for blockers.
+
+Option C was chosen for Phase 1 over Option A because it required fewer implementation layers
+and could be validated end-to-end immediately. The known cost is losing parent-level cache
+steps after the sub-agent divergence point.
 
 ---
 
@@ -466,98 +473,114 @@ In the replayer:
 
 ---
 
-## 7. asyncChat API Investigation (Critical Prerequisite)
+## 7. asyncChat API Investigation — Resolved
 
-The go-live algorithm (Approach A) requires:
+Approach B (manual tool-loop) was implemented directly, without prototyping Approach A.
 
+**Approach B (implemented)**:
 ```cangjie
-agent.asyncChat(conversation: prebuiltHistory)
+// We own the loop — call agent.model.create, invoke tools, append to history
+while liveStep < maxSteps:
+    let chatResp = agent.model.create(ChatRequest(history, tools: tools))
+    let content = chatResp.message.content
+
+    if let Some((toolName, toolArgs)) <- parseToolCall(content, chatResp.toolRequests):
+        let result = tool.invoke(toolArgs).content
+        if Config.enableModelToolCall:
+            history.add(Message.assistant(ToolRequest(name: toolName, args: toolArgs).toJsonValue().toJsonString()))
+            history.add(Message.user(result))
+        else:
+            history.add(Message.assistant(content))
+            history.add(Message.user("<observation>${result}</observation>"))
+        liveStep++
+    else if !content.isEmpty():
+        print content   // final answer
+        return
+    else:
+        return          // empty response
 ```
 
-where `prebuiltHistory` is an array of alternating assistant/user messages representing
-steps 0..k that have already been validated. The DSL must treat this as a mid-run
-conversation context and continue from there.
+Approach B requires `agent.model` (for `model.create`) and `agent.toolManager` (for tool lookup),
+both of which were already accessible in the replayer. It is fully general and requires no DSL changes.
 
-**Questions to answer before implementation:**
-
-1. Does `asyncChat` (or equivalent) accept a `conversation` parameter of type
-   `Array<Message>` or `MessageList`?
-2. If yes: does it correctly interleave the pre-built history with new model calls?
-3. If no: is there a lower-level `agent.model.chat(systemPrompt, messages)` call we
-   can use to build a manual tool-loop?
-
-**Approach A (preferred)**:
-```cangjie
-let response = agent.asyncChat(conversation: history, prompt: "")
-// The DSL runs the tool loop from the divergence point onward
-```
-
-**Approach B (fallback — manual tool-loop)**:
-```cangjie
-// We own the loop
-while true:
-    let modelMsg = agent.model.chat(agent.systemPrompt, history)
-    if isFinalAnswer(modelMsg): break
-    let (toolName, args) = extractToolCall(modelMsg)
-    let result = agent.toolManager.findTool(toolName).invoke(args).content
-    history.append(AssistantMessage(modelMsg))
-    history.append(UserMessage(result))
-```
-
-Approach B requires access to `agent.model` and `agent.toolManager`, which are already
-used by the replayer. It is the safe fallback if the DSL doesn't support pre-built history.
-
-**Action item**: Prototype Approach A with a trivially reconstructed 1-step history
-to confirm the DSL supports it before building the full go-live system.
+Approach A (`asyncChat` with pre-built history) was not prototyped. If the DSL ever adds clean support
+for it, it could replace the manual loop in `goLive` and allow the sub-agent's own `asyncChat` flow
+(including its tool confirmation UX) to handle live execution.
 
 ---
 
-## 8. Output Format
+## 8. Output Format (Actual — as Implemented)
 
-### Record mode (with modelOutput capture):
+### Record mode:
 ```
 [record] Task: "fix the bug in foo.cj"
+[record] Trace name: my-task
 [record] Captured 3 tool step(s) (1 sub-agent with nested trace)
 [record] Trace saved -> .magic-cli/traces/my-task.json
 ```
-(Unchanged from current output. ModelOutput is stored silently.)
+`modelOutput` and `toolResultObserved` are stored silently — no extra output.
 
-### Replay mode — all cache-hits (no change from Stage 2):
+### Replay mode — all cache-hits:
 ```
+[replay] Trace: my-task  (recorded 2026-05-18T...)
+[replay] Agent: GeneralCodeAgent
+[replay] Task:  "fix the bug in foo.cj"
+[replay] Steps: 2
+
 [replay] System prompt: unchanged
 [replay] step 0: cache hit  (listDirectory)
 [replay] step 1: cache hit  (fileBatchRead)
-[replay] Result: all 2 step(s) cache-hit -- environment unchanged, run complete
+
+[replay] Result: all 2 step(s) cache-hit -- no divergence detected
 ```
 
 ### Replay mode — divergence, going live:
 ```
 [replay] System prompt: unchanged
 [replay] step 0: cache hit  (listDirectory)
-[replay] step 1: DIVERGED   (fileBatchRead) -- going live from step 2
-[replay] [live] step 2 onward: running model live...
-<live agent output continues here>
-[replay] Done. 1 step(s) cached, 2 step(s) live.
+[replay] step 1: DIVERGED   (fileBatchRead)
+[replay] Going live from step 1
+
+[replay] go-live step 1: fileBatchRead
+[replay] go-live step 2: shellExecute
+[replay] go-live: agent finished
+
+<final answer text>
 ```
 
-### Replay mode — sub-agent diverged, Option A (re-run from scratch):
+### Replay mode — sub-agent diverged (Option C — go live at outer level):
 ```
-[replay] step 0: cache hit  (listDirectory)
-[replay] step 1: sub-agent diverged (ExplorerAgent) -- re-running sub-agent live
-[replay] step 1: sub-agent output CHANGED -- going live from step 2
-[replay] [live] step 2 onward: running model live...
+[replay] System prompt: unchanged
+[replay] step 0: DIVERGED   (ExplorerAgent)
+[replay] Going live from step 0
+
+[replay] go-live step 0: ExplorerAgent
+[replay] go-live step 1: ExplorerAgent
+[replay] go-live: agent finished
+
+<final answer text>
 ```
-Or, if sub-agent produced the same final output:
-```
-[replay] step 1: sub-agent diverged internally, output UNCHANGED -- parent cache-hit
-[replay] step 2: cache hit  (shellExecute)
-[replay] Result: all 3 step(s) effective-cache-hit -- 1 sub-agent re-ran internally
-```
+The parent model re-invokes ExplorerAgent (which runs from scratch inside `AgentAsTool`).
 
 ### Replay mode — system prompt changed:
 ```
-[replay] System prompt: CHANGED -- going fully live from step 0
-[replay] [live] running full task live...
+[replay] System prompt changed -- going live from step 0
+
+[replay] go-live step 0: listDirectory
+...
+[replay] go-live: agent finished
+
+<final answer text>
+```
+
+### Replay mode — pre-Stage-3 trace (dry-run fallback):
+```
+[replay] Trace missing modelOutput (pre-Stage-3) -- dry-run only (re-record to enable go-live)
+[replay] System prompt: unchanged
+[replay] step 0: cache hit  (listDirectory)
+[replay] step 1: DIVERGED   (fileBatchRead)
+
+[replay] Result: diverged at step 1 -- re-record to enable go-live
 ```
 
 ---
@@ -605,47 +628,47 @@ DIVERGED, include error result in history, continue with the successful sub-agen
 
 ## 10. Implementation Plan
 
-### Phase 1 — Single-Agent Go-Live
+### Phase 1 — Single-Agent Go-Live ✓ Implemented
 
-**Prerequisites:**
-- Prototype Approach A (`asyncChat` with pre-built history) — if it doesn't work, commit
-  to Approach B before any other implementation.
+**Changes (all committed):**
+1. Added `modelOutput: String` and `toolResultObserved: String` to `ToolStepRecord`; updated
+   `init`, `toJsonValue`, `fromJsonValue` (empty string defaults — backward compatible). (f72f6ed)
+2. Updated `Recorder.buildRecord` to capture `modelOutput` and `toolResultObserved` from
+   `chatRound.steps`. (f72f6ed)
+3. Implemented `Replayer.replayLive(trace, agent)` per §3 — uses Approach B (manual tool-loop). (6f3cc51)
+4. Implemented `Replayer.goLive(agent, history, startStep)` — manual tool-loop calling
+   `agent.model.create`. (6f3cc51)
+5. Updated `ReplayRunner.replay()` to call `replayLive` instead of `validate`. (6f3cc51)
 
-**Changes:**
-1. Add `modelOutput: String` and `toolResultObserved: String` to `ToolStepRecord`; update
-   `init`, `toJsonValue`, `fromJsonValue` (empty string defaults — backward compatible).
-2. Add `compactionEvents: Array<CompactionEvent>` to `AgentTrace`; update serialization
-   (empty array default — backward compatible).
-3. Update `Recorder.buildRecord` to capture `modelOutput` and `toolResultObserved` from
-   `chatRound.steps`. ✓ Done (committed f72f6ed).
-4. Implement `Replayer.replayLive(trace, agent)` per §3.
-6. Update `ReplayRunner.replay()` to call `replayLive` instead of (or alongside) `validate`.
-7. Update output format per §8.
+**Sub-agent handling**: Option C — when a sub-agent step diverges, `goLive` fires at the outer
+level immediately. The parent model re-invokes the sub-agent tool, which runs from scratch.
 
-**Test**: Run Test A in go-live mode (no divergence expected — should print "all cache-hit").
-Run Test B in go-live mode (divergence at step 0 — should go live and complete the task).
+**Verified by**: Tests A, B, C, D all pass.
+- Test A: all cache-hit with go-live trace.
+- Test B: step 0 diverges → go live → agent answers including new file.
+- Test C: ReviewerAgent step cache-hit.
+- Test D: ExplorerAgent diverges → outer go-live → agent re-runs ExplorerAgent.
 
 ### Phase 2 — Sequential Sub-Agent Go-Live (Option A)
 
+**Status**: Not yet started. See `todo.md [LOW]` (currently merged with Option B as Phase 3).
+
 **Changes:**
 1. In `replayLive`, when a sub-agent step diverges: re-run the sub-agent tool from scratch
-   (call `AgentAsTool.invoke` directly), compare output to `step.toolResultHash`.
-2. If output unchanged → parent cache-hit; if changed → parent DIVERGED → go live at parent.
-3. Update output format (§8 sub-agent messages).
-
-**Test**: Run Test C in go-live mode — ReviewerAgent should re-run and produce same output
-(cache-hit at parent). Run Test D in go-live mode — ExplorerAgent should re-run, produce
-different output (parent DIVERGED → go live).
+   via `AgentAsTool.invoke`, compare output hash to `step.toolResultHash`.
+2. If output hash matches → parent cache-hit; if changed → parent DIVERGED → go live at parent.
 
 ### Phase 3 — Sequential Sub-Agent Go-Live (Option B — Recursive)
 
-**Prerequisites:** Phase 2 working; `modelOutput` captured in sub-trace steps too (not
-just parent trace).
+**Status**: Deferred. See `todo.md [LOW]` for blockers.
+
+**Prerequisites:** `modelOutput` captured in sub-trace steps (currently stored as `""` for
+sub-agent inner steps, since their `taskPrompt` is empty and their history is not reconstructed).
+Needs changes to `Recorder.extract` for sub-agent calls.
 
 **Changes:**
 1. Add `replayLiveSubAgent(subTrace, subAgent)` per §4.3.
-2. Replace Option A re-run with Option B recursive replay in `replayLive`.
-3. Verify sub-agent's `asyncChat` also supports pre-built history (same Approach A/B question).
+2. Replace Option C/A with Option B recursive replay in `replayLive`.
 
 ### Phase 4 — Parallel Sub-Agent Go-Live
 
@@ -668,9 +691,10 @@ just parent trace).
 | Hash comparison | Use toolResult (raw) | Symmetric with replayer re-invocation; compaction is LLM non-deterministic |
 | Conversation-level compaction replay | Not needed for single-task scope | FileContextCompactor fires after a round completes; single-task record runs have no prior rounds to compact |
 | Pre-built history overflow | Not a concern; detect model-switch and error | toolResultObserved matches original context size; only model-switch between record and replay can break this |
-| asyncChat injection | Prototype Approach A first | Simpler; fall back to Approach B if unsupported |
-| Sub-agent strategy Phase 1 | Option A (re-run from scratch) | Simple, no sub-trace modelOutput needed |
-| Sub-agent strategy Phase 2 | Option B (recursive live replay) | Maximally reuses cache |
+| asyncChat injection | Approach B (manual tool-loop) | Approach A not prototyped; Approach B is fully general and requires no DSL changes |
+| Sub-agent strategy Phase 1 (current) | Option C (outer-level go-live) | Simplest; sub-agent re-runs from scratch via parent model |
+| Sub-agent strategy Phase 2 (future) | Option A (re-run + compare output) | Sub-agent as black box; simpler than Option B |
+| Sub-agent strategy Phase 3 (future) | Option B (recursive live replay) | Maximally reuses cache; deferred — see todo.md [LOW] |
 | Parallel sub-agents | Design now, implement later | Trace format must be forward-compatible |
 | roundIndex | Add when parallel is implemented | No need before parallel support exists |
 | Old trace backward compat | Empty modelOutput → dry-run only | Warn and degrade gracefully |
