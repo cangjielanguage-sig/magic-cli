@@ -14,6 +14,8 @@ $tests = @(
     @{ id = "H"; script = "tests\replay\test-h.ps1"; title = "System Prompt Change (AGENTS.md)" }
     @{ id = "I"; script = "tests\replay\test-i.ps1"; title = "Tool Behavior Change" }
     @{ id = "J"; script = "tests\replay\test-j.ps1"; title = "Multi-Agent + Tool Change" }
+    @{ id = "K"; script = "tests\replay\test-k.ps1"; title = "Multi-Skill: Middle Skill Change" }
+    @{ id = "L"; script = "tests\replay\test-l.ps1"; title = "Multi-Skill: Last Skill Change" }
 )
 
 $suiteResults = @()

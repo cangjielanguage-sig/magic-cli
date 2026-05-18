@@ -37,6 +37,8 @@ Tests are organized into three categories to cover each surface:
 | H | Skill | System prompt change via AGENTS.md | Step 0 (full re-run forced) |
 | I | Tool | Tool behavior change (shell script proxy) | Step N (when tool is called) |
 | J | Tool + Multi-agent | ExplorerAgent caches; outer script call diverges | Step 1 (after sub-agent cache-hit) |
+| K | Multi-skill | 4 skills loaded; middle skill (naming-guide) changes | Skill 3 of 4 (skills 1–2 cache-hit) |
+| L | Multi-skill | 4 skills loaded; last skill (complexity-limits) changes | Skill 4 of 4 (skills 1–3 cache-hit) |
 
 ---
 
@@ -301,6 +303,76 @@ Step 1: outer agent runs `line-stats.ps1` via ShellTool.
 
 ---
 
+## 6b. Category 4 — Multi-Skill Workflows
+
+These tests use a realistic scenario: an agent loads a suite of four domain-specific skill
+files sequentially, then applies all of them to a target file. Changing a skill at different
+positions in the load sequence shows how divergence position affects cache efficiency.
+
+**Skill suite** (all in `src/replay/skills/`):
+| Order | File | Domain |
+|-------|------|--------|
+| 1 | `code-reviewer.md` | Code quality (function length, exception handling, doc comments) |
+| 2 | `doc-advisor.md` | Documentation completeness (class/function/block comments) |
+| 3 | `naming-guide.md` | Naming conventions (PascalCase types, camelCase functions, etc.) |
+| 4 | `complexity-limits.md` | Complexity limits (line count, nesting depth, SRP) |
+
+**Shared task prompt** (`prompt-k.txt`):
+```
+You are performing a multi-criteria code review of src/replay/recorder.cj.
+
+Load your review criteria by reading each skill file below using a SEPARATE tool call
+for each, in this exact order — do NOT batch them:
+1. src/replay/skills/code-reviewer.md
+2. src/replay/skills/doc-advisor.md
+3. src/replay/skills/naming-guide.md
+4. src/replay/skills/complexity-limits.md
+
+After all four skill files are loaded, read src/replay/recorder.cj.
+Produce a review report with findings grouped by skill. For each skill list any rule
+violations with the rule number. If no violations write "No issues found."
+```
+
+---
+
+### Test K — Multi-Skill, Middle Skill Change
+
+**Real practice**: developer tightens naming conventions mid-sprint (adds a new rule) after a
+PR review raised the issue. The naming-guide skill is skill 3 of 4 in the load sequence.
+
+**Mutation**: append to `src/replay/skills/naming-guide.md`:
+```
+5. Avoid single-letter variable names except for conventional loop counters (i, j, k).
+```
+
+**Expected**:
+- Steps 0–1 (skills 1–2): cache-hit — content unchanged
+- Step 2 (skill 3, naming-guide.md): `DIVERGED` — new rule detected
+- Go-live from step 2: live agent reads the updated naming-guide and applies all 5 rules
+- Speedup: modest (2 of 5 skill-read steps saved, synthesis still live)
+
+---
+
+### Test L — Multi-Skill, Last Skill Change
+
+**Real practice**: developer adds a new complexity rule after discovering a match expression
+with too many arms. The complexity-limits skill is the last (skill 4 of 4) in the load sequence.
+
+**Mutation**: append to `src/replay/skills/complexity-limits.md`:
+```
+4. A single match expression must not have more than 8 arms.
+```
+
+**Expected**:
+- Steps 0–2 (skills 1–3): cache-hit — content unchanged
+- Step 3 (skill 4, complexity-limits.md): `DIVERGED` — new rule detected
+- Go-live from step 3: live agent reads the updated limits and applies all 4 complexity rules
+- Speedup: better than K (3 of 5 skill-read steps saved)
+- **Key insight**: within a fixed skill suite, changing a later skill gives better replay
+  efficiency — exactly analogous to Test F vs. an early file change.
+
+---
+
 ## 7. Metrics Per Test
 
 ```
@@ -325,17 +397,19 @@ tests/replay/
 ├── prompt-g.txt                 # skill body: guide + apply to recorder.cj
 ├── prompt-i.txt                 # tool behavior: run line-stats, summarize
 ├── prompt-j.txt                 # multi-agent + tool: ExplorerAgent + direct read
+├── prompt-k.txt                 # multi-skill: 4 skills + review (shared by K and L)
 ├── skills/
-│   └── analysis-guide.md       # skill body used in Test G
+│   └── analysis-guide.md       # skill body used in Test G (git-ignored location; see below)
 ├── tools/
 │   └── line-stats.ps1          # shell script proxy for custom tool (Tests I, J)
-├── test-e.ps1
-├── test-f.ps1
-├── test-g.ps1
-├── test-h.ps1
-├── test-i.ps1
-├── test-j.ps1
-└── run-perf-suite.ps1           # runs all 6, generates report
+├── test-e.ps1 … test-l.ps1
+└── run-perf-suite.ps1           # runs all 8, generates report
+
+src/replay/skills/               # skill files must live here (tests/ is git-ignored,
+├── code-reviewer.md             # which causes fileRead to return a shielded placeholder)
+├── doc-advisor.md
+├── naming-guide.md
+└── complexity-limits.md
 ```
 
 ### Per-test script structure
@@ -351,7 +425,7 @@ Each script:
 
 ### Suite runner
 
-`run-perf-suite.ps1` runs E through J in sequence, then reads the 6 JSON results and
+`run-perf-suite.ps1` runs E through L in sequence, then reads all 8 JSON results and
 renders `tests/replay/report-<timestamp>.md`.
 
 ---

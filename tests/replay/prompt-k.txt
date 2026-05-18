@@ -1,0 +1,11 @@
+You are performing a multi-criteria code review of src/replay/recorder.cj.
+
+Load your review criteria by reading each skill file below using a SEPARATE tool call for each, in this exact order — do NOT batch them:
+1. src/replay/skills/code-reviewer.md
+2. src/replay/skills/doc-advisor.md
+3. src/replay/skills/naming-guide.md
+4. src/replay/skills/complexity-limits.md
+
+After all four skill files are loaded, read src/replay/recorder.cj.
+
+Produce a review report with findings grouped by skill. For each skill list any rule violations with the rule number. If a skill finds no violations write "No issues found."
