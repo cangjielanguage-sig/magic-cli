@@ -1,7 +1,7 @@
 # Replay Performance Test Suite — Design
 
 **Date**: 2026-05-18
-**Status**: Design — pending review
+**Status**: Complete — all 8 tests passed (2026-05-18). See `tests/replay/perf-report-20260518-154418.md` for full results.
 
 ---
 
@@ -34,7 +34,7 @@ Tests are organized into three categories to cover each surface:
 | E | Baseline | No change — pure cache | None (all cache-hit) |
 | F | File | Late-stage source file change | Step 5/6 |
 | G | Skill | Skill body change (guidance doc updated) | Step 0 (skill read first) |
-| H | Skill | System prompt change via AGENTS.md | Step 0 (full re-run forced) |
+| H | System Prompt | System prompt change via AGENTS.md | Step 0 (full re-run forced) |
 | I | Tool | Tool behavior change (shell script proxy) | Step N (when tool is called) |
 | J | Tool + Multi-agent | ExplorerAgent caches; outer script call diverges | Step 1 (after sub-agent cache-hit) |
 | K | Multi-skill | 4 skills loaded; middle skill (naming-guide) changes | Skill 3 of 4 (skills 1–2 cache-hit) |
@@ -130,7 +130,7 @@ instruction body. Changing the body changes the tool result; changing the frontm
 would be invisible to replay (frontmatter is not in the main agent's system prompt for
 custom agents).
 
-**Setup**: create `tests/replay/skills/code-reviewer.md`:
+**Setup**: `src/replay/skills/code-reviewer.md` (must live outside `tests/` — files in git-ignored directories return a shielded placeholder from `fileRead`, so the hash would always match):
 ```markdown
 ---
 name: code-reviewer
@@ -146,7 +146,7 @@ Apply these rules when reviewing Cangjie code:
 
 **Task prompt** (`prompt-g.txt`):
 ```
-Read the skill definition at tests/replay/skills/code-reviewer.md to load your review
+Read the skill definition at src/replay/skills/code-reviewer.md to load your review
 criteria. Then read src/replay/recorder.cj and apply those criteria exactly.
 List each finding with the rule number it violates. If no violations, say "No issues found."
 ```
@@ -412,16 +412,14 @@ tests/replay/
 ├── prompt-i.txt                 # tool behavior: run line-stats, summarize
 ├── prompt-j.txt                 # multi-agent + tool: ExplorerAgent + direct read
 ├── prompt-k.txt                 # multi-skill: 4 skills + review (shared by K and L)
-├── skills/
-│   └── analysis-guide.md       # skill body used in Test G (git-ignored location; see below)
 ├── tools/
 │   └── line-stats.ps1          # shell script proxy for custom tool (Tests I, J)
 ├── test-e.ps1 … test-l.ps1
 └── run-perf-suite.ps1           # runs all 8, generates report
 
-src/replay/skills/               # skill files must live here (tests/ is git-ignored,
-├── code-reviewer.md             # which causes fileRead to return a shielded placeholder)
-├── doc-advisor.md
+src/replay/skills/               # skill files must live here — tests/ is git-ignored,
+├── code-reviewer.md             # so fileRead on anything under tests/ returns a shielded
+├── doc-advisor.md               # placeholder string, making the hash always match (no divergence).
 ├── naming-guide.md
 └── complexity-limits.md
 ```
@@ -429,13 +427,14 @@ src/replay/skills/               # skill files must live here (tests/ is git-ign
 ### Per-test script structure
 
 Each script:
-1. Sets up fixtures (creates skill/tool files if needed)
-2. Phase 1: `Measure-Command { cjpm run ... --mode record }` → `T_record`
-3. Applies mutation
-4. Phase 2: `Measure-Command { cjpm run ... --mode replay }` → `T_replay`; captures stdout; parses cache-hit count
-5. Phase 3: `Measure-Command { cjpm run ... --auto --prompt-file ... }` → `T_fresh`
-6. `try/finally` restores all mutated files and removes fixtures
-7. Emits JSON result to `.magic-cli/perf-results/<test>.json`
+1. Pre-test restore: `git checkout -- <mutated-file>` — ensures a clean baseline even if a previous interrupted run left the file mutated
+2. Reads original file content into `$originalX` variable
+3. Phase 1: `Measure-Command { cjpm run ... --mode record }` → `T_record`
+4. Applies mutation (append new rule / sentinel / byte-count output)
+5. Phase 2: `Measure-Command { cjpm run ... --mode replay }` → `T_replay`; captures stdout; parses cache-hit count
+6. Phase 3: `Measure-Command { cjpm run ... --auto --prompt-file ... }` → `T_fresh`
+7. `try/finally` restores all mutated files using `[System.IO.File]::WriteAllText` with UTF-8 no-BOM
+8. Emits JSON result to `.magic-cli/perf-results/<test>.json`
 
 ### Suite runner
 
@@ -517,22 +516,23 @@ The report explicitly shows these cases to set accurate expectations.
 | G | Step 0 `DIVERGED`; go-live answer mentions findings from the updated guide |
 | H | Output contains `System prompt changed`; zero `cache hit` lines in output |
 | I | The script-call step `DIVERGED`; go-live answer reflects the new output format |
-| J | ExplorerAgent step `DIVERGED`; output contains `sub-agent diverged`; both tasks in final answer |
+| J | ExplorerAgent step `cache hit` (sub-trace all-cached); shellExecute step `DIVERGED`; go-live from step 1; final answer reflects updated script output |
 
 ### Performance (informational — warnings, not failures)
 
-| Test | Expected speedup |
-|------|-----------------|
-| E | > 10× |
-| F | > 2× |
-| G | 0.8–1.5× |
-| H | 0.8–1.2× |
-| I | 0.8–1.5× |
-| J | 0.8–1.5× |
+| Test | Estimated speedup | Actual (2026-05-18) | Notes |
+|------|------------------|---------------------|-------|
+| E | > 10× | 3.5× | All 5 steps cache-hit. Lower than estimated — actual task had fewer/cheaper steps than the design assumed. |
+| F | > 2× | 1.1× | 3/4 steps cached but final synthesis dominates; cached steps were cheap intermediate calls (~4s each). |
+| G | 0.8–1.5× | 1.0× | Early divergence, expected. |
+| H | 0.8–1.2× | 1.5× | No caching — speedup is a model path-efficiency artifact (go-live used fileBatchRead; fresh run used 4 fileReads). |
+| I | 0.8–1.5× | 1.0× | Early divergence, expected. |
+| J | 0.8–1.5× | 2.0× | ExplorerAgent sub-trace fully cached — sub-agent steps are expensive, so caching one gives real savings. |
+| K | — | 3.0× | 5 inner steps cached via ExplorerAgent; diverged at naming-guide directory listing (file size changed). |
+| L | — | 2.7× | 20/21 steps cached; task-managed sequential read; diverged cleanly at step 20. |
 
-Speedup outside these ranges is flagged in the report as a warning. Model API latency
-varies ±20% per run; single-measurement results are directionally correct, not precise
-benchmarks.
+Speedup ratios are polluted by single-run LLM latency variance in T_fresh (±20–30%); use T_replay as the
+stable efficiency metric when comparing tests. Full analysis is in `tests/replay/perf-report-20260518-154418.md`.
 
 ---
 

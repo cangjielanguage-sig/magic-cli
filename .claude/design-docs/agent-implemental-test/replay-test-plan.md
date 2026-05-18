@@ -1,5 +1,7 @@
 # Incremental Replay — Manual Test Plan
 
+**Status**: Tests A–D complete. For broader performance and scenario coverage (Tests E–L), see `perf-test-design.md` and `tests/replay/perf-report-20260518-154418.md`.
+
 ## Goal
 
 Verify two things:

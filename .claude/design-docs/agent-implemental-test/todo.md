@@ -28,7 +28,9 @@
 
 ## System Prompt Stability
 
-**Problem:** The system prompt may contain dynamic content (e.g., AGENTS.md injected from the working directory, current date). This means the hash can shift between runs even when no intentional change was made, forcing a full re-run unnecessarily.
+**Validated in Test H (2026-05-18):** AGENTS.md injection into the system prompt works correctly — appending a sentinel line to AGENTS.md causes the system prompt hash to differ, which triggers an immediate full re-run before any tool call. Zero false negatives. This confirms the strict byte-equality approach is sound for intentional system prompt changes.
+
+**Remaining concern:** The hash can shift between runs even when no intentional change was made (e.g., AGENTS.md auto-updated by another tool, or current date injected). In that case the user pays for a full re-run unnecessarily.
 
 **Current treatment:** For the initial implementation, treat the system prompt as static and use strict byte equality for the hash comparison.
 
