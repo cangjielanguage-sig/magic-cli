@@ -1,0 +1,4 @@
+Run the following shell command and report the results:
+  powershell -File tests\replay\tools\line-stats.ps1
+
+Report the complete output of the command, then state which file has the most lines and which has the fewest.

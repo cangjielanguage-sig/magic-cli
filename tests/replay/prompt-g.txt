@@ -1,0 +1,3 @@
+Read the skill definition at src/replay/skills/code-reviewer.md to load your review criteria.
+Then read src/replay/recorder.cj and apply those criteria exactly.
+List each finding with the rule number it violates. If no violations, say "No issues found."

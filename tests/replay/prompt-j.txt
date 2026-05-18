@@ -1,0 +1,9 @@
+Please do two things in order:
+
+1. Use the ExplorerAgent to explore src/replay/ and provide a one-sentence description of what each .cj file does.
+
+2. Run the following shell command and report the results:
+   powershell -File tests\replay\tools\line-stats.ps1
+   Then state which file has the most lines and which has the fewest.
+
+Label the two parts clearly as "Part 1" and "Part 2".

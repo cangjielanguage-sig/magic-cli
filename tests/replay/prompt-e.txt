@@ -1,0 +1,7 @@
+Read the following src/replay/ files one by one and describe each:
+1. src/replay/recorder.cj — what does it do and what are its public functions?
+2. src/replay/replayer.cj — what does it do and what are its public functions?
+3. src/replay/trace.cj — what does it do and what are its public types/functions?
+4. src/replay/trace_store.cj — what does it do and what are its public functions?
+
+Read them sequentially, one file per tool call. After all four, give a 2-sentence summary of how they fit together.
