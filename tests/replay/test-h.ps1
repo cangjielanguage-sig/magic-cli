@@ -55,7 +55,9 @@ try {
     # ── Parse & evaluate ──────────────────────────────────────────────────────
     $replayStr       = $replayOutput -join "`n"
     $cacheHits       = @($replayOutput | Where-Object { $_ -match "\[replay\] step \d+: cache hit" }).Count
-    $totalSteps      = @($replayOutput | Where-Object { $_ -match "\[replay\] step \d+:" }).Count
+    # System prompt change bypasses the step loop entirely, so count from the trace header instead.
+    $headerLine  = $replayOutput | Where-Object { $_ -match "\[replay\] Steps: (\d+)" } | Select-Object -First 1
+    $totalSteps  = if ($headerLine -and $headerLine -match "\[replay\] Steps: (\d+)") { [int]$Matches[1] } else { 0 }
     $sysPromptChange = $replayStr -match "System prompt changed"
     $speedup         = if ($t_replay -gt 0) { [math]::Round($t_fresh / $t_replay, 1) } else { 999 }
     $passed          = $sysPromptChange -and ($cacheHits -eq 0)
