@@ -193,18 +193,4 @@ public class Recorder {
         }
     }
 
-    // Strip ```lang ... ``` code fences -- text mode wraps the action JSON in markdown fences.
-    private static func stripCodeFences(s: String): String {
-        let trimmed = s.trimAscii()
-        if (trimmed.startsWith("```")) {
-            if (let Some(newline) <- trimmed.indexOf("\n", 0)) {
-                let afterFence = trimmed[(newline + 1)..]
-                if (let Some(closing) <- afterFence.lastIndexOf("```")) {
-                    return afterFence[0..closing].trimAscii()
-                }
-                return afterFence.trimAscii()
-            }
-        }
-        return trimmed
-    }
 }

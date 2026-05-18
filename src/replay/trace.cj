@@ -18,6 +18,21 @@ public func computeHash(s: String): String {
     return "${h1}:${h2}"
 }
 
+// Strip ```lang ... ``` code fences. Text mode wraps the action JSON in markdown fences.
+public func stripCodeFences(s: String): String {
+    let trimmed = s.trimAscii()
+    if (trimmed.startsWith("```")) {
+        if (let Some(newline) <- trimmed.indexOf("\n", 0)) {
+            let afterFence = trimmed[(newline + 1)..]
+            if (let Some(closing) <- afterFence.lastIndexOf("```")) {
+                return afterFence[0..closing].trimAscii()
+            }
+            return afterFence.trimAscii()
+        }
+    }
+    return trimmed
+}
+
 // Extract the text between <tagName>...</tagName>.
 // Returns None if the open tag is not found.
 // Uses the LAST occurrence of the close tag so that tool results containing

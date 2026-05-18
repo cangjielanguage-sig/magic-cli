@@ -78,30 +78,7 @@ public class ReplayRunner {
         PrintUtils.printLine("[replay] Steps: ${trace.steps.size}")
         PrintUtils.printLine("")
 
-        // Validate each tool step
-        let result = Replayer.validate(trace, app.mainAgent)
-
-        // Count skipped steps (Stage 1 sub-agent steps without sub-trace)
-        var skippedCount: Int64 = 0
-        for ((_, _, r) in result.stepResults) {
-            match (r) {
-                case StepResult.Skipped(_) => skippedCount++
-                case _ => ()
-            }
-        }
-
-        // Print summary
-        PrintUtils.printLine("")
-        if (result.allCached) {
-            if (skippedCount > 0) {
-                PrintUtils.printLine("[replay] Result: all checked step(s) cache-hit -- ${skippedCount} sub-agent step(s) skipped (re-record to enable Stage 2 validation)")
-            } else {
-                PrintUtils.printLine("[replay] Result: all ${trace.steps.size} step(s) cache-hit -- no divergence detected")
-            }
-        } else if (result.systemPromptChanged) {
-            PrintUtils.printLine("[replay] Result: system prompt changed -- full re-run needed")
-        } else if (let Some(idx) <- result.firstDivergenceIndex) {
-            PrintUtils.printLine("[replay] Result: first divergence at step ${idx} -- re-run from that step onward")
-        }
+        // Run go-live replay: cache-hit steps reuse history, diverged steps run live
+        Replayer.replayLive(trace, app.mainAgent)
     }
 }
