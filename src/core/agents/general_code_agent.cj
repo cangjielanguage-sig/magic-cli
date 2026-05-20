@@ -27,6 +27,7 @@ IMPORTANT: You must NEVER generate or guess URLs for the user unless you are con
         FSToolset(),
         ShellTool(),
         PlanToolset(),
+        SearchToolset(),
         // GitToolset(),
         // AgentAsTool(CodeAnalyzer(), mode: SubAgentMode.WithContext)
         AgentAsTool(ExplorerAgent(), mode: SubAgentMode.WithContext),
