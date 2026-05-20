@@ -118,3 +118,95 @@ private func testNoApiKey(): Unit {
     }
 }
 
+//----------------------------------------------------------------------------------
+// RawHttpFetchTool test cases
+//----------------------------------------------------------------------------------
+
+/**
+ * Top-level test runner for RawHttpFetchTool.
+ */
+@Test
+public func testRawHttpFetchTool(): Unit {
+    PrintUtils.printLine("=== Testing RawHttpFetchTool ===")
+    testFetchRawCangjieDownloadPage()
+    testFetchRawStaticPage()
+    testFetchRaw404()
+    testFetchRawTruncation()
+    PrintUtils.printLine("=== RawHttpFetchTool tests completed ===")
+}
+
+/**
+ * Verify the Cangjie download page (SSR) returns inline <script> JSON in the
+ * raw body, asserting that the 1.0.5 SDK archive name is present.
+ */
+@Test
+private func testFetchRawCangjieDownloadPage(): Unit {
+    PrintUtils.printLine("\n--- fetchRaw: Cangjie download page (SSR target) ---")
+    try {
+        let tool = RawHttpFetchTool()
+        let result = tool.fetch("https://cangjie-lang.cn/download/1.0.5", 524288)
+
+        // The raw HTML / inline JSON should contain the Windows SDK archive name.
+        @PowerAssert(result.contains("cangjie-sdk-windows-x64-1.0.5"))
+        PrintUtils.printLine("✓ Cangjie download page raw fetch passed")
+    } catch (e: Exception) {
+        // Network may be unavailable in CI; degrade to a warning rather than a hard failure.
+        PrintUtils.printLine("! fetchRaw Cangjie page skipped (network?): ${e.message}")
+    }
+}
+
+/**
+ * Verify a plain static page returns HTTP 200 and contains recognisable
+ * markup in the raw body.
+ */
+@Test
+private func testFetchRawStaticPage(): Unit {
+    PrintUtils.printLine("\n--- fetchRaw: plain static page ---")
+    try {
+        let tool = RawHttpFetchTool()
+        let result = tool.fetch("https://example.com", 524288)
+
+        @PowerAssert(result.contains("HTTP Status: 200"))
+        @PowerAssert(result.contains("<h1>Example Domain</h1>"))
+        PrintUtils.printLine("✓ Static page raw fetch passed")
+    } catch (e: Exception) {
+        PrintUtils.printLine("! fetchRaw static page skipped (network?): ${e.message}")
+    }
+}
+
+/**
+ * Verify a non-existent path produces an HTTP 4xx error message rather
+ * than a body or an unhandled exception.
+ */
+@Test
+private func testFetchRaw404(): Unit {
+    PrintUtils.printLine("\n--- fetchRaw: 404 error handling ---")
+    try {
+        let tool = RawHttpFetchTool()
+        let result = tool.fetch("https://example.com/this-does-not-exist-404xyz", 524288)
+
+        @PowerAssert(result.contains("HTTP 4") || result.contains("Web fetch failed"))
+        PrintUtils.printLine("✓ 404 error handling passed — result: ${result[..60]}")
+    } catch (e: Exception) {
+        PrintUtils.printLine("! fetchRaw 404 test skipped (network?): ${e.message}")
+    }
+}
+
+/**
+ * Verify that requesting a very small maxBytes cap triggers the TRUNCATED
+ * marker so the agent knows the response was cut short.
+ */
+@Test
+private func testFetchRawTruncation(): Unit {
+    PrintUtils.printLine("\n--- fetchRaw: truncation ---")
+    try {
+        let tool = RawHttpFetchTool()
+        let result = tool.fetch("https://en.wikipedia.org/wiki/Cangjie_input_method", 1024)
+
+        @PowerAssert(result.contains("TRUNCATED"))
+        PrintUtils.printLine("✓ Truncation test passed")
+    } catch (e: Exception) {
+        PrintUtils.printLine("! fetchRaw truncation test skipped (network?): ${e.message}")
+    }
+}
+

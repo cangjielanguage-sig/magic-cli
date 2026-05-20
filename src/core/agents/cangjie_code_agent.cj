@@ -45,6 +45,7 @@ For any unclear aspects, use the **${CangjieToolset._cangjieRetrieveDocuments}**
         ShellTool(),
         CangjieToolset(),
         PlanToolset(),
+        SearchToolset(),
         // GitToolset(),
         fixCangjieProjectCompileError,
         // AgentAsTool(CodeAnalyzer(), mode: SubAgentMode.WithContext) // Duplicate with ExplorerAgent?
