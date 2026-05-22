@@ -25,6 +25,7 @@ build-script-cache/
 .idea/
 *.swp
 *.swo
+.trae/
 
 # OS files
 .DS_Store
@@ -38,6 +39,7 @@ todo.md
 # Test files
 test/
 test_examples/
+tests/
 
 # External modules
 CangjieMagic/
