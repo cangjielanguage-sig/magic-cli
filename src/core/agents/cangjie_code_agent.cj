@@ -55,7 +55,8 @@ For any unclear aspects, use the **${CangjieToolset._cangjieRetrieveDocuments}**
         AgentAsTool(ReviewerAgent(), mode: SubAgentMode.WithContext),
         AgentAsTool(TestGeneratorAgent(), mode: SubAgentMode.WithContext),
         AgentAsTool(RefactoringAgent(), mode: SubAgentMode.WithContext)
-    ]
+    ],
+    skillRoot: CliConfig.skillRoot
 ]
 public class CangjieCodeAgent {
     @prompt(
