@@ -39,7 +39,7 @@ Thumbs.db
 # Test files
 test/
 test_examples/
-tests/
+# tests/
 
 # External modules
 CangjieMagic/

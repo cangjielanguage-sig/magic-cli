@@ -1,0 +1,1 @@
+Use the ExplorerAgent to explore the src/replay/ module and explain how all components (Recorder, Replayer, ReplayRunner, ToolResultNormalizer) work together to implement the incremental replay feature.
