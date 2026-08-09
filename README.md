@@ -188,6 +188,10 @@ Magic-CLI 提供了丰富的内置命令来管理对话、配置和系统功能�
 - **`/exit`** - 退出程序
 - **`/clear`** - 清除当前对话历史
 - **`/compact`** - 压缩对话上下文，优化长期会话性能
+- **`/models`** - 配置模型提供商和主模型
+- **`/status`** - 显示当前 Token 使用状态
+- **`/init`** - 为当前项目初始化 `AGENTS.md`
+- **`/agents`** - 列出所有自定义 Agent
 
 ### 对话管理
 Magic-CLI 支持保存和恢复对话会话：
@@ -197,6 +201,7 @@ Magic-CLI 支持保存和恢复对话会话：
 - **`/conversation save <name>`** - 保存当前对话为指定名称
 - **`/conversation resume <name>`** - 恢复指定名称的对话
 - **`/conversation remove <name>`** - 删除指定的对话
+- **`/conversation help`** - 显示对话管理命令帮助
 
 **使用示例：**
 ```bash
@@ -213,6 +218,7 @@ Magic-CLI 支持保存和恢复对话会话：
 ```
 ### MCP 工具管理
 - **`/mcp`** - 显示当前加载的所有 MCP 服务器和工具
+- **`/mcp list`** - 列出当前配置的 MCP 服务器
 - **`/mcp add <name> <command> [args...]`** - 添加新的 stdio MCP 服务器
 - **`/mcp add-sse <name> <url>`** - 添加新的 SSE MCP 服务器
 - **`/mcp remove <name>`** - 移除指定的 MCP 服务器
